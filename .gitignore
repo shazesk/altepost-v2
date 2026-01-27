@@ -1,0 +1,10 @@
+node_modules
+dist
+api/data
+api/uploads/*.jpg
+api/uploads/*.png
+api/uploads/*.jpeg
+api/uploads/*.gif
+api/uploads/*.webp
+.DS_Store
+*.log

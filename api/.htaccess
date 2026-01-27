@@ -1,0 +1,26 @@
+# Altepost API .htaccess
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Deny access to sensitive files
+<FilesMatch "(^\.ht|\.sql$|\.log$)">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Deny directory listing
+Options -Indexes
+
+# PHP settings (if allowed)
+<IfModule mod_php.c>
+    php_flag display_errors off
+    php_flag log_errors on
+</IfModule>
