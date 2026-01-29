@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const finalAmount = voucherType === 'amount' ? (amount === 'custom' ? customAmount : amount) : null;
 
     // Store voucher order
-    const vouchers = readVouchers();
+    const vouchers = await readVouchers();
     const newVoucher: VoucherOrder = {
       id: vouchers.length > 0 ? Math.max(...vouchers.map(v => v.id)) + 1 : 1,
       voucherType,
@@ -38,7 +38,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       notes: ''
     };
     vouchers.push(newVoucher);
-    writeVouchers(vouchers);
+    await writeVouchers(vouchers);
 
     // Build email details
     let voucherDetails: string;

@@ -12,8 +12,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    const reservations = readReservations();
-    const events = readEvents();
+    const reservations = await readReservations();
+    const events = await readEvents();
     const { eventId, status } = req.query;
 
     let filtered = reservations;
@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const reservations = readReservations();
+    const reservations = await readReservations();
     const { eventId, name, email, phone, tickets, notes } = req.body || {};
 
     if (!eventId || !name || !email || !tickets) {
@@ -62,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     reservations.push(newReservation);
-    writeReservations(reservations);
+    await writeReservations(reservations);
 
     return res.status(200).json({ success: true, data: newReservation });
   }

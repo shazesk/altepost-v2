@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Store contact submission
-    const contacts = readContacts();
+    const contacts = await readContacts();
     const newContact: Contact = {
       id: contacts.length > 0 ? Math.max(...contacts.map(c => c.id)) + 1 : 1,
       name,
@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       notes: ''
     };
     contacts.push(newContact);
-    writeContacts(contacts);
+    await writeContacts(contacts);
 
     // Send emails
     await Promise.all([

@@ -19,19 +19,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Get site settings (replaces /api/settings)
   if (type === 'settings') {
-    const settings = readSettings();
+    const settings = await readSettings();
     return res.status(200).json({ success: true, data: settings });
   }
 
   // Get list of all pages
   if (type === 'list') {
-    const pages = listPages();
+    const pages = await listPages();
     return res.status(200).json({ success: true, data: pages });
   }
 
   // Get testimonials
   if (type === 'testimonials') {
-    const testimonials = readTestimonials();
+    const testimonials = await readTestimonials();
     const { page } = req.query;
     if (page && typeof page === 'string') {
       const filtered = testimonials.filter(t => t.page === page);
@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Get specific page content
   if (name && typeof name === 'string') {
-    const content = readPageContent(name);
+    const content = await readPageContent(name);
     if (!content) {
       return res.status(404).json({ success: false, error: 'Page not found' });
     }

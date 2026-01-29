@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Store membership application
-    const memberships = readMemberships();
+    const memberships = await readMemberships();
     const newMembership: MembershipApplication = {
       id: memberships.length > 0 ? Math.max(...memberships.map(m => m.id)) + 1 : 1,
       name,
@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       notes: ''
     };
     memberships.push(newMembership);
-    writeMemberships(memberships);
+    await writeMemberships(memberships);
 
     // Send emails
     await Promise.all([

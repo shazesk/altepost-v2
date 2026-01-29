@@ -20,13 +20,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Find eventId if not provided
     let resolvedEventId = eventId;
     if (!resolvedEventId) {
-      const events = readEvents();
+      const events = await readEvents();
       const event = events.find(e => e.title === eventTitle && e.date === eventDate);
       resolvedEventId = event?.id || 0;
     }
 
     // Save reservation to database
-    const reservations = readReservations();
+    const reservations = await readReservations();
     const newReservation: Reservation = {
       id: reservations.length > 0 ? Math.max(...reservations.map(r => r.id)) + 1 : 1,
       eventId: resolvedEventId,
@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       createdAt: new Date().toISOString(),
     };
     reservations.push(newReservation);
-    writeReservations(reservations);
+    await writeReservations(reservations);
 
     // Send emails
     const [venueResult, confirmResult] = await Promise.all([

@@ -35,7 +35,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ success: false, error: 'Missing contact ID' });
     }
 
-    const contacts = readContacts();
+    const contacts = await readContacts();
     const index = contacts.findIndex(c => c.id === resourceId);
 
     if (index === -1) {
@@ -49,13 +49,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'PUT') {
       const updates = req.body || {};
       contacts[index] = { ...contacts[index], ...updates };
-      writeContacts(contacts);
+      await writeContacts(contacts);
       return res.status(200).json({ success: true, data: contacts[index] });
     }
 
     if (req.method === 'DELETE') {
       const deleted = contacts.splice(index, 1)[0];
-      writeContacts(contacts);
+      await writeContacts(contacts);
       return res.status(200).json({ success: true, data: deleted });
     }
   }
@@ -66,7 +66,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ success: false, error: 'Missing voucher ID' });
     }
 
-    const vouchers = readVouchers();
+    const vouchers = await readVouchers();
     const index = vouchers.findIndex(v => v.id === resourceId);
 
     if (index === -1) {
@@ -80,13 +80,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'PUT') {
       const updates = req.body || {};
       vouchers[index] = { ...vouchers[index], ...updates };
-      writeVouchers(vouchers);
+      await writeVouchers(vouchers);
       return res.status(200).json({ success: true, data: vouchers[index] });
     }
 
     if (req.method === 'DELETE') {
       const deleted = vouchers.splice(index, 1)[0];
-      writeVouchers(vouchers);
+      await writeVouchers(vouchers);
       return res.status(200).json({ success: true, data: deleted });
     }
   }
@@ -97,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ success: false, error: 'Missing membership ID' });
     }
 
-    const memberships = readMemberships();
+    const memberships = await readMemberships();
     const index = memberships.findIndex(m => m.id === resourceId);
 
     if (index === -1) {
@@ -111,13 +111,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'PUT') {
       const updates = req.body || {};
       memberships[index] = { ...memberships[index], ...updates };
-      writeMemberships(memberships);
+      await writeMemberships(memberships);
       return res.status(200).json({ success: true, data: memberships[index] });
     }
 
     if (req.method === 'DELETE') {
       const deleted = memberships.splice(index, 1)[0];
-      writeMemberships(memberships);
+      await writeMemberships(memberships);
       return res.status(200).json({ success: true, data: deleted });
     }
   }

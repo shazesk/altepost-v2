@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, error: 'Invalid event ID' });
   }
 
-  const events = readEvents();
+  const events = await readEvents();
   const eventIndex = events.findIndex(e => e.id === eventId);
 
   if (eventIndex === -1) {
@@ -49,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(405).json({ success: false, error: 'Method not allowed' });
     }
     events[eventIndex].is_archived = !events[eventIndex].is_archived;
-    writeEvents(events);
+    await writeEvents(events);
     return res.status(200).json({ success: true, data: events[eventIndex] });
   }
 
@@ -78,14 +78,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     events[eventIndex] = updatedEvent;
-    writeEvents(events);
+    await writeEvents(events);
 
     return res.status(200).json({ success: true, data: updatedEvent });
   }
 
   if (req.method === 'DELETE') {
     const deletedEvent = events.splice(eventIndex, 1)[0];
-    writeEvents(events);
+    await writeEvents(events);
     return res.status(200).json({ success: true, data: deletedEvent });
   }
 

@@ -1,10 +1,6 @@
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
 import jwt from 'jsonwebtoken';
-
-const DATA_DIR = path.join(process.cwd(), 'api/data');
-const ADMINS_FILE = path.join(DATA_DIR, 'admins.json');
+import { readAdmins } from './data.js';
 
 // JWT secret - in production, use an environment variable
 const JWT_SECRET = process.env.JWT_SECRET || 'altepost_jwt_secret_key_2024';
@@ -13,21 +9,10 @@ export function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password + 'altepost_salt').digest('hex');
 }
 
-export function readAdmins(): Array<{ id: number; username: string; password: string }> {
-  try {
-    if (fs.existsSync(ADMINS_FILE)) {
-      return JSON.parse(fs.readFileSync(ADMINS_FILE, 'utf8'));
-    }
-  } catch (e) {
-    console.error('Error reading admins:', e);
-  }
-  return [];
-}
-
-export function authenticateAdmin(username: string, password: string): { id: number; username: string } | null {
-  const admins = readAdmins();
+export async function authenticateAdmin(username: string, password: string): Promise<{ id: number; username: string } | null> {
+  const admins = await readAdmins();
   const hashedPassword = hashPassword(password);
-  const admin = admins.find(a => a.username === username && a.password === hashedPassword);
+  const admin = admins.find((a: any) => a.username === username && a.password === hashedPassword);
   return admin ? { id: admin.id, username: admin.username } : null;
 }
 

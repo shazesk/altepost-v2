@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    const events = readEvents();
+    const events = await readEvents();
     const archived = req.query.archived === '1';
     const filteredEvents = events.filter(e => e.is_archived === archived);
     filteredEvents.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -32,7 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const events = readEvents();
+    const events = await readEvents();
     const body = req.body || {};
 
     const newEvent: Event = {
@@ -51,7 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     events.push(newEvent);
-    writeEvents(events);
+    await writeEvents(events);
 
     return res.status(200).json({ success: true, data: newEvent });
   }

@@ -32,11 +32,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     switch (type) {
       case 'stats': {
-        const events = readEvents();
-        const reservations = readReservations();
-        const contacts = readContacts();
-        const vouchers = readVouchers();
-        const memberships = readMemberships();
+        const events = await readEvents();
+        const reservations = await readReservations();
+        const contacts = await readContacts();
+        const vouchers = await readVouchers();
+        const memberships = await readMemberships();
 
         return res.status(200).json({
           success: true,
@@ -67,12 +67,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       case 'settings': {
-        const settings = readSettings();
+        const settings = await readSettings();
         return res.status(200).json({ success: true, data: settings });
       }
 
       case 'contacts': {
-        const contacts = readContacts();
+        const contacts = await readContacts();
         const { status } = req.query;
         let filtered = contacts;
         if (status && status !== 'all') {
@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       case 'vouchers': {
-        const vouchers = readVouchers();
+        const vouchers = await readVouchers();
         const { status } = req.query;
         let filtered = vouchers;
         if (status && status !== 'all') {
@@ -94,7 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       case 'memberships': {
-        const memberships = readMemberships();
+        const memberships = await readMemberships();
         const { status } = req.query;
         let filtered = memberships;
         if (status && status !== 'all') {
@@ -105,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       case 'pages': {
-        const pages = listPages();
+        const pages = await listPages();
         return res.status(200).json({ success: true, data: pages });
       }
 
@@ -114,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (!name || typeof name !== 'string') {
           return res.status(400).json({ success: false, error: 'Missing page name' });
         }
-        const content = readPageContent(name);
+        const content = await readPageContent(name);
         if (!content) {
           return res.status(404).json({ success: false, error: 'Page not found' });
         }
@@ -122,7 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       case 'testimonials': {
-        const testimonials = readTestimonials();
+        const testimonials = await readTestimonials();
         return res.status(200).json({ success: true, data: testimonials });
       }
 
@@ -138,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!settings) {
         return res.status(400).json({ success: false, error: 'Missing settings data' });
       }
-      writeSettings(settings);
+      await writeSettings(settings);
       return res.status(200).json({ success: true, data: settings });
     }
 
@@ -151,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!content) {
         return res.status(400).json({ success: false, error: 'Missing page content' });
       }
-      writePageContent(name, content);
+      await writePageContent(name, content);
       return res.status(200).json({ success: true, data: content });
     }
 
@@ -160,7 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!testimonials) {
         return res.status(400).json({ success: false, error: 'Missing testimonials data' });
       }
-      writeTestimonials(testimonials);
+      await writeTestimonials(testimonials);
       return res.status(200).json({ success: true, data: testimonials });
     }
 

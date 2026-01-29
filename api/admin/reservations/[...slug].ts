@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ success: false, error: 'Invalid reservation ID' });
   }
 
-  const reservations = readReservations();
+  const reservations = await readReservations();
   const reservationIndex = reservations.findIndex(r => r.id === reservationId);
 
   if (reservationIndex === -1) {
@@ -43,14 +43,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     reservations[reservationIndex].status = status;
-    writeReservations(reservations);
+    await writeReservations(reservations);
 
     return res.status(200).json({ success: true, data: reservations[reservationIndex] });
   }
 
   // Handle single reservation CRUD
   if (req.method === 'GET') {
-    const events = readEvents();
+    const events = await readEvents();
     const reservation = reservations[reservationIndex];
     const event = events.find(e => e.id === reservation.eventId);
 
@@ -77,14 +77,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     reservations[reservationIndex] = updatedReservation;
-    writeReservations(reservations);
+    await writeReservations(reservations);
 
     return res.status(200).json({ success: true, data: updatedReservation });
   }
 
   if (req.method === 'DELETE') {
     const deletedReservation = reservations.splice(reservationIndex, 1)[0];
-    writeReservations(reservations);
+    await writeReservations(reservations);
     return res.status(200).json({ success: true, data: deletedReservation });
   }
 
