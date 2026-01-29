@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ScrollToTop } from './components/ScrollToTop';
+import { SettingsProvider } from './contexts/SettingsContext';
 import { HomePage } from './pages/HomePage';
 import { ProgrammPage } from './pages/ProgrammPage';
 import { AboutPage } from './pages/AboutPage';
@@ -20,6 +21,7 @@ import { AdminPage } from './pages/AdminPage';
 
 export default function App() {
   return (
+    <SettingsProvider>
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
@@ -45,5 +47,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </SettingsProvider>
   );
 }

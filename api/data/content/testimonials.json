@@ -1,0 +1,37 @@
+[
+  {
+    "id": 1,
+    "quote": "Die Alte Post ist ein magischer Ort. Hier erlebt man Kultur so nah und persönlich wie nirgendwo sonst.",
+    "author": "Maria K.",
+    "role": "Besucherin seit 2010",
+    "page": "home"
+  },
+  {
+    "id": 2,
+    "quote": "Als Künstler schätze ich die besondere Atmosphäre. Das Publikum ist aufmerksam und die Akustik hervorragend.",
+    "author": "Thomas M.",
+    "role": "Jazz-Pianist",
+    "page": "home"
+  },
+  {
+    "id": 3,
+    "quote": "Unsere Mitgliedschaft ist das beste Investment in Kultur. Wir kommen seit Jahren regelmäßig und sind immer begeistert.",
+    "author": "Familie Schneider",
+    "role": "Mitglieder seit 2015",
+    "page": "home"
+  },
+  {
+    "id": 4,
+    "quote": "Die Alte Post ist für mich wie ein zweites Wohnzimmer geworden. Die Gemeinschaft hier ist einzigartig.",
+    "author": "Elisabeth K.",
+    "role": "Mitglied seit 2005",
+    "page": "membership"
+  },
+  {
+    "id": 5,
+    "quote": "Selten habe ich eine so herzliche Atmosphäre erlebt. Das Publikum ist fantastisch und die Organisation professionell.",
+    "author": "Anna L.",
+    "role": "Singer-Songwriter",
+    "page": "artists"
+  }
+]

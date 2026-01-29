@@ -1,6 +1,7 @@
 node_modules
 dist
-api/data
+api/data/sessions.json
+api/data/admins.json
 api/uploads/*.jpg
 api/uploads/*.png
 api/uploads/*.jpeg
@@ -8,3 +9,5 @@ api/uploads/*.gif
 api/uploads/*.webp
 .DS_Store
 *.log
+.vercel
+.env*.local

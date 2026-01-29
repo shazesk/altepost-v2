@@ -1,0 +1,33 @@
+{
+  "logo": {
+    "mainText": "Alte Post",
+    "subtitle": "BRENSBACH"
+  },
+  "address": {
+    "street": "Hauptstraße 15",
+    "postalCode": "64395",
+    "city": "Brensbach"
+  },
+  "contact": {
+    "phone": "+49 (0) 6161 12 34 56",
+    "emailGeneral": "info@alte-post-brensbach.de",
+    "emailTickets": "tickets@alte-post-brensbach.de",
+    "emailArtists": "programm@alte-post-brensbach.de",
+    "emailSponsors": "foerderung@alte-post-brensbach.de"
+  },
+  "social": {
+    "instagram": "https://www.instagram.com/altepostbrensbach",
+    "facebook": "https://www.facebook.com/altepostbrensbach"
+  },
+  "organization": {
+    "name": "KleinKunstKneipe Alte Post Brensbach e.V.",
+    "registrationNumber": "VR 1234",
+    "court": "Amtsgericht Darmstadt",
+    "taxNumber": "12/345/67890",
+    "description": "Seit 1994 ein Ort für lebendige Kleinkunst im Herzen des Odenwalds."
+  },
+  "officeHours": {
+    "days": "Montag bis Freitag",
+    "hours": "10:00 - 18:00 Uhr"
+  }
+}

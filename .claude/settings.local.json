@@ -21,7 +21,21 @@
       "Bash(npx vercel --version)",
       "Bash(brew install:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(mdfind:*)",
+      "Bash(export PATH=\"$HOME/.local/bin:$HOME/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\")",
+      "Bash(npx vercel:*)",
+      "Bash(test:*)",
+      "Bash(npm run build:*)",
+      "Bash(shasum:*)",
+      "Bash(pip3 install:*)",
+      "Bash(SESSION=\"440db48bdce8e021a84b8bcd379a971cdcfd1eebad319f1133232ceeb2514dac\")",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZG1pbklkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaWF0IjoxNzY5NjA2MDA2LCJleHAiOjE3Njk2OTI0MDZ9.lchMMjJ5YZ2V4s6nH63SnFy9k1EPznd8-MBKP-U9DWE\")",
+      "Bash(npx tsc:*)"
     ]
   }
 }

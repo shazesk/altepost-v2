@@ -1,0 +1,49 @@
+{
+  "header": {
+    "title": "Unterstützer & Förderer",
+    "description": "Wir danken allen Unterstützern, die unsere kulturelle Arbeit seit über 30 Jahren ermöglichen. Ohne ihre Hilfe wäre unser vielfältiges Programm nicht möglich."
+  },
+  "intro": {
+    "title": "Danke für Ihre Unterstützung",
+    "paragraphs": [
+      "Die Alte Post lebt von der Unterstützung ihrer Partner und Förderer. Gemeinsam schaffen wir einen Ort, an dem Kultur erlebbar wird.",
+      "Ob durch finanzielle Unterstützung, Sachspenden oder Kooperationen – jeder Beitrag hilft uns, unser Programm zu gestalten und weiterzuentwickeln."
+    ]
+  },
+  "categories": [
+    {
+      "name": "Hauptförderer",
+      "description": "Unsere wichtigsten Partner, die uns maßgeblich unterstützen",
+      "sponsors": [
+        { "name": "Sparkasse Odenwaldkreis", "logo": null, "url": null },
+        { "name": "Gemeinde Brensbach", "logo": null, "url": null },
+        { "name": "Hessisches Ministerium für Wissenschaft und Kunst", "logo": null, "url": null }
+      ]
+    },
+    {
+      "name": "Förderer",
+      "description": "Regionale Partner, die unsere Arbeit unterstützen",
+      "sponsors": [
+        { "name": "VR Bank Dreieich-Offenbach", "logo": null, "url": null },
+        { "name": "Druckerei Schmidt, Brensbach", "logo": null, "url": null },
+        { "name": "Volksbank Odenwald", "logo": null, "url": null },
+        { "name": "Odenwald Tourismus", "logo": null, "url": null }
+      ]
+    },
+    {
+      "name": "Kooperationspartner",
+      "description": "Kulturelle Partner für gemeinsame Projekte",
+      "sponsors": [
+        { "name": "Odenwald Kulturtage e.V.", "logo": null, "url": null },
+        { "name": "Jazz Initiative Darmstadt", "logo": null, "url": null },
+        { "name": "Theaterverband Südhessen", "logo": null, "url": null }
+      ]
+    }
+  ],
+  "cta": {
+    "title": "Sie möchten uns unterstützen?",
+    "description": "Werden Sie Teil unseres Fördernetzwerks und unterstützen Sie lebendige Kleinkunst im Odenwald. Als Förderer profitieren Sie von attraktiven Gegenleistungen und einer prominenten Präsenz.",
+    "email": "foerderung@alte-post-brensbach.de",
+    "buttonText": "Förderer werden"
+  }
+}

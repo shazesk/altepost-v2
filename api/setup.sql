@@ -34,10 +34,9 @@ CREATE TABLE IF NOT EXISTS admins (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Insert default admin (password: admin123)
--- Password hash generated with password_hash('admin123', PASSWORD_DEFAULT)
+-- Insert default admin (password: Golshahzad89)
 INSERT INTO admins (username, password) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi')
+('admin', '$2b$12$08ZYWew4zZR00o62omtSkEB1IZpmWrqaZxPVnxd86V.DBuNw4MXe')
 ON DUPLICATE KEY UPDATE username = username;
 
 -- Insert sample upcoming events

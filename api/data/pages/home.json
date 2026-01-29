@@ -1,0 +1,57 @@
+{
+  "hero": {
+    "badge": "Nächste Veranstaltung",
+    "title": "Winterkonzert",
+    "subtitle": "Maria Schneider Quartett",
+    "description": "Ein intimer Jazzabend mit der preisgekrönten Pianistin Maria Schneider und ihrem Quartett.",
+    "date": "15. Januar 2026",
+    "time": "20:00 Uhr",
+    "price": "18,00",
+    "genre": "Jazz"
+  },
+  "intro": {
+    "title": "Willkommen in der Alten Post",
+    "subtitle": "Was unsere Kleinkunstkneipe seit 1994 zu einem besonderen Ort macht"
+  },
+  "features": [
+    {
+      "icon": "heart",
+      "title": "Intime Atmosphäre",
+      "description": "Mit nur 80 Plätzen erleben Sie Kultur hautnah – persönlich, authentisch und unvergesslich."
+    },
+    {
+      "icon": "history",
+      "title": "30 Jahre Tradition",
+      "description": "Seit 1994 bringen wir Kleinkunst in den Odenwald. Über 3.000 Veranstaltungen sprechen für sich."
+    },
+    {
+      "icon": "star",
+      "title": "Qualität & Vielfalt",
+      "description": "Rund 40 handverlesene Veranstaltungen pro Jahr – von Jazz über Kabarett bis hin zu Lesungen."
+    }
+  ],
+  "quickLinks": [
+    { "title": "Programm", "description": "Alle kommenden Veranstaltungen", "link": "/programm" },
+    { "title": "Tickets", "description": "Jetzt Plätze sichern", "link": "/tickets" },
+    { "title": "Mitgliedschaft", "description": "Teil unserer Gemeinschaft werden", "link": "/membership" },
+    { "title": "Gutscheine", "description": "Kultur verschenken", "link": "/gutschein" }
+  ],
+  "cta": {
+    "title": "Werden Sie Teil unserer Kulturgemeinschaft",
+    "description": "Ob als Besucher, Mitglied oder Förderer – es gibt viele Wege, die Alte Post zu unterstützen und lebendige Kleinkunst im Odenwald zu erleben.",
+    "primaryButton": { "text": "Mitglied werden", "link": "/membership" },
+    "secondaryButton": { "text": "Kontakt aufnehmen", "link": "/kontakt" }
+  },
+  "instagram": {
+    "handle": "@altepostbrensbach",
+    "url": "https://www.instagram.com/altepostbrensbach",
+    "images": [
+      "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=300&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=300&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=300&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=300&h=300&fit=crop"
+    ]
+  }
+}

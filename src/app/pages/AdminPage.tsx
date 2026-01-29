@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, LayoutDashboard, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User } from 'lucide-react';
+import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, LayoutDashboard, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -42,6 +42,76 @@ interface Stats {
     total: number;
     totalTickets: number;
   };
+  contacts?: { new: number; total: number };
+  vouchers?: { pending: number; total: number };
+  memberships?: { pending: number; total: number };
+}
+
+interface Contact {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  formType: 'general' | 'artist' | 'sponsor';
+  status: 'new' | 'read' | 'replied' | 'archived';
+  createdAt: string;
+  notes: string;
+}
+
+interface VoucherOrder {
+  id: number;
+  voucherType: 'amount' | 'event';
+  amount: string | null;
+  eventName: string | null;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  recipientName: string;
+  recipientEmail: string;
+  message: string;
+  delivery: 'email' | 'post' | 'pickup';
+  status: 'pending' | 'paid' | 'sent' | 'redeemed' | 'cancelled';
+  createdAt: string;
+  notes: string;
+}
+
+interface MembershipApplication {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  postalCode: string;
+  city: string;
+  membershipType: string;
+  membershipPrice: string;
+  message: string;
+  status: 'pending' | 'approved' | 'active' | 'cancelled';
+  createdAt: string;
+  notes: string;
+}
+
+interface SiteSettings {
+  logo: { mainText: string; subtitle: string };
+  address: { street: string; postalCode: string; city: string };
+  contact: {
+    phone: string;
+    emailGeneral: string;
+    emailTickets: string;
+    emailArtists: string;
+    emailSponsors: string;
+  };
+  social: { instagram: string; facebook: string };
+  organization: {
+    name: string;
+    registrationNumber: string;
+    court: string;
+    taxNumber: string;
+    description: string;
+  };
+  officeHours: { days: string; hours: string };
 }
 
 const API_BASE = '/api/admin';
@@ -61,10 +131,28 @@ export function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [activeView, setActiveView] = useState<'dashboard' | 'events' | 'archive' | 'reservations'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms'>('dashboard');
   const [reservationFilter, setReservationFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
   const [selectedEventFilter, setSelectedEventFilter] = useState<number | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
+
+  // New state for contacts, vouchers, memberships, settings
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [vouchers, setVouchers] = useState<VoucherOrder[]>([]);
+  const [memberships, setMemberships] = useState<MembershipApplication[]>([]);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [contactFilter, setContactFilter] = useState<'all' | 'new' | 'read' | 'replied' | 'archived'>('all');
+  const [voucherFilter, setVoucherFilter] = useState<'all' | 'pending' | 'paid' | 'sent' | 'redeemed' | 'cancelled'>('all');
+  const [membershipFilter, setMembershipFilter] = useState<'all' | 'pending' | 'approved' | 'active' | 'cancelled'>('all');
+  const [viewingContact, setViewingContact] = useState<Contact | null>(null);
+  const [editingSettings, setEditingSettings] = useState(false);
+
+  // CMS state
+  const [cmsPages, setCmsPages] = useState<string[]>([]);
+  const [selectedPage, setSelectedPage] = useState<string | null>(null);
+  const [pageContent, setPageContent] = useState<any>(null);
+  const [editingPageContent, setEditingPageContent] = useState(false);
+  const [savingPage, setSavingPage] = useState(false);
 
   // Check stored session on mount
   useEffect(() => {
@@ -83,12 +171,16 @@ export function AdminPage() {
       loadStats();
       loadEvents();
       loadReservations();
+      loadContacts();
+      loadVouchers();
+      loadMemberships();
+      loadSettings();
     }
   }, [isAuthenticated, sessionId, showArchived]);
 
   async function checkAuth(session: string) {
     try {
-      const res = await fetch(`${API_BASE}/check`, {
+      const res = await fetch(`${API_BASE}/auth?action=check`, {
         headers: { 'x-session-id': session }
       });
       if (res.ok) {
@@ -107,7 +199,7 @@ export function AdminPage() {
     setLoginError('');
 
     try {
-      const res = await fetch(`${API_BASE}/login`, {
+      const res = await fetch(`${API_BASE}/auth?action=login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -129,7 +221,7 @@ export function AdminPage() {
 
   async function handleLogout() {
     if (sessionId) {
-      await fetch(`${API_BASE}/logout`, {
+      await fetch(`${API_BASE}/auth?action=logout`, {
         method: 'POST',
         headers: { 'x-session-id': sessionId }
       });
@@ -141,7 +233,7 @@ export function AdminPage() {
 
   async function loadStats() {
     try {
-      const res = await fetch(`${API_BASE}/stats`, {
+      const res = await fetch(`${API_BASE}/data?type=stats`, {
         headers: { 'x-session-id': sessionId! }
       });
       const data = await res.json();
@@ -193,6 +285,153 @@ export function AdminPage() {
       loadReservations();
     }
   }, [reservationFilter, selectedEventFilter]);
+
+  async function loadContacts() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=contacts`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        let filtered = data.data;
+        if (contactFilter !== 'all') {
+          filtered = filtered.filter((c: Contact) => c.status === contactFilter);
+        }
+        setContacts(filtered);
+      }
+    } catch (e) {
+      console.error('Failed to load contacts');
+    }
+  }
+
+  async function loadVouchers() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=vouchers`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        let filtered = data.data;
+        if (voucherFilter !== 'all') {
+          filtered = filtered.filter((v: VoucherOrder) => v.status === voucherFilter);
+        }
+        setVouchers(filtered);
+      }
+    } catch (e) {
+      console.error('Failed to load vouchers');
+    }
+  }
+
+  async function loadMemberships() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=memberships`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        let filtered = data.data;
+        if (membershipFilter !== 'all') {
+          filtered = filtered.filter((m: MembershipApplication) => m.status === membershipFilter);
+        }
+        setMemberships(filtered);
+      }
+    } catch (e) {
+      console.error('Failed to load memberships');
+    }
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=settings`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSiteSettings(data.data);
+      }
+    } catch (e) {
+      console.error('Failed to load settings');
+    }
+  }
+
+  // Reload contacts/vouchers/memberships when filters change
+  useEffect(() => {
+    if (isAuthenticated && sessionId) {
+      loadContacts();
+    }
+  }, [contactFilter]);
+
+  useEffect(() => {
+    if (isAuthenticated && sessionId) {
+      loadVouchers();
+    }
+  }, [voucherFilter]);
+
+  useEffect(() => {
+    if (isAuthenticated && sessionId) {
+      loadMemberships();
+    }
+  }, [membershipFilter]);
+
+  // CMS functions
+  async function loadCmsPages() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=pages`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCmsPages(data.data);
+      }
+    } catch (e) {
+      console.error('Failed to load CMS pages');
+    }
+  }
+
+  async function loadPageContent(pageName: string) {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=page&name=${pageName}`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPageContent(data.data);
+        setSelectedPage(pageName);
+      }
+    } catch (e) {
+      console.error('Failed to load page content');
+    }
+  }
+
+  async function handleSavePageContent() {
+    if (!selectedPage || !pageContent) return;
+    setSavingPage(true);
+    try {
+      const res = await fetch(`${API_BASE}/data?type=page&name=${selectedPage}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify(pageContent)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Seite gespeichert', type: 'success' });
+        setEditingPageContent(false);
+      } else {
+        setMessage({ text: data.error || 'Speichern fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    } finally {
+      setSavingPage(false);
+    }
+  }
+
+  // Load CMS pages when entering CMS view
+  useEffect(() => {
+    if (isAuthenticated && sessionId && activeView === 'cms') {
+      loadCmsPages();
+    }
+  }, [activeView, isAuthenticated, sessionId]);
 
   async function handleSaveEvent(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -343,6 +582,188 @@ export function AdminPage() {
         loadStats();
       } else {
         setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  // Handler functions for contacts, vouchers, memberships
+  async function handleContactStatus(id: number, status: Contact['status']) {
+    try {
+      const res = await fetch(`${API_BASE}/submissions/contacts/${id}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const statusLabels: Record<string, string> = { new: 'Neu', read: 'Gelesen', replied: 'Beantwortet', archived: 'Archiviert' };
+        setMessage({ text: `Status auf "${statusLabels[status]}" geändert`, type: 'success' });
+        loadContacts();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Statusänderung fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleDeleteContact(id: number) {
+    if (!confirm('Nachricht wirklich löschen?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/submissions/contacts/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Nachricht gelöscht', type: 'success' });
+        loadContacts();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleVoucherStatus(id: number, status: VoucherOrder['status']) {
+    try {
+      const res = await fetch(`${API_BASE}/submissions/vouchers/${id}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const statusLabels: Record<string, string> = { pending: 'Ausstehend', paid: 'Bezahlt', sent: 'Versendet', redeemed: 'Eingelöst', cancelled: 'Storniert' };
+        setMessage({ text: `Status auf "${statusLabels[status]}" geändert`, type: 'success' });
+        loadVouchers();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Statusänderung fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleDeleteVoucher(id: number) {
+    if (!confirm('Gutschein-Bestellung wirklich löschen?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/submissions/vouchers/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Gutschein-Bestellung gelöscht', type: 'success' });
+        loadVouchers();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleMembershipStatus(id: number, status: MembershipApplication['status']) {
+    try {
+      const res = await fetch(`${API_BASE}/submissions/memberships/${id}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (data.success) {
+        const statusLabels: Record<string, string> = { pending: 'Ausstehend', approved: 'Genehmigt', active: 'Aktiv', cancelled: 'Abgelehnt' };
+        setMessage({ text: `Status auf "${statusLabels[status]}" geändert`, type: 'success' });
+        loadMemberships();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Statusänderung fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleDeleteMembership(id: number) {
+    if (!confirm('Mitgliedsantrag wirklich löschen?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/submissions/memberships/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Mitgliedsantrag gelöscht', type: 'success' });
+        loadMemberships();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleSaveSettings(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    const updatedSettings: SiteSettings = {
+      logo: {
+        mainText: formData.get('logo_mainText') as string,
+        subtitle: formData.get('logo_subtitle') as string,
+      },
+      address: {
+        street: formData.get('address_street') as string,
+        postalCode: formData.get('address_postalCode') as string,
+        city: formData.get('address_city') as string,
+      },
+      contact: {
+        phone: formData.get('contact_phone') as string,
+        emailGeneral: formData.get('contact_emailGeneral') as string,
+        emailTickets: formData.get('contact_emailTickets') as string,
+        emailArtists: formData.get('contact_emailArtists') as string,
+        emailSponsors: formData.get('contact_emailSponsors') as string,
+      },
+      social: {
+        instagram: formData.get('social_instagram') as string,
+        facebook: formData.get('social_facebook') as string,
+      },
+      organization: {
+        name: formData.get('org_name') as string,
+        registrationNumber: formData.get('org_registrationNumber') as string,
+        court: formData.get('org_court') as string,
+        taxNumber: formData.get('org_taxNumber') as string,
+        description: formData.get('org_description') as string,
+      },
+      officeHours: {
+        days: formData.get('hours_days') as string,
+        hours: formData.get('hours_hours') as string,
+      },
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/data?type=settings`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedSettings)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Einstellungen gespeichert', type: 'success' });
+        setSiteSettings(updatedSettings);
+        setEditingSettings(false);
+      } else {
+        setMessage({ text: data.error || 'Speichern fehlgeschlagen', type: 'error' });
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
@@ -774,6 +1195,57 @@ export function AdminPage() {
             <ArchiveIcon className="w-5 h-5" />
             Archiv
           </button>
+
+          <div className="border-t border-white/10 my-4" />
+
+          <button
+            onClick={() => { setActiveView('contacts'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'contacts' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <MessageSquare className="w-5 h-5" />
+            Nachrichten
+            {stats?.contacts?.new ? (
+              <span className="ml-auto bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.contacts.new}</span>
+            ) : null}
+          </button>
+          <button
+            onClick={() => { setActiveView('vouchers'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'vouchers' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <Gift className="w-5 h-5" />
+            Gutscheine
+            {stats?.vouchers?.pending ? (
+              <span className="ml-auto bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.vouchers.pending}</span>
+            ) : null}
+          </button>
+          <button
+            onClick={() => { setActiveView('memberships'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'memberships' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <Users className="w-5 h-5" />
+            Mitglieder
+            {stats?.memberships?.pending ? (
+              <span className="ml-auto bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.memberships.pending}</span>
+            ) : null}
+          </button>
+          <button
+            onClick={() => { setActiveView('settings'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'settings' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <Settings className="w-5 h-5" />
+            Einstellungen
+          </button>
+
+          <div className="border-t border-white/10 my-4" />
+          <div className="text-xs text-white/40 uppercase tracking-wider px-4 mb-2">CMS</div>
+
+          <button
+            onClick={() => { setActiveView('cms'); setSelectedPage(null); setPageContent(null); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'cms' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <FileText className="w-5 h-5" />
+            Seiten bearbeiten
+          </button>
         </nav>
 
         <div className="p-4 border-t border-white/10">
@@ -1024,7 +1496,627 @@ export function AdminPage() {
             </div>
           </>
         )}
+
+        {/* Contacts View */}
+        {activeView === 'contacts' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Nachrichten</h2>
+            </div>
+
+            {/* Contact Detail Modal */}
+            {viewingContact && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                  <div className="p-6 border-b border-[rgba(107,142,111,0.1)] flex justify-between items-center">
+                    <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">Nachricht von {viewingContact.name}</h3>
+                    <button onClick={() => setViewingContact(null)} className="text-[#666666] hover:text-[#2d2d2d]">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <div className="text-sm text-[#666666]">Betreff</div>
+                      <div className="font-medium text-[#2d2d2d]">{viewingContact.subject}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666666]">Typ</div>
+                      <div className="text-[#2d2d2d]">{viewingContact.formType === 'general' ? 'Allgemein' : viewingContact.formType === 'artist' ? 'Künstler' : 'Förderer'}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666666]">Kontakt</div>
+                      <div className="text-[#2d2d2d]">{viewingContact.email}</div>
+                      {viewingContact.phone && <div className="text-[#2d2d2d]">{viewingContact.phone}</div>}
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666666]">Nachricht</div>
+                      <div className="text-[#2d2d2d] whitespace-pre-wrap bg-[#faf9f7] p-4 rounded-lg">{viewingContact.message}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-[#666666]">Erhalten am</div>
+                      <div className="text-[#2d2d2d]">{formatDate(viewingContact.createdAt)}</div>
+                    </div>
+                    <div className="flex gap-2 flex-wrap pt-4 border-t border-[rgba(107,142,111,0.1)]">
+                      {viewingContact.status === 'new' && (
+                        <button onClick={() => { handleContactStatus(viewingContact.id, 'read'); setViewingContact(null); }} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                          <Eye className="w-4 h-4" /> Als gelesen
+                        </button>
+                      )}
+                      <a href={`mailto:${viewingContact.email}?subject=Re: ${viewingContact.subject}`} onClick={() => handleContactStatus(viewingContact.id, 'replied')} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e]">
+                        <Mail className="w-4 h-4" /> Antworten
+                      </a>
+                      {viewingContact.status !== 'archived' && (
+                        <button onClick={() => { handleContactStatus(viewingContact.id, 'archived'); setViewingContact(null); }} className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]">
+                          <Archive className="w-4 h-4" /> Archivieren
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div>
+                <label className="block text-sm text-[#666666] mb-1">Status</label>
+                <select
+                  value={contactFilter}
+                  onChange={(e) => setContactFilter(e.target.value as typeof contactFilter)}
+                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                >
+                  <option value="all">Alle</option>
+                  <option value="new">Neu</option>
+                  <option value="read">Gelesen</option>
+                  <option value="replied">Beantwortet</option>
+                  <option value="archived">Archiviert</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Contacts table */}
+            <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[#faf9f7]">
+                  <tr>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Datum</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Name</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Betreff</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Typ</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Status</th>
+                    <th className="text-right p-4 font-medium text-[#2d2d2d]">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
+                  {contacts.map(c => (
+                    <tr key={c.id} className={`hover:bg-[#faf9f7] ${c.status === 'new' ? 'bg-blue-50/30' : ''}`}>
+                      <td className="p-4 text-[#666666] text-sm">{formatDate(c.createdAt)}</td>
+                      <td className="p-4">
+                        <div className="font-medium text-[#2d2d2d]">{c.name}</div>
+                        <div className="text-sm text-[#666666]">{c.email}</div>
+                      </td>
+                      <td className="p-4 text-[#2d2d2d]">{c.subject}</td>
+                      <td className="p-4 text-[#666666]">{c.formType === 'general' ? 'Allgemein' : c.formType === 'artist' ? 'Künstler' : 'Förderer'}</td>
+                      <td className="p-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                          c.status === 'new' ? 'bg-blue-100 text-blue-800' :
+                          c.status === 'read' ? 'bg-gray-100 text-gray-800' :
+                          c.status === 'replied' ? 'bg-green-100 text-green-800' :
+                          'bg-[#e8e4df] text-[#666666]'
+                        }`}>
+                          {c.status === 'new' ? 'Neu' : c.status === 'read' ? 'Gelesen' : c.status === 'replied' ? 'Beantwortet' : 'Archiviert'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex justify-end gap-1">
+                          <button onClick={() => { setViewingContact(c); if (c.status === 'new') handleContactStatus(c.id, 'read'); }} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Anzeigen"><Eye className="w-4 h-4" /></button>
+                          <a href={`mailto:${c.email}?subject=Re: ${c.subject}`} onClick={() => handleContactStatus(c.id, 'replied')} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
+                          {c.status !== 'archived' && <button onClick={() => handleContactStatus(c.id, 'archived')} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>}
+                          <button onClick={() => handleDeleteContact(c.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {contacts.length === 0 && (
+                <div className="p-8 text-center text-[#666666]">Keine Nachrichten gefunden.</div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Vouchers View */}
+        {activeView === 'vouchers' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Gutschein-Bestellungen</h2>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div>
+                <label className="block text-sm text-[#666666] mb-1">Status</label>
+                <select
+                  value={voucherFilter}
+                  onChange={(e) => setVoucherFilter(e.target.value as typeof voucherFilter)}
+                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                >
+                  <option value="all">Alle</option>
+                  <option value="pending">Ausstehend</option>
+                  <option value="paid">Bezahlt</option>
+                  <option value="sent">Versendet</option>
+                  <option value="redeemed">Eingelöst</option>
+                  <option value="cancelled">Storniert</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Vouchers table */}
+            <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[#faf9f7]">
+                  <tr>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Datum</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Käufer</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Typ</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Wert</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Zustellung</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Status</th>
+                    <th className="text-right p-4 font-medium text-[#2d2d2d]">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
+                  {vouchers.map(v => (
+                    <tr key={v.id} className="hover:bg-[#faf9f7]">
+                      <td className="p-4 text-[#666666] text-sm">{formatDate(v.createdAt)}</td>
+                      <td className="p-4">
+                        <div className="font-medium text-[#2d2d2d]">{v.buyerName}</div>
+                        <div className="text-sm text-[#666666]">{v.buyerEmail}</div>
+                      </td>
+                      <td className="p-4 text-[#666666]">{v.voucherType === 'amount' ? 'Wertgutschein' : 'Veranstaltung'}</td>
+                      <td className="p-4 text-[#2d2d2d] font-medium">{v.voucherType === 'amount' ? `${v.amount} €` : v.eventName}</td>
+                      <td className="p-4 text-[#666666]">{v.delivery === 'email' ? 'E-Mail' : v.delivery === 'post' ? 'Post' : 'Abholung'}</td>
+                      <td className="p-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                          v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          v.status === 'paid' ? 'bg-blue-100 text-blue-800' :
+                          v.status === 'sent' ? 'bg-green-100 text-green-800' :
+                          v.status === 'redeemed' ? 'bg-purple-100 text-purple-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {v.status === 'pending' ? 'Ausstehend' : v.status === 'paid' ? 'Bezahlt' : v.status === 'sent' ? 'Versendet' : v.status === 'redeemed' ? 'Eingelöst' : 'Storniert'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex justify-end gap-1">
+                          {v.status === 'pending' && (
+                            <button onClick={() => handleVoucherStatus(v.id, 'paid')} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Als bezahlt markieren"><Check className="w-4 h-4" /></button>
+                          )}
+                          {v.status === 'paid' && (
+                            <button onClick={() => handleVoucherStatus(v.id, 'sent')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Als versendet markieren"><Check className="w-4 h-4" /></button>
+                          )}
+                          {v.status === 'sent' && (
+                            <button onClick={() => handleVoucherStatus(v.id, 'redeemed')} className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg" title="Als eingelöst markieren"><Check className="w-4 h-4" /></button>
+                          )}
+                          {v.status !== 'cancelled' && v.status !== 'redeemed' && (
+                            <button onClick={() => handleVoucherStatus(v.id, 'cancelled')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Stornieren"><X className="w-4 h-4" /></button>
+                          )}
+                          <button onClick={() => handleDeleteVoucher(v.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {vouchers.length === 0 && (
+                <div className="p-8 text-center text-[#666666]">Keine Gutschein-Bestellungen gefunden.</div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Memberships View */}
+        {activeView === 'memberships' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Mitgliedsanträge</h2>
+            </div>
+
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 mb-6">
+              <div>
+                <label className="block text-sm text-[#666666] mb-1">Status</label>
+                <select
+                  value={membershipFilter}
+                  onChange={(e) => setMembershipFilter(e.target.value as typeof membershipFilter)}
+                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                >
+                  <option value="all">Alle</option>
+                  <option value="pending">Ausstehend</option>
+                  <option value="approved">Genehmigt</option>
+                  <option value="active">Aktiv</option>
+                  <option value="cancelled">Abgelehnt</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Memberships table */}
+            <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-[#faf9f7]">
+                  <tr>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Datum</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Name</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Adresse</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Mitgliedschaft</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Status</th>
+                    <th className="text-right p-4 font-medium text-[#2d2d2d]">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
+                  {memberships.map(m => (
+                    <tr key={m.id} className="hover:bg-[#faf9f7]">
+                      <td className="p-4 text-[#666666] text-sm">{formatDate(m.createdAt)}</td>
+                      <td className="p-4">
+                        <div className="font-medium text-[#2d2d2d]">{m.name}</div>
+                        <div className="text-sm text-[#666666]">{m.email}</div>
+                      </td>
+                      <td className="p-4 text-[#666666] text-sm">
+                        {m.address}<br />{m.postalCode} {m.city}
+                      </td>
+                      <td className="p-4">
+                        <div className="font-medium text-[#2d2d2d]">{m.membershipType}</div>
+                        {m.membershipPrice && <div className="text-sm text-[#666666]">{m.membershipPrice}</div>}
+                      </td>
+                      <td className="p-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                          m.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          m.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                          m.status === 'active' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {m.status === 'pending' ? 'Ausstehend' : m.status === 'approved' ? 'Genehmigt' : m.status === 'active' ? 'Aktiv' : 'Abgelehnt'}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex justify-end gap-1">
+                          {m.status === 'pending' && (
+                            <button onClick={() => handleMembershipStatus(m.id, 'approved')} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Genehmigen"><Check className="w-4 h-4" /></button>
+                          )}
+                          {m.status === 'approved' && (
+                            <button onClick={() => handleMembershipStatus(m.id, 'active')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Aktivieren"><Check className="w-4 h-4" /></button>
+                          )}
+                          {m.status !== 'cancelled' && m.status !== 'active' && (
+                            <button onClick={() => handleMembershipStatus(m.id, 'cancelled')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Ablehnen"><X className="w-4 h-4" /></button>
+                          )}
+                          <a href={`mailto:${m.email}`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="E-Mail senden"><Mail className="w-4 h-4" /></a>
+                          <button onClick={() => handleDeleteMembership(m.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {memberships.length === 0 && (
+                <div className="p-8 text-center text-[#666666]">Keine Mitgliedsanträge gefunden.</div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Settings View */}
+        {activeView === 'settings' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Einstellungen</h2>
+              {!editingSettings && (
+                <button onClick={() => setEditingSettings(true)} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">
+                  <Edit2 className="w-5 h-5" /> Bearbeiten
+                </button>
+              )}
+            </div>
+
+            {siteSettings && (
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                {/* Logo */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Logo</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Haupttext</label>
+                      <input type="text" name="logo_mainText" defaultValue={siteSettings.logo.mainText} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Untertitel</label>
+                      <input type="text" name="logo_subtitle" defaultValue={siteSettings.logo.subtitle} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Address */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Adresse</h3>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Straße</label>
+                      <input type="text" name="address_street" defaultValue={siteSettings.address.street} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">PLZ</label>
+                      <input type="text" name="address_postalCode" defaultValue={siteSettings.address.postalCode} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Stadt</label>
+                      <input type="text" name="address_city" defaultValue={siteSettings.address.city} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Kontakt</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Telefon</label>
+                      <input type="text" name="contact_phone" defaultValue={siteSettings.contact.phone} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">E-Mail (Allgemein)</label>
+                      <input type="email" name="contact_emailGeneral" defaultValue={siteSettings.contact.emailGeneral} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">E-Mail (Tickets)</label>
+                      <input type="email" name="contact_emailTickets" defaultValue={siteSettings.contact.emailTickets} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">E-Mail (Künstler)</label>
+                      <input type="email" name="contact_emailArtists" defaultValue={siteSettings.contact.emailArtists} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">E-Mail (Förderer)</label>
+                      <input type="email" name="contact_emailSponsors" defaultValue={siteSettings.contact.emailSponsors} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Social */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Social Media</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Instagram</label>
+                      <input type="url" name="social_instagram" defaultValue={siteSettings.social.instagram} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Facebook</label>
+                      <input type="url" name="social_facebook" defaultValue={siteSettings.social.facebook} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Organization */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Organisation</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Name</label>
+                      <input type="text" name="org_name" defaultValue={siteSettings.organization.name} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Registernummer</label>
+                      <input type="text" name="org_registrationNumber" defaultValue={siteSettings.organization.registrationNumber} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Amtsgericht</label>
+                      <input type="text" name="org_court" defaultValue={siteSettings.organization.court} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Steuernummer</label>
+                      <input type="text" name="org_taxNumber" defaultValue={siteSettings.organization.taxNumber} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Beschreibung</label>
+                      <textarea name="org_description" defaultValue={siteSettings.organization.description} disabled={!editingSettings} rows={3} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Office Hours */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Öffnungszeiten</h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Tage</label>
+                      <input type="text" name="hours_days" defaultValue={siteSettings.officeHours.days} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Uhrzeiten</label>
+                      <input type="text" name="hours_hours" defaultValue={siteSettings.officeHours.hours} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
+                {editingSettings && (
+                  <div className="flex gap-4">
+                    <button type="submit" className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">Speichern</button>
+                    <button type="button" onClick={() => setEditingSettings(false)} className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors">Abbrechen</button>
+                  </div>
+                )}
+              </form>
+            )}
+
+            {!siteSettings && (
+              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] text-center text-[#666666]">
+                Einstellungen werden geladen...
+              </div>
+            )}
+          </>
+        )}
+
+        {/* CMS View */}
+        {activeView === 'cms' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">
+                {selectedPage ? `Seite: ${selectedPage.charAt(0).toUpperCase() + selectedPage.slice(1)}` : 'Seiten bearbeiten'}
+              </h2>
+              {selectedPage && editingPageContent && (
+                <button
+                  onClick={handleSavePageContent}
+                  disabled={savingPage}
+                  className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
+                >
+                  <Save className="w-5 h-5" />
+                  {savingPage ? 'Speichern...' : 'Speichern'}
+                </button>
+              )}
+            </div>
+
+            <div className="grid lg:grid-cols-4 gap-6">
+              {/* Page List Sidebar */}
+              <div className="lg:col-span-1">
+                <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+                  <div className="p-4 bg-[#faf9f7] border-b border-[rgba(107,142,111,0.1)]">
+                    <h3 className="font-medium text-[#2d2d2d]">Seiten</h3>
+                  </div>
+                  <div className="divide-y divide-[rgba(107,142,111,0.1)]">
+                    {cmsPages.map(page => (
+                      <button
+                        key={page}
+                        onClick={() => { loadPageContent(page); setEditingPageContent(false); }}
+                        className={`w-full text-left px-4 py-3 flex items-center justify-between hover:bg-[#faf9f7] transition-colors ${selectedPage === page ? 'bg-[#6b8e6f]/10 text-[#6b8e6f]' : 'text-[#2d2d2d]'}`}
+                      >
+                        <span className="capitalize">{page}</span>
+                        <ChevronRight className="w-4 h-4 text-[#999999]" />
+                      </button>
+                    ))}
+                    {cmsPages.length === 0 && (
+                      <div className="p-4 text-center text-[#666666] text-sm">Keine Seiten gefunden</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Page Content Editor */}
+              <div className="lg:col-span-3">
+                {selectedPage && pageContent ? (
+                  <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+                    <div className="p-4 bg-[#faf9f7] border-b border-[rgba(107,142,111,0.1)] flex justify-between items-center">
+                      <h3 className="font-medium text-[#2d2d2d]">Inhalt bearbeiten</h3>
+                      {!editingPageContent ? (
+                        <button
+                          onClick={() => setEditingPageContent(true)}
+                          className="flex items-center gap-2 text-[#6b8e6f] hover:text-[#5a7a5e] text-sm"
+                        >
+                          <Edit2 className="w-4 h-4" /> Bearbeiten
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setEditingPageContent(false)}
+                          className="text-[#666666] hover:text-[#2d2d2d] text-sm"
+                        >
+                          Abbrechen
+                        </button>
+                      )}
+                    </div>
+                    <div className="p-6">
+                      {editingPageContent ? (
+                        <div className="space-y-6">
+                          {Object.entries(pageContent).map(([sectionKey, sectionValue]) => (
+                            <div key={sectionKey} className="border border-[rgba(107,142,111,0.2)] rounded-lg p-4">
+                              <h4 className="font-medium text-[#2d2d2d] mb-4 capitalize">{sectionKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                              {renderEditableSection(sectionKey, sectionValue, (newValue) => {
+                                setPageContent({ ...pageContent, [sectionKey]: newValue });
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {Object.entries(pageContent).map(([sectionKey, sectionValue]) => (
+                            <div key={sectionKey} className="border-b border-[rgba(107,142,111,0.1)] pb-4 last:border-0">
+                              <h4 className="font-medium text-[#6b8e6f] mb-2 capitalize">{sectionKey.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                              <pre className="text-sm text-[#666666] whitespace-pre-wrap bg-[#faf9f7] p-3 rounded-lg overflow-x-auto">
+                                {JSON.stringify(sectionValue, null, 2)}
+                              </pre>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] p-12 text-center">
+                    <FileText className="w-16 h-16 text-[#e8e4df] mx-auto mb-4" />
+                    <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">Seite auswählen</h3>
+                    <p className="text-[#666666]">Wählen Sie eine Seite aus der Liste, um den Inhalt zu bearbeiten.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
+
+  // Helper function to render editable sections
+  function renderEditableSection(key: string, value: any, onChange: (newValue: any) => void): React.ReactNode {
+    if (typeof value === 'string') {
+      return (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={3}
+          className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+        />
+      );
+    }
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      return (
+        <div className="space-y-3">
+          {Object.entries(value).map(([subKey, subValue]) => (
+            <div key={subKey}>
+              <label className="block text-sm text-[#666666] mb-1 capitalize">{subKey.replace(/([A-Z])/g, ' $1').trim()}</label>
+              {typeof subValue === 'string' ? (
+                <input
+                  type="text"
+                  value={subValue}
+                  onChange={(e) => onChange({ ...value, [subKey]: e.target.value })}
+                  className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+                />
+              ) : (
+                <textarea
+                  value={JSON.stringify(subValue, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      onChange({ ...value, [subKey]: JSON.parse(e.target.value) });
+                    } catch {}
+                  }}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm font-mono"
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    if (Array.isArray(value)) {
+      return (
+        <textarea
+          value={JSON.stringify(value, null, 2)}
+          onChange={(e) => {
+            try {
+              onChange(JSON.parse(e.target.value));
+            } catch {}
+          }}
+          rows={Math.min(15, value.length * 4 + 2)}
+          className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm font-mono"
+        />
+      );
+    }
+    return <span className="text-[#666666]">{String(value)}</span>;
+  }
 }

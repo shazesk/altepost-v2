@@ -19,36 +19,27 @@ export function MitgliedwerdenPage() {
     message: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Create mailto link with form data
-    const subject = `Mitgliedsantrag - ${membershipType}`;
-    const body = `
-Mitgliedsantrag
-
-Gewünschte Mitgliedschaft: ${membershipType} (${membershipPrice})
-
-Persönliche Daten:
-Name: ${formData.name}
-E-Mail: ${formData.email}
-Telefon: ${formData.phone}
-
-Adresse:
-${formData.address}
-${formData.postalCode} ${formData.city}
-
-${formData.message ? `Nachricht:
-${formData.message}` : ''}
-
----
-Ich beantrage hiermit die Mitgliedschaft im Verein KleinKunstKneipe Alte Post Brensbach e.V.
-    `.trim();
-
-    window.location.href = `mailto:mitgliedschaft@alte-post-brensbach.de?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
-    setSubmitted(true);
+    setIsLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/send/membership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, membershipType, membershipPrice }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(`Fehler: ${err.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es später erneut.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (submitted) {
@@ -61,9 +52,8 @@ Ich beantrage hiermit die Mitgliedschaft im Verein KleinKunstKneipe Alte Post Br
               Vielen Dank für Ihr Interesse!
             </h1>
             <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif] mb-8 max-w-xl mx-auto">
-              Ihr E-Mail-Programm sollte sich geöffnet haben. Bitte senden Sie die E-Mail ab, 
-              um Ihren Mitgliedsantrag zu vervollständigen. Wir melden uns schnellstmöglich 
-              bei Ihnen mit weiteren Informationen.
+              Ihr Mitgliedsantrag wurde erfolgreich übermittelt. Sie erhalten in Kürze eine
+              Bestätigungs-E-Mail. Wir melden uns schnellstmöglich bei Ihnen mit weiteren Informationen.
             </p>
             <div className="flex gap-4 justify-center">
               <button
@@ -242,13 +232,17 @@ Ich beantrage hiermit die Mitgliedschaft im Verein KleinKunstKneipe Alte Post Br
               Nächste Schritte:
             </h4>
             <ul className="text-sm text-[#666666] space-y-2 font-['Inter',sans-serif]">
-              <li>• Nach dem Absenden öffnet sich Ihr E-Mail-Programm</li>
+              <li>• Nach dem Absenden erhalten Sie eine Bestätigungs-E-Mail</li>
               <li>• Wir senden Ihnen die Beitragsordnung und weitere Informationen zu</li>
               <li>• Nach Bestätigung erhalten Sie Ihre Mitgliedsurkunde</li>
               <li>• Der Mitgliedsbeitrag wird jährlich fällig</li>
               <li>• Sie erhalten eine steuerlich absetzbare Spendenbescheinigung</li>
             </ul>
           </div>
+
+          {error && (
+            <p className="text-sm text-red-600 text-center font-['Inter',sans-serif]">{error}</p>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
@@ -261,9 +255,14 @@ Ich beantrage hiermit die Mitgliedschaft im Verein KleinKunstKneipe Alte Post Br
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-md bg-[#6b8e6f] px-6 py-3 text-white hover:bg-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
+              disabled={isLoading}
+              className={`flex-1 rounded-md px-6 py-3 transition-colors font-['Inter',sans-serif] ${
+                isLoading
+                  ? 'bg-[#e8e4df] text-[#999999] cursor-not-allowed'
+                  : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
+              }`}
             >
-              Mitgliedsantrag absenden
+              {isLoading ? 'Wird gesendet...' : 'Mitgliedsantrag absenden'}
             </button>
           </div>
         </form>

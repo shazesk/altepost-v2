@@ -19,44 +19,30 @@ export function GutscheinPage() {
     delivery: 'email', // 'email' or 'pickup'
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Determine voucher details
-    let voucherDetails = '';
-    if (formData.voucherType === 'amount') {
-      const finalAmount = formData.amount === 'custom' ? formData.customAmount : formData.amount;
-      voucherDetails = `Wertgutschein über ${finalAmount}€`;
-    } else {
-      voucherDetails = `Gutschein für Veranstaltung: ${formData.eventName}`;
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/send/voucher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(`Fehler: ${err.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es später erneut.`);
+    } finally {
+      setIsLoading(false);
     }
-
-    // Create mailto link with form data
-    const subject = `Gutschein-Bestellung - ${voucherDetails}`;
-    const body = `
-Gutschein-Bestellung
-
-${voucherDetails}
-
-Käufer-Informationen:
-Name: ${formData.buyerName}
-E-Mail: ${formData.buyerEmail}
-Telefon: ${formData.buyerPhone}
-
-${formData.recipientName || formData.recipientEmail ? `Empfänger-Informationen:
-${formData.recipientName ? `Name: ${formData.recipientName}` : ''}
-${formData.recipientEmail ? `E-Mail: ${formData.recipientEmail}` : ''}
-` : ''}
-${formData.message ? `Persönliche Nachricht:
-${formData.message}
-` : ''}
-Zustellung: ${formData.delivery === 'email' ? 'Per E-Mail (PDF)' : 'Abholung vor Ort'}
-    `.trim();
-
-    window.location.href = `mailto:gutscheine@alte-post-brensbach.de?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    
-    setSubmitted(true);
   };
 
   if (submitted) {
@@ -69,22 +55,21 @@ Zustellung: ${formData.delivery === 'email' ? 'Per E-Mail (PDF)' : 'Abholung vor
               Vielen Dank für Ihre Bestellung!
             </h1>
             <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif] mb-8 max-w-xl mx-auto">
-              Ihr E-Mail-Programm sollte sich geöffnet haben. Bitte senden Sie die E-Mail ab, 
-              um Ihre Gutschein-Bestellung zu vervollständigen. Wir melden uns schnellstmöglich 
-              bei Ihnen mit den Zahlungsinformationen.
+              Ihre Gutschein-Bestellung wurde erfolgreich übermittelt. Sie erhalten in Kürze eine
+              Bestätigungs-E-Mail. Wir melden uns schnellstmöglich bei Ihnen mit den Zahlungsinformationen.
             </p>
             <div className="flex gap-4 justify-center">
-              <button
-                onClick={() => setSubmitted(false)}
-                className="text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors underline font-['Inter',sans-serif]"
-              >
-                Angaben ändern
-              </button>
               <Link
                 to="/tickets"
-                className="text-[#666666] hover:text-[#2d2d2d] transition-colors underline font-['Inter',sans-serif]"
+                className="text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors underline font-['Inter',sans-serif]"
               >
                 Zurück zu Tickets
+              </Link>
+              <Link
+                to="/"
+                className="text-[#666666] hover:text-[#2d2d2d] transition-colors underline font-['Inter',sans-serif]"
+              >
+                Zur Startseite
               </Link>
             </div>
           </div>
@@ -389,26 +374,34 @@ Zustellung: ${formData.delivery === 'email' ? 'Per E-Mail (PDF)' : 'Abholung vor
           {/* Info Box */}
           <div className="bg-[#faf9f7] rounded-lg p-4 border border-[rgba(107,142,111,0.2)]">
             <p className="text-sm text-[#666666] font-['Inter',sans-serif]">
-              * Pflichtfelder. Nach dem Absenden öffnet sich Ihr E-Mail-Programm. Wir senden Ihnen 
-              die Zahlungsinformationen zu. Der Gutschein wird nach Zahlungseingang versendet bzw. 
-              zur Abholung bereitgestellt.
+              * Pflichtfelder. Wir senden Ihnen die Zahlungsinformationen zu. Der Gutschein wird
+              nach Zahlungseingang versendet bzw. zur Abholung bereitgestellt.
             </p>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-600 font-['Inter',sans-serif]">{error}</p>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={() => navigate('/tickets')}
-              className="flex-1 rounded-md border border-[rgba(107,142,111,0.3)] px-6 py-3 text-[#2d2d2d] hover:bg-[#faf9f7] transition-colors font-['Inter',sans-serif]"
+              disabled={isLoading}
+              className="flex-1 rounded-md border border-[rgba(107,142,111,0.3)] px-6 py-3 text-[#2d2d2d] hover:bg-[#faf9f7] transition-colors font-['Inter',sans-serif] disabled:opacity-50"
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-md bg-[#6b8e6f] px-6 py-3 text-white hover:bg-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
+              disabled={isLoading}
+              className="flex-1 rounded-md bg-[#6b8e6f] px-6 py-3 text-white hover:bg-[#5a7a5e] transition-colors font-['Inter',sans-serif] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Gutschein bestellen
+              {isLoading ? 'Wird gesendet...' : 'Gutschein bestellen'}
             </button>
           </div>
         </form>

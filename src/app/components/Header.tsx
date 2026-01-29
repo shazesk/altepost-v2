@@ -2,9 +2,11 @@ import React from "react";
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const settings = useSettings();
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -23,10 +25,10 @@ export function Header() {
           {/* Logo */}
           <div className="flex lg:flex-1">
             <Link to="/" className="-m-1.5 p-1.5">
-              <span className="sr-only">Alte Post Brensbach</span>
+              <span className="sr-only">{settings.logo.mainText} {settings.logo.subtitle}</span>
               <div className="flex flex-col items-center">
-                <span className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] leading-tight">Alte Post</span>
-                <span className="text-xs lg:text-sm text-[#6b8e6f] font-['Inter',sans-serif] tracking-wider">BRENSBACH</span>
+                <span className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] leading-tight">{settings.logo.mainText}</span>
+                <span className="text-xs lg:text-sm text-[#6b8e6f] font-['Inter',sans-serif] tracking-wider">{settings.logo.subtitle}</span>
               </div>
             </Link>
           </div>

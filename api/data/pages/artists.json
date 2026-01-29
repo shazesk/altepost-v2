@@ -1,0 +1,36 @@
+{
+  "header": {
+    "title": "Informationen für Künstler",
+    "description": "Sie sind Künstler*in und möchten bei uns auftreten? Wir freuen uns auf Ihre Anfrage!"
+  },
+  "intro": {
+    "paragraphs": [
+      "Die Alte Post ist ein Ort, an dem Künstler*innen und Publikum auf Augenhöhe zusammenkommen. Unsere intime Atmosphäre mit 80 Plätzen bietet einen besonderen Rahmen für unvergessliche Auftritte.",
+      "Wir legen Wert auf faire Konditionen und eine partnerschaftliche Zusammenarbeit. Bei uns stehen die Kunst und das gemeinsame Erlebnis im Mittelpunkt.",
+      "Ob Sie ein etablierter Act sind oder am Anfang Ihrer Karriere stehen – wir sind offen für vielfältige Programmpunkte und freuen uns, von Ihnen zu hören."
+    ]
+  },
+  "venue": {
+    "title": "Unsere Location",
+    "specs": [
+      { "label": "Kapazität", "value": "ca. 80 Sitzplätze" },
+      { "label": "Bühne", "value": "Klein & intim (ca. 4m × 3m)" },
+      { "label": "Technik", "value": "PA-Anlage, Beleuchtung vorhanden" },
+      { "label": "Atmosphäre", "value": "Historisches Ambiente, persönliche Nähe" }
+    ]
+  },
+  "requirements": {
+    "title": "Was wir suchen",
+    "items": [
+      { "icon": "users", "title": "Solo bis Quartett", "description": "Unsere Bühne eignet sich ideal für Solokünstler bis hin zu kleinen Ensembles." },
+      { "icon": "music", "title": "Akustisch orientiert", "description": "Jazz, Folk, Singer-Songwriter, Kabarett, Theater – Genres, die von der Intimität profitieren." },
+      { "icon": "map", "title": "Regionale & überregionale Acts", "description": "Wir fördern lokale Talente und laden überregionale Künstler ein." }
+    ]
+  },
+  "contact": {
+    "title": "Ihre Anfrage",
+    "description": "Stellen Sie uns Ihr Programm vor. Wir freuen uns darauf, von Ihnen zu hören!",
+    "email": "programm@alte-post-brensbach.de",
+    "buttonText": "Anfrage senden"
+  }
+}

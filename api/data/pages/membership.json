@@ -1,0 +1,68 @@
+{
+  "header": {
+    "title": "Mitglied werden",
+    "description": "Unterstützen Sie lebendige Kleinkunst im Odenwald und werden Sie Teil unserer Kulturgemeinschaft"
+  },
+  "intro": {
+    "title": "Warum Ihre Mitgliedschaft wichtig ist",
+    "emphasis": "Ohne unsere Mitglieder gäbe es die Alte Post nicht.",
+    "paragraphs": [
+      "Als gemeinnütziger Verein finanzieren wir uns hauptsächlich durch Mitgliedsbeiträge und Spenden. Jedes Mitglied trägt dazu bei, dass wir auch weiterhin hochwertige Kulturveranstaltungen zu fairen Preisen anbieten können.",
+      "Mit Ihrer Mitgliedschaft sichern Sie nicht nur den Fortbestand unserer Kleinkunstkneipe, sondern werden Teil einer lebendigen Gemeinschaft von Kulturliebhabern."
+    ]
+  },
+  "benefits": [
+    { "icon": "ticket", "title": "Ermäßigte Tickets", "description": "Als Mitglied erhalten Sie vergünstigten Eintritt zu allen Veranstaltungen." },
+    { "icon": "clock", "title": "Vorverkaufsrecht", "description": "Sichern Sie sich Ihre Tickets vor dem öffentlichen Verkaufsstart." },
+    { "icon": "mail", "title": "Programmheft", "description": "Erhalten Sie unser Programmheft mit allen Veranstaltungen direkt nach Hause." },
+    { "icon": "vote", "title": "Mitbestimmung", "description": "Stimmen Sie bei der Jahreshauptversammlung über die Zukunft des Vereins ab." }
+  ],
+  "tiers": [
+    {
+      "id": "einzeln",
+      "name": "Einzelmitgliedschaft",
+      "price": "30",
+      "period": "pro Jahr",
+      "popular": false,
+      "features": [
+        "Ermäßigter Eintritt zu allen Veranstaltungen",
+        "Vorverkaufsrecht für beliebte Events",
+        "Halbjährliches Programmheft per Post"
+      ]
+    },
+    {
+      "id": "familie",
+      "name": "Familienmitgliedschaft",
+      "price": "50",
+      "period": "pro Jahr",
+      "popular": true,
+      "badge": "Beliebt",
+      "features": [
+        "Alle Vorteile der Einzelmitgliedschaft",
+        "Gilt für 2 Erwachsene + Kinder",
+        "Ermäßigung auch für Kinder unter 18",
+        "Ideal für kulturbegeisterte Familien"
+      ],
+      "note": "Gilt für 2 Erwachsene + Kinder"
+    },
+    {
+      "id": "foerder",
+      "name": "Fördermitgliedschaft",
+      "price": "ab 100",
+      "period": "pro Jahr",
+      "popular": false,
+      "features": [
+        "Alle Vorteile der Familienmitgliedschaft",
+        "Namentliche Nennung als Förderer",
+        "Einladung zu exklusiven Vereinsevents"
+      ]
+    }
+  ],
+  "additionalInfo": {
+    "title": "Warum Ihre Unterstützung wichtig ist",
+    "paragraphs": [
+      "Als gemeinnütziger Verein sind wir auf die Unterstützung unserer Mitglieder angewiesen. Ihr Beitrag hilft uns, hochwertige Kulturveranstaltungen zu fairen Preisen anzubieten.",
+      "Mitgliedsbeiträge sind steuerlich absetzbar. Sie erhalten von uns eine Spendenbescheinigung."
+    ]
+  }
+}

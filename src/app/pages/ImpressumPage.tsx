@@ -1,5 +1,9 @@
 import React from "react";
+import { useSettings } from '../contexts/SettingsContext';
+
 export function ImpressumPage() {
+  const settings = useSettings();
+
   return (
     <div className="min-h-screen bg-[#faf9f7] py-20">
       <div className="mx-auto max-w-4xl px-6 lg:px-8">
@@ -13,9 +17,9 @@ export function ImpressumPage() {
               Angaben gemäß § 5 TMG
             </h2>
             <p className="text-[#666666] leading-relaxed">
-              KleinKunstKneipe Alte Post Brensbach e.V.<br />
-              Hauptstraße 42<br />
-              64395 Brensbach
+              {settings.organization.name}<br />
+              {settings.address.street}<br />
+              {settings.address.postalCode} {settings.address.city}
             </p>
           </section>
 
@@ -35,8 +39,8 @@ export function ImpressumPage() {
               Kontakt
             </h2>
             <p className="text-[#666666] leading-relaxed">
-              Telefon: +49 (0) 6161 12 34 56<br />
-              E-Mail: info@alte-post-brensbach.de
+              Telefon: {settings.contact.phone}<br />
+              E-Mail: {settings.contact.emailGeneral}
             </p>
           </section>
 
@@ -46,8 +50,8 @@ export function ImpressumPage() {
             </h2>
             <p className="text-[#666666] leading-relaxed">
               Eintragung im Vereinsregister<br />
-              Registergericht: Amtsgericht Darmstadt<br />
-              Registernummer: VR 1234
+              Registergericht: {settings.organization.court}<br />
+              Registernummer: {settings.organization.registrationNumber}
             </p>
           </section>
 
@@ -57,7 +61,7 @@ export function ImpressumPage() {
             </h2>
             <p className="text-[#666666] leading-relaxed">
               Der Verein ist als gemeinnützig anerkannt.<br />
-              Steuernummer: 12/345/67890<br />
+              Steuernummer: {settings.organization.taxNumber}<br />
               Finanzamt Darmstadt
             </p>
           </section>

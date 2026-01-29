@@ -1,8 +1,11 @@
 import React from "react";
 import { ContactForm } from '../components/ContactForm';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function KontaktPage() {
+  const settings = useSettings();
+
   return (
     <div className="min-h-screen bg-white">
       <section className="py-20 lg:py-28">
@@ -36,9 +39,9 @@ export function KontaktPage() {
                         Adresse
                       </h3>
                       <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif]">
-                        KleinKunstKneipe Alte Post Brensbach e.V.<br />
-                        Hauptstraße 15<br />
-                        64395 Brensbach
+                        {settings.organization.name}<br />
+                        {settings.address.street}<br />
+                        {settings.address.postalCode} {settings.address.city}
                       </p>
                     </div>
                   </div>
@@ -54,10 +57,10 @@ export function KontaktPage() {
                       </h3>
                       <div className="space-y-1">
                         <a
-                          href="mailto:info@alte-post-brensbach.de"
+                          href={`mailto:${settings.contact.emailGeneral}`}
                           className="block text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
                         >
-                          info@alte-post-brensbach.de
+                          {settings.contact.emailGeneral}
                         </a>
                         <p className="text-sm text-[#999999] font-['Inter',sans-serif]">
                           Allgemeine Anfragen
@@ -76,10 +79,10 @@ export function KontaktPage() {
                         Telefon
                       </h3>
                       <a
-                        href="tel:+496161123456"
+                        href={`tel:${settings.contact.phone.replace(/\s|\(|\)/g, '')}`}
                         className="block text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
                       >
-                        +49 (0) 6161 12 34 56
+                        {settings.contact.phone}
                       </a>
                     </div>
                   </div>
@@ -94,8 +97,8 @@ export function KontaktPage() {
                         Erreichbarkeit
                       </h3>
                       <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif]">
-                        Montag bis Freitag<br />
-                        10:00 - 18:00 Uhr
+                        {settings.officeHours.days}<br />
+                        {settings.officeHours.hours}
                       </p>
                     </div>
                   </div>
@@ -111,28 +114,28 @@ export function KontaktPage() {
                   <div>
                     <span className="text-[#2d2d2d] font-['Inter',sans-serif]">Ticketreservierungen:</span>
                     <a
-                      href="mailto:tickets@alte-post-brensbach.de"
+                      href={`mailto:${settings.contact.emailTickets}`}
                       className="block text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
                     >
-                      tickets@alte-post-brensbach.de
+                      {settings.contact.emailTickets}
                     </a>
                   </div>
                   <div>
                     <span className="text-[#2d2d2d] font-['Inter',sans-serif]">Künstleranfragen:</span>
                     <a
-                      href="mailto:programm@alte-post-brensbach.de"
+                      href={`mailto:${settings.contact.emailArtists}`}
                       className="block text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
                     >
-                      programm@alte-post-brensbach.de
+                      {settings.contact.emailArtists}
                     </a>
                   </div>
                   <div>
                     <span className="text-[#2d2d2d] font-['Inter',sans-serif]">Förderung & Sponsoring:</span>
                     <a
-                      href="mailto:foerderung@alte-post-brensbach.de"
+                      href={`mailto:${settings.contact.emailSponsors}`}
                       className="block text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
                     >
-                      foerderung@alte-post-brensbach.de
+                      {settings.contact.emailSponsors}
                     </a>
                   </div>
                 </div>
@@ -141,7 +144,7 @@ export function KontaktPage() {
 
             {/* Contact Form */}
             <div>
-              <ContactForm formType="general" emailTo="info@alte-post-brensbach.de" />
+              <ContactForm formType="general" emailTo={settings.contact.emailGeneral} />
             </div>
           </div>
 
@@ -151,10 +154,10 @@ export function KontaktPage() {
               <div className="text-center p-8">
                 <MapPin className="h-12 w-12 text-[#6b8e6f] mx-auto mb-4" />
                 <p className="text-[#666666] font-['Inter',sans-serif]">
-                  <strong className="text-[#2d2d2d]">KleinKunstKneipe Alte Post Brensbach</strong><br />
-                  Hauptstraße 15, 64395 Brensbach<br />
+                  <strong className="text-[#2d2d2d]">{settings.organization.name}</strong><br />
+                  {settings.address.street}, {settings.address.postalCode} {settings.address.city}<br />
                   <a
-                    href="https://www.google.com/maps/search/?api=1&query=Hauptstraße+15+64395+Brensbach"
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${settings.address.street} ${settings.address.postalCode} ${settings.address.city}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors inline-flex items-center mt-2"

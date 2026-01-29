@@ -1,8 +1,11 @@
 import React from "react";
 import { Mail, MapPin, Phone, Instagram, Facebook } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function Footer() {
+  const settings = useSettings();
+
   return (
     <footer className="bg-[#2d2d2d] text-[#e8e4df]">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-20">
@@ -10,22 +13,22 @@ export function Footer() {
           {/* About */}
           <div className="lg:col-span-2">
             <h3 className="font-['Playfair_Display',serif] text-xl text-white mb-4">
-              KleinKunstKneipe Alte Post Brensbach e.V.
+              {settings.organization.name}
             </h3>
             <p className="text-[#d9cfc1] leading-relaxed mb-6 font-['Inter',sans-serif]">
-              Seit 1994 ein Ort für lebendige Kleinkunst im Herzen des Odenwalds. 
-              Wir sind ein gemeinnütziger Verein und fördern kulturelle Vielfalt durch 
+              {settings.organization.description}
+              {' '}Wir sind ein gemeinnütziger Verein und fördern kulturelle Vielfalt durch
               hochwertige Veranstaltungen in intimer Atmosphäre.
             </p>
             <div className="text-sm text-[#999999] font-['Inter',sans-serif]">
-              Vereinsregister: VR 1234 | Amtsgericht Darmstadt<br />
-              Steuernummer: 12/345/67890
+              Vereinsregister: {settings.organization.registrationNumber} | {settings.organization.court}<br />
+              Steuernummer: {settings.organization.taxNumber}
             </div>
-            
+
             {/* Social Media */}
             <div className="mt-6 flex gap-4">
               <a
-                href="https://www.instagram.com/altepostbrensbach"
+                href={settings.social.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-[#444444] text-[#d9cfc1] hover:bg-[#6b8e6f] hover:text-white transition-all"
@@ -34,7 +37,7 @@ export function Footer() {
                 <Instagram className="h-5 w-5" />
               </a>
               <a
-                href="https://www.facebook.com/altepostbrensbach"
+                href={settings.social.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center w-10 h-10 rounded-full bg-[#444444] text-[#d9cfc1] hover:bg-[#6b8e6f] hover:text-white transition-all"
@@ -54,23 +57,23 @@ export function Footer() {
               <div className="flex items-start">
                 <MapPin className="h-5 w-5 text-[#6b8e6f] mr-3 mt-0.5 flex-shrink-0" />
                 <div className="font-['Inter',sans-serif]">
-                  <p className="text-[#d9cfc1]">Hauptstraße 42</p>
-                  <p className="text-[#d9cfc1]">64395 Brensbach</p>
+                  <p className="text-[#d9cfc1]">{settings.address.street}</p>
+                  <p className="text-[#d9cfc1]">{settings.address.postalCode} {settings.address.city}</p>
                 </div>
               </div>
               <a
-                href="mailto:info@alte-post-brensbach.de"
+                href={`mailto:${settings.contact.emailGeneral}`}
                 className="flex items-center text-[#d9cfc1] hover:text-white transition-colors font-['Inter',sans-serif]"
               >
                 <Mail className="h-5 w-5 text-[#6b8e6f] mr-3 flex-shrink-0" />
-                info@alte-post-brensbach.de
+                {settings.contact.emailGeneral}
               </a>
               <a
-                href="tel:+496161123456"
+                href={`tel:${settings.contact.phone.replace(/\s|\(|\)/g, '')}`}
                 className="flex items-center text-[#d9cfc1] hover:text-white transition-colors font-['Inter',sans-serif]"
               >
                 <Phone className="h-5 w-5 text-[#6b8e6f] mr-3 flex-shrink-0" />
-                +49 (0) 6161 12 34 56
+                {settings.contact.phone}
               </a>
             </div>
           </div>
@@ -153,7 +156,7 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t border-[#444444]">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-[#999999] font-['Inter',sans-serif]">
-              © {new Date().getFullYear()} KleinKunstKneipe Alte Post Brensbach e.V. Alle Rechte vorbehalten.
+              © {new Date().getFullYear()} {settings.organization.name}. Alle Rechte vorbehalten.
             </p>
             <div className="flex gap-6">
               <Link

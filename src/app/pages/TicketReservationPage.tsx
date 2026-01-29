@@ -28,6 +28,8 @@ export function TicketReservationPage() {
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // If no event data, redirect to tickets page
   if (!event && !isSubmitted) {
@@ -45,41 +47,37 @@ export function TicketReservationPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!event) return;
+    setIsLoading(true);
+    setError('');
 
-    // Calculate total price
-    const totalPrice = (parseFloat(event.price.replace(',', '.')) * parseInt(formData.ticketCount)).toFixed(2).replace('.', ',');
-    
-    // Create mailto link with form data
-    const subject = encodeURIComponent(`Ticketreservierung: ${event.title}`);
-    const body = encodeURIComponent(
-      `TICKETRESERVIERUNG\n\n` +
-      `Veranstaltung: ${event.title}\n` +
-      `Künstler: ${event.artist}\n` +
-      `Datum: ${event.date}\n` +
-      `Uhrzeit: ${event.time}\n` +
-      `Preis pro Ticket: ${event.price} EUR\n\n` +
-      `---\n\n` +
-      `Anzahl Tickets: ${formData.ticketCount}\n` +
-      `Gesamtpreis: ${totalPrice} EUR\n\n` +
-      `KONTAKTDATEN\n\n` +
-      `Name: ${formData.name}\n` +
-      `E-Mail: ${formData.email}\n` +
-      `Telefon: ${formData.phone}\n\n` +
-      `${formData.message ? `Nachricht:\n${formData.message}\n\n` : ''}` +
-      `---\n\n` +
-      `Ich bitte um Bestätigung der Reservierung.\n\n` +
-      `Mit freundlichen Grüßen\n` +
-      `${formData.name}`
-    );
-    
-    window.location.href = `mailto:tickets@alte-post-brensbach.de?subject=${subject}&body=${body}`;
-    
-    // Show success message
-    setIsSubmitted(true);
+    const computedTotalPrice = (parseFloat(event.price.replace(',', '.')) * parseInt(formData.ticketCount)).toFixed(2).replace('.', ',');
+
+    try {
+      const res = await fetch('/api/send/reserve-tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          eventId: event.id,
+          eventTitle: event.title,
+          eventArtist: event.artist,
+          eventDate: event.date,
+          eventTime: event.time,
+          eventPrice: event.price,
+          totalPrice: computedTotalPrice,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+      setIsSubmitted(true);
+    } catch (err: any) {
+      setError(`Fehler: ${err.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es später erneut.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = 
@@ -108,11 +106,11 @@ export function TicketReservationPage() {
               Vielen Dank!
             </h1>
             <p className="text-lg text-[#666666] mb-2 font-['Inter',sans-serif]">
-              Ihr E-Mail-Programm sollte sich geöffnet haben.
+              Ihre Reservierung wurde erfolgreich übermittelt.
             </p>
             <p className="text-[#666666] font-['Inter',sans-serif] mb-8">
-              Bitte senden Sie die vorbereitete Reservierungsanfrage ab. Wir bestätigen Ihre 
-              Reservierung innerhalb von 24 Stunden per E-Mail.
+              Sie erhalten in Kürze eine Bestätigungs-E-Mail. Wir bestätigen Ihre
+              Reservierung innerhalb von 24 Stunden.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -317,15 +315,15 @@ export function TicketReservationPage() {
           <div className="mt-8 flex flex-col sm:flex-row gap-3">
             <button
               type="submit"
-              disabled={!isFormValid}
+              disabled={!isFormValid || isLoading}
               className={`flex-1 inline-flex items-center justify-center gap-2 rounded-md px-6 py-4 transition-colors font-['Inter',sans-serif] ${
-                isFormValid
+                isFormValid && !isLoading
                   ? 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
                   : 'bg-[#e8e4df] text-[#999999] cursor-not-allowed'
               }`}
             >
               <Ticket className="h-5 w-5" />
-              Jetzt reservieren
+              {isLoading ? 'Wird gesendet...' : 'Jetzt reservieren'}
             </button>
             <Link
               to="/tickets"
@@ -334,6 +332,9 @@ export function TicketReservationPage() {
               Abbrechen
             </Link>
           </div>
+          {error && (
+            <p className="text-sm text-red-600 text-center mt-3 font-['Inter',sans-serif]">{error}</p>
+          )}
           <p className="text-xs text-[#999999] text-center mt-3 font-['Inter',sans-serif]">
             * Pflichtfelder
           </p>

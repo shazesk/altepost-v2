@@ -19,6 +19,8 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const formTitles = {
     general: 'Kontaktformular',
@@ -57,36 +59,30 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Create mailto link with form data
-    const subject = encodeURIComponent(`${formData.subject} - ${formData.name}`);
-    const body = encodeURIComponent(
-      `Name: ${formData.name}\n` +
-      `E-Mail: ${formData.email}\n` +
-      `Telefon: ${formData.phone}\n\n` +
-      `Betreff: ${formData.subject}\n\n` +
-      `Nachricht:\n${formData.message}`
-    );
-    
-    window.location.href = `mailto:${emailTo}?subject=${subject}&body=${body}`;
-    
-    // Show success message
-    setIsSubmitted(true);
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: '',
-        privacyAccepted: false,
+    setIsLoading(true);
+    setError('');
+    try {
+      const payload = { ...formData, formType };
+      console.log('[ContactForm] Sending payload:', JSON.stringify(payload));
+      const res = await fetch('/api/send/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-    }, 3000);
+      const data = await res.json();
+      console.log('[ContactForm] Response:', res.status, JSON.stringify(data));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      setIsSubmitted(true);
+    } catch (err: any) {
+      console.error('[ContactForm] Error:', err);
+      setError(`Fehler: ${err.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es später erneut.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = 
@@ -104,7 +100,7 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
           Vielen Dank für Ihre Nachricht!
         </h3>
         <p className="text-white/90 font-['Inter',sans-serif]">
-          Ihr E-Mail-Programm sollte sich öffnen. Bitte senden Sie die vorbereitete E-Mail ab.
+          Wir haben Ihre Nachricht erhalten und werden uns schnellstmöglich bei Ihnen melden.
         </p>
       </div>
     );
@@ -237,16 +233,19 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
         <div className="pt-4">
           <button
             type="submit"
-            disabled={!isFormValid}
+            disabled={!isFormValid || isLoading}
             className={`w-full inline-flex items-center justify-center gap-2 rounded-md px-6 py-4 transition-colors font-['Inter',sans-serif] ${
-              isFormValid
+              isFormValid && !isLoading
                 ? 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
                 : 'bg-[#e8e4df] text-[#999999] cursor-not-allowed'
             }`}
           >
             <Send className="h-5 w-5" />
-            Nachricht senden
+            {isLoading ? 'Wird gesendet...' : 'Nachricht senden'}
           </button>
+          {error && (
+            <p className="text-sm text-red-600 text-center mt-3 font-['Inter',sans-serif]">{error}</p>
+          )}
           <p className="text-xs text-[#999999] text-center mt-3 font-['Inter',sans-serif]">
             * Pflichtfelder
           </p>

@@ -25,6 +25,8 @@ export function VoucherPurchaseModal({ isOpen, onClose }: VoucherPurchaseModalPr
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -38,68 +40,24 @@ export function VoucherPurchaseModal({ isOpen, onClose }: VoucherPurchaseModalPr
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Determine voucher details
-    let voucherDetails = '';
-    let voucherValue = '';
-    if (formData.voucherType === 'amount') {
-      const finalAmount = formData.amount === 'custom' ? formData.customAmount : formData.amount;
-      voucherDetails = `Wertgutschein über ${finalAmount}€`;
-      voucherValue = `${finalAmount} EUR`;
-    } else {
-      voucherDetails = `Gutschein für Veranstaltung: ${formData.eventName}`;
-      voucherValue = 'Nach Veranstaltung';
-    }
-
-    // Create mailto link with form data
-    const subject = encodeURIComponent(`Gutschein-Bestellung: ${voucherDetails}`);
-    const body = encodeURIComponent(
-      `GUTSCHEIN-BESTELLUNG\n\n` +
-      `${voucherDetails}\n` +
-      `Wert: ${voucherValue}\n` +
-      `Zustellung: ${formData.delivery === 'email' ? 'Per E-Mail (PDF)' : 'Abholung vor Ort'}\n\n` +
-      `---\n\n` +
-      `KÄUFER-INFORMATIONEN\n\n` +
-      `Name: ${formData.buyerName}\n` +
-      `E-Mail: ${formData.buyerEmail}\n` +
-      `Telefon: ${formData.buyerPhone}\n\n` +
-      `${formData.recipientName || formData.recipientEmail ? `EMPFÄNGER-INFORMATIONEN\n\n` : ''}` +
-      `${formData.recipientName ? `Name: ${formData.recipientName}\n` : ''}` +
-      `${formData.recipientEmail ? `E-Mail: ${formData.recipientEmail}\n` : ''}` +
-      `${formData.recipientName || formData.recipientEmail ? '\n' : ''}` +
-      `${formData.message ? `PERSÖNLICHE GRUSSBOTSCRAFT\n\n${formData.message}\n\n` : ''}` +
-      `---\n\n` +
-      `Ich bitte um Zusendung der Zahlungsinformationen.\n\n` +
-      `Mit freundlichen Grüßen\n` +
-      `${formData.buyerName}`
-    );
-    
-    window.location.href = `mailto:gutscheine@alte-post-brensbach.de?subject=${subject}&body=${body}`;
-    
-    // Show success message
-    setIsSubmitted(true);
-    
-    // Reset after 3 seconds and close modal
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFormData({
-        voucherType: 'amount',
-        amount: '50',
-        customAmount: '',
-        eventName: '',
-        recipientName: '',
-        recipientEmail: '',
-        buyerName: '',
-        buyerEmail: '',
-        buyerPhone: '',
-        message: '',
-        delivery: 'email',
-        privacyAccepted: false,
+    setIsLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/send/voucher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
-      onClose();
-    }, 3000);
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+      setIsSubmitted(true);
+    } catch (err: any) {
+      setError(`Fehler: ${err.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es später erneut.`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const isFormValid = 
@@ -147,11 +105,11 @@ export function VoucherPurchaseModal({ isOpen, onClose }: VoucherPurchaseModalPr
                 Vielen Dank für Ihre Bestellung!
               </h3>
               <p className="text-lg text-[#666666] mb-2 font-['Inter',sans-serif]">
-                Ihr E-Mail-Programm sollte sich öffnen.
+                Ihre Bestellung wurde erfolgreich übermittelt.
               </p>
               <p className="text-[#666666] font-['Inter',sans-serif] max-w-xl mx-auto">
-                Bitte senden Sie die vorbereitete Gutschein-Bestellung ab. Wir melden uns 
-                schnellstmöglich mit den Zahlungsinformationen. Der Gutschein wird nach 
+                Sie erhalten in Kürze eine Bestätigungs-E-Mail. Wir melden uns
+                schnellstmöglich mit den Zahlungsinformationen. Der Gutschein wird nach
                 Zahlungseingang versendet.
               </p>
             </div>
@@ -486,8 +444,8 @@ export function VoucherPurchaseModal({ isOpen, onClose }: VoucherPurchaseModalPr
                   {/* Important Info */}
                   <div className="bg-[#fff9e6] border border-[#f4d06f] rounded-lg p-4">
                     <p className="text-sm text-[#666666] font-['Inter',sans-serif]">
-                      <strong className="text-[#2d2d2d]">Hinweis:</strong> Nach dem Absenden öffnet sich Ihr 
-                      E-Mail-Programm. Wir senden Ihnen die Zahlungsinformationen zu. Der Gutschein wird nach 
+                      <strong className="text-[#2d2d2d]">Hinweis:</strong> Nach dem Absenden erhalten Sie eine
+                      Bestätigungs-E-Mail. Wir senden Ihnen die Zahlungsinformationen zu. Der Gutschein wird nach
                       Zahlungseingang versendet bzw. zur Abholung bereitgestellt.
                     </p>
                   </div>
@@ -497,15 +455,15 @@ export function VoucherPurchaseModal({ isOpen, onClose }: VoucherPurchaseModalPr
                 <div className="mt-8 flex flex-col sm:flex-row gap-3">
                   <button
                     type="submit"
-                    disabled={!isFormValid}
+                    disabled={!isFormValid || isLoading}
                     className={`flex-1 inline-flex items-center justify-center gap-2 rounded-md px-6 py-4 transition-colors font-['Inter',sans-serif] ${
-                      isFormValid
+                      isFormValid && !isLoading
                         ? 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
                         : 'bg-[#e8e4df] text-[#999999] cursor-not-allowed'
                     }`}
                   >
                     <Gift className="h-5 w-5" />
-                    Gutschein bestellen
+                    {isLoading ? 'Wird gesendet...' : 'Gutschein bestellen'}
                   </button>
                   <button
                     type="button"
@@ -515,6 +473,9 @@ export function VoucherPurchaseModal({ isOpen, onClose }: VoucherPurchaseModalPr
                     Abbrechen
                   </button>
                 </div>
+                {error && (
+                  <p className="text-sm text-red-600 text-center mt-3 font-['Inter',sans-serif]">{error}</p>
+                )}
                 <p className="text-xs text-[#999999] text-center mt-3 font-['Inter',sans-serif]">
                   * Pflichtfelder
                 </p>
