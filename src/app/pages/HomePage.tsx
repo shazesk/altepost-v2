@@ -2,12 +2,12 @@ import React from "react";
 import { Hero } from '../components/Hero';
 import { SponsorsCarousel } from '../components/SponsorsCarousel';
 import { Link } from 'react-router-dom';
-import { 
-  Calendar, 
-  Clock, 
-  Euro, 
-  ArrowRight, 
-  MapPin, 
+import {
+  Calendar,
+  Clock,
+  Euro,
+  ArrowRight,
+  MapPin,
   Heart,
   Sparkles,
   Gift,
@@ -20,17 +20,80 @@ import {
   Facebook
 } from 'lucide-react';
 import { QuoteCard } from '../components/QuoteCard';
+import { useCmsPage } from '../hooks/useCmsPage';
 
-export function HomePage() {
-  // Next upcoming event
-  const nextEvent = {
+interface HomePageContent {
+  hero: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    description: string;
+    date: string;
+    time: string;
+    price: string;
+    genre: string;
+  };
+  intro: {
+    title: string;
+    subtitle: string;
+  };
+  features: Array<{
+    icon: string;
+    title: string;
+    description: string;
+  }>;
+  cta: {
+    title: string;
+    description: string;
+  };
+  instagram: {
+    handle: string;
+    url: string;
+  };
+}
+
+const defaultContent: HomePageContent = {
+  hero: {
+    badge: 'Nächste Veranstaltung',
     title: 'Winterkonzert',
-    artist: 'Maria Schneider Quartett',
+    subtitle: 'Maria Schneider Quartett',
+    description: 'Ein intimer Jazzabend mit der preisgekrönten Pianistin Maria Schneider und ihrem Quartett.',
     date: '15. Januar 2026',
     time: '20:00 Uhr',
     price: '18,00',
     genre: 'Jazz',
-    description: 'Ein intimer Jazzabend mit der preisgekrönten Pianistin Maria Schneider und ihrem Quartett.',
+  },
+  intro: {
+    title: 'Willkommen in der Alten Post',
+    subtitle: 'Was unsere Kleinkunstkneipe seit 1994 zu einem besonderen Ort macht',
+  },
+  features: [
+    { icon: 'heart', title: 'Intime Atmosphäre', description: 'Mit nur 80 Plätzen erleben Sie Kultur hautnah.' },
+    { icon: 'history', title: '30 Jahre Tradition', description: 'Seit 1994 bringen wir Kleinkunst in den Odenwald.' },
+    { icon: 'star', title: 'Qualität & Vielfalt', description: 'Rund 40 handverlesene Veranstaltungen pro Jahr.' },
+  ],
+  cta: {
+    title: 'Werden Sie Teil unserer Kulturgemeinschaft',
+    description: 'Ob als Besucher, Mitglied oder Förderer – gemeinsam erhalten wir lebendige Kleinkunst im Odenwald.',
+  },
+  instagram: {
+    handle: '@altepostbrensbach',
+    url: 'https://www.instagram.com/altepostbrensbach',
+  },
+};
+
+export function HomePage() {
+  const { content } = useCmsPage<HomePageContent>('home', defaultContent);
+
+  // Use CMS content for the next event
+  const nextEvent = {
+    title: content.hero.title,
+    artist: content.hero.subtitle,
+    date: content.hero.date,
+    time: content.hero.time,
+    price: content.hero.price,
+    genre: content.hero.genre,
+    description: content.hero.description,
   };
 
   return (
@@ -117,10 +180,10 @@ export function HomePage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-['Playfair_Display',serif] text-3xl lg:text-4xl text-[#2d2d2d] mb-3">
-              Warum die Alte Post?
+              {content.intro.title}
             </h2>
             <p className="text-lg text-[#666666] font-['Inter',sans-serif] max-w-2xl mx-auto">
-              Was unsere Kleinkunstkneipe seit 1994 zu einem besonderen Ort macht
+              {content.intro.subtitle}
             </p>
           </div>
 
@@ -309,12 +372,12 @@ export function HomePage() {
             
             {/* Instagram Handle */}
             <h3 className="font-['Inter',sans-serif] text-lg sm:text-xl text-[#2d2d2d] mb-4">
-              @altepostbrensbach
+              {content.instagram.handle}
             </h3>
-            
+
             {/* Follow Button */}
             <a
-              href="https://www.instagram.com/altepostbrensbach"
+              href={content.instagram.url}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-md bg-[#2d2d2d] px-6 py-2.5 text-white hover:bg-[#1a1a1a] transition-all font-['Inter',sans-serif] text-sm"
@@ -386,11 +449,10 @@ export function HomePage() {
       <section className="py-16 lg:py-20 bg-white">
         <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
           <h2 className="font-['Playfair_Display',serif] text-3xl lg:text-4xl text-[#2d2d2d] mb-4">
-            Werden Sie Teil unserer Kulturgemeinschaft
+            {content.cta.title}
           </h2>
           <p className="text-lg text-[#666666] mb-8 font-['Inter',sans-serif] max-w-2xl mx-auto">
-            Ob als Besucher, Mitglied oder Förderer – gemeinsam erhalten wir lebendige 
-            Kleinkunst im Odenwald.
+            {content.cta.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
