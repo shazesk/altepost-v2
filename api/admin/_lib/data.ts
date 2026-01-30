@@ -2,12 +2,6 @@ import { Redis } from '@upstash/redis';
 import fs from 'fs';
 import path from 'path';
 
-// Initialize Redis client (uses UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars)
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL || '',
-  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
-});
-
 // Fallback to local JSON files for development
 const DATA_DIR = path.join(process.cwd(), 'api/data');
 const PAGES_DIR = path.join(DATA_DIR, 'pages');
@@ -15,6 +9,19 @@ const PAGES_DIR = path.join(DATA_DIR, 'pages');
 // Check if Redis is configured
 function isRedisConfigured(): boolean {
   return !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+}
+
+// Lazy-initialize Redis client only when needed and configured
+let redis: Redis | null = null;
+function getRedis(): Redis | null {
+  if (!isRedisConfigured()) return null;
+  if (!redis) {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    });
+  }
+  return redis;
 }
 
 // Helper to read from local JSON file
@@ -169,7 +176,7 @@ const defaultSettings: SiteSettings = {
 export async function readEvents(): Promise<Event[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<Event[]>('events');
+      const data = await getRedis()!.get<Event[]>('events');
       return data || [];
     } catch (e) {
       console.error('Redis error reading events:', e);
@@ -181,7 +188,7 @@ export async function readEvents(): Promise<Event[]> {
 export async function writeEvents(events: Event[]): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('events', events);
+      await getRedis()!.set('events', events);
       return;
     } catch (e) {
       console.error('Redis error writing events:', e);
@@ -194,7 +201,7 @@ export async function writeEvents(events: Event[]): Promise<void> {
 export async function readReservations(): Promise<Reservation[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<Reservation[]>('reservations');
+      const data = await getRedis()!.get<Reservation[]>('reservations');
       return data || [];
     } catch (e) {
       console.error('Redis error reading reservations:', e);
@@ -206,7 +213,7 @@ export async function readReservations(): Promise<Reservation[]> {
 export async function writeReservations(reservations: Reservation[]): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('reservations', reservations);
+      await getRedis()!.set('reservations', reservations);
       return;
     } catch (e) {
       console.error('Redis error writing reservations:', e);
@@ -219,7 +226,7 @@ export async function writeReservations(reservations: Reservation[]): Promise<vo
 export async function readSettings(): Promise<SiteSettings> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<SiteSettings>('settings');
+      const data = await getRedis()!.get<SiteSettings>('settings');
       return data || defaultSettings;
     } catch (e) {
       console.error('Redis error reading settings:', e);
@@ -231,7 +238,7 @@ export async function readSettings(): Promise<SiteSettings> {
 export async function writeSettings(settings: SiteSettings): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('settings', settings);
+      await getRedis()!.set('settings', settings);
       return;
     } catch (e) {
       console.error('Redis error writing settings:', e);
@@ -244,7 +251,7 @@ export async function writeSettings(settings: SiteSettings): Promise<void> {
 export async function readContacts(): Promise<Contact[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<Contact[]>('contacts');
+      const data = await getRedis()!.get<Contact[]>('contacts');
       return data || [];
     } catch (e) {
       console.error('Redis error reading contacts:', e);
@@ -256,7 +263,7 @@ export async function readContacts(): Promise<Contact[]> {
 export async function writeContacts(contacts: Contact[]): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('contacts', contacts);
+      await getRedis()!.set('contacts', contacts);
       return;
     } catch (e) {
       console.error('Redis error writing contacts:', e);
@@ -269,7 +276,7 @@ export async function writeContacts(contacts: Contact[]): Promise<void> {
 export async function readVouchers(): Promise<VoucherOrder[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<VoucherOrder[]>('vouchers');
+      const data = await getRedis()!.get<VoucherOrder[]>('vouchers');
       return data || [];
     } catch (e) {
       console.error('Redis error reading vouchers:', e);
@@ -281,7 +288,7 @@ export async function readVouchers(): Promise<VoucherOrder[]> {
 export async function writeVouchers(vouchers: VoucherOrder[]): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('vouchers', vouchers);
+      await getRedis()!.set('vouchers', vouchers);
       return;
     } catch (e) {
       console.error('Redis error writing vouchers:', e);
@@ -294,7 +301,7 @@ export async function writeVouchers(vouchers: VoucherOrder[]): Promise<void> {
 export async function readMemberships(): Promise<MembershipApplication[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<MembershipApplication[]>('memberships');
+      const data = await getRedis()!.get<MembershipApplication[]>('memberships');
       return data || [];
     } catch (e) {
       console.error('Redis error reading memberships:', e);
@@ -306,7 +313,7 @@ export async function readMemberships(): Promise<MembershipApplication[]> {
 export async function writeMemberships(memberships: MembershipApplication[]): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('memberships', memberships);
+      await getRedis()!.set('memberships', memberships);
       return;
     } catch (e) {
       console.error('Redis error writing memberships:', e);
@@ -319,7 +326,7 @@ export async function writeMemberships(memberships: MembershipApplication[]): Pr
 export async function readPageContent(pageName: string): Promise<any> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get(`page:${pageName}`);
+      const data = await getRedis()!.get(`page:${pageName}`);
       if (data) return data;
     } catch (e) {
       console.error(`Redis error reading page ${pageName}:`, e);
@@ -340,11 +347,11 @@ export async function readPageContent(pageName: string): Promise<any> {
 export async function writePageContent(pageName: string, content: any): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set(`page:${pageName}`, content);
+      await getRedis()!.set(`page:${pageName}`, content);
       // Also update the pages list
       const pages = await listPages();
       if (!pages.includes(pageName)) {
-        await redis.set('pages_list', [...pages, pageName]);
+        await getRedis()!.set('pages_list', [...pages, pageName]);
       }
       return;
     } catch (e) {
@@ -363,7 +370,7 @@ export async function writePageContent(pageName: string, content: any): Promise<
 export async function listPages(): Promise<string[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<string[]>('pages_list');
+      const data = await getRedis()!.get<string[]>('pages_list');
       if (data) return data;
     } catch (e) {
       console.error('Redis error listing pages:', e);
@@ -386,7 +393,7 @@ export async function listPages(): Promise<string[]> {
 export async function readTestimonials(): Promise<Testimonial[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<Testimonial[]>('testimonials');
+      const data = await getRedis()!.get<Testimonial[]>('testimonials');
       return data || [];
     } catch (e) {
       console.error('Redis error reading testimonials:', e);
@@ -398,7 +405,7 @@ export async function readTestimonials(): Promise<Testimonial[]> {
 export async function writeTestimonials(testimonials: Testimonial[]): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('testimonials', testimonials);
+      await getRedis()!.set('testimonials', testimonials);
       return;
     } catch (e) {
       console.error('Redis error writing testimonials:', e);
@@ -411,7 +418,7 @@ export async function writeTestimonials(testimonials: Testimonial[]): Promise<vo
 export async function readSessions(): Promise<any[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<any[]>('sessions');
+      const data = await getRedis()!.get<any[]>('sessions');
       return data || [];
     } catch (e) {
       console.error('Redis error reading sessions:', e);
@@ -423,7 +430,7 @@ export async function readSessions(): Promise<any[]> {
 export async function writeSessions(sessions: any[]): Promise<void> {
   if (isRedisConfigured()) {
     try {
-      await redis.set('sessions', sessions);
+      await getRedis()!.set('sessions', sessions);
       return;
     } catch (e) {
       console.error('Redis error writing sessions:', e);
@@ -436,7 +443,7 @@ export async function writeSessions(sessions: any[]): Promise<void> {
 export async function readAdmins(): Promise<any[]> {
   if (isRedisConfigured()) {
     try {
-      const data = await redis.get<any[]>('admins');
+      const data = await getRedis()!.get<any[]>('admins');
       if (data && data.length > 0) return data;
     } catch (e) {
       console.error('Redis error reading admins:', e);
