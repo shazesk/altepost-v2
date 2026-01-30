@@ -386,7 +386,8 @@ export async function listPages(): Promise<string[]> {
   } catch (e) {
     console.error('Error listing pages:', e);
   }
-  return [];
+  // Return default page list if file system not available
+  return ['home', 'about', 'membership', 'artists', 'sponsors'];
 }
 
 // ============ TESTIMONIALS ============
