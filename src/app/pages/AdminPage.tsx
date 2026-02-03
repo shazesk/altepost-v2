@@ -27,7 +27,7 @@ interface Reservation {
   email: string;
   phone: string;
   tickets: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'active' | 'archived';
   notes: string;
   createdAt: string;
 }
@@ -37,14 +37,13 @@ interface Stats {
   archived: number;
   total: number;
   reservations?: {
-    pending: number;
-    confirmed: number;
+    active: number;
     total: number;
     totalTickets: number;
   };
-  contacts?: { new: number; total: number };
-  vouchers?: { pending: number; total: number };
-  memberships?: { pending: number; total: number };
+  contacts?: { active: number; total: number };
+  vouchers?: { active: number; total: number };
+  memberships?: { active: number; total: number };
 }
 
 interface Contact {
@@ -55,7 +54,7 @@ interface Contact {
   subject: string;
   message: string;
   formType: 'general' | 'artist' | 'sponsor';
-  status: 'new' | 'read' | 'replied' | 'archived';
+  status: 'active' | 'archived';
   createdAt: string;
   notes: string;
 }
@@ -72,7 +71,7 @@ interface VoucherOrder {
   recipientEmail: string;
   message: string;
   delivery: 'email' | 'post' | 'pickup';
-  status: 'pending' | 'paid' | 'sent' | 'redeemed' | 'cancelled';
+  status: 'active' | 'archived';
   createdAt: string;
   notes: string;
 }
@@ -88,7 +87,7 @@ interface MembershipApplication {
   membershipType: string;
   membershipPrice: string;
   message: string;
-  status: 'pending' | 'approved' | 'active' | 'cancelled';
+  status: 'active' | 'archived';
   createdAt: string;
   notes: string;
 }
@@ -132,7 +131,7 @@ export function AdminPage() {
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [activeView, setActiveView] = useState<'dashboard' | 'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms'>('dashboard');
-  const [reservationFilter, setReservationFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
+  const [reservationFilter, setReservationFilter] = useState<'all' | 'active' | 'archived'>('all');
   const [selectedEventFilter, setSelectedEventFilter] = useState<number | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
 
@@ -141,9 +140,9 @@ export function AdminPage() {
   const [vouchers, setVouchers] = useState<VoucherOrder[]>([]);
   const [memberships, setMemberships] = useState<MembershipApplication[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
-  const [contactFilter, setContactFilter] = useState<'all' | 'new' | 'read' | 'replied' | 'archived'>('all');
-  const [voucherFilter, setVoucherFilter] = useState<'all' | 'pending' | 'paid' | 'sent' | 'redeemed' | 'cancelled'>('all');
-  const [membershipFilter, setMembershipFilter] = useState<'all' | 'pending' | 'approved' | 'active' | 'cancelled'>('all');
+  const [contactFilter, setContactFilter] = useState<'all' | 'active' | 'archived'>('all');
+  const [voucherFilter, setVoucherFilter] = useState<'all' | 'active' | 'archived'>('all');
+  const [membershipFilter, setMembershipFilter] = useState<'all' | 'active' | 'archived'>('all');
   const [viewingContact, setViewingContact] = useState<Contact | null>(null);
   const [editingSettings, setEditingSettings] = useState(false);
 
@@ -153,6 +152,10 @@ export function AdminPage() {
   const [pageContent, setPageContent] = useState<any>(null);
   const [editingPageContent, setEditingPageContent] = useState(false);
   const [savingPage, setSavingPage] = useState(false);
+
+  // Image upload state
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   // Check stored session on mount
   useEffect(() => {
@@ -439,14 +442,46 @@ export function AdminPage() {
     const formData = new FormData(form);
 
     try {
+      // Build JSON data from form
+      const eventData: Record<string, any> = {
+        title: formData.get('title'),
+        artist: formData.get('artist'),
+        date: formData.get('date'),
+        time: formData.get('time'),
+        price: formData.get('price'),
+        genre: formData.get('genre'),
+        availability: formData.get('availability'),
+        description: formData.get('description'),
+        is_archived: formData.get('is_archived') === 'true'
+      };
+
+      // Handle image - convert to base64 if new file selected
+      if (selectedImageFile) {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(selectedImageFile);
+        });
+        eventData.image = base64;
+      } else if (editingEvent?.image && !imagePreview) {
+        // Keep existing image if not changed and not removed
+        eventData.image = editingEvent.image;
+      } else if (imagePreview === null && editingEvent?.image) {
+        // Image was removed
+        eventData.image = null;
+      }
+
       const url = editingEvent
         ? `${API_BASE}/events/${editingEvent.id}`
         : `${API_BASE}/events`;
 
       const res = await fetch(url, {
         method: editingEvent ? 'PUT' : 'POST',
-        headers: { 'x-session-id': sessionId! },
-        body: formData
+        headers: {
+          'x-session-id': sessionId!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(eventData)
       });
 
       const data = await res.json();
@@ -455,6 +490,8 @@ export function AdminPage() {
         setMessage({ text: editingEvent ? 'Event aktualisiert' : 'Event erstellt', type: 'success' });
         setEditingEvent(null);
         setIsCreating(false);
+        setImagePreview(null);
+        setSelectedImageFile(null);
         loadEvents();
         loadStats();
       } else {
@@ -463,6 +500,26 @@ export function AdminPage() {
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
     }
+  }
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Check file size (max 2MB for base64 storage)
+      if (file.size > 2 * 1024 * 1024) {
+        setMessage({ text: 'Bild zu groß. Maximum: 2MB', type: 'error' });
+        return;
+      }
+      setSelectedImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function handleRemoveImage() {
+    setImagePreview(null);
+    setSelectedImageFile(null);
   }
 
   async function handleDelete(id: number) {
@@ -543,22 +600,22 @@ export function AdminPage() {
     }
   }
 
-  async function handleReservationStatus(id: number, status: 'pending' | 'confirmed' | 'cancelled') {
+  async function handleReservationArchive(id: number) {
     try {
       const res = await fetch(`${API_BASE}/reservations/${id}/status`, {
         method: 'POST',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status: 'archived' })
       });
 
       const data = await res.json();
 
       if (data.success) {
-        setMessage({ text: `Status auf "${status === 'confirmed' ? 'Bestätigt' : status === 'cancelled' ? 'Storniert' : 'Ausstehend'}" geändert`, type: 'success' });
+        setMessage({ text: 'Archiviert', type: 'success' });
         loadReservations();
         loadStats();
       } else {
-        setMessage({ text: data.error || 'Statusänderung fehlgeschlagen', type: 'error' });
+        setMessage({ text: data.error || 'Archivierung fehlgeschlagen', type: 'error' });
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
@@ -589,21 +646,20 @@ export function AdminPage() {
   }
 
   // Handler functions for contacts, vouchers, memberships
-  async function handleContactStatus(id: number, status: Contact['status']) {
+  async function handleContactArchive(id: number) {
     try {
       const res = await fetch(`${API_BASE}/submissions/contacts/${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status: 'archived' })
       });
       const data = await res.json();
       if (data.success) {
-        const statusLabels: Record<string, string> = { new: 'Neu', read: 'Gelesen', replied: 'Beantwortet', archived: 'Archiviert' };
-        setMessage({ text: `Status auf "${statusLabels[status]}" geändert`, type: 'success' });
+        setMessage({ text: 'Archiviert', type: 'success' });
         loadContacts();
         loadStats();
       } else {
-        setMessage({ text: data.error || 'Statusänderung fehlgeschlagen', type: 'error' });
+        setMessage({ text: data.error || 'Archivierung fehlgeschlagen', type: 'error' });
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
@@ -630,21 +686,20 @@ export function AdminPage() {
     }
   }
 
-  async function handleVoucherStatus(id: number, status: VoucherOrder['status']) {
+  async function handleVoucherArchive(id: number) {
     try {
       const res = await fetch(`${API_BASE}/submissions/vouchers/${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status: 'archived' })
       });
       const data = await res.json();
       if (data.success) {
-        const statusLabels: Record<string, string> = { pending: 'Ausstehend', paid: 'Bezahlt', sent: 'Versendet', redeemed: 'Eingelöst', cancelled: 'Storniert' };
-        setMessage({ text: `Status auf "${statusLabels[status]}" geändert`, type: 'success' });
+        setMessage({ text: 'Archiviert', type: 'success' });
         loadVouchers();
         loadStats();
       } else {
-        setMessage({ text: data.error || 'Statusänderung fehlgeschlagen', type: 'error' });
+        setMessage({ text: data.error || 'Archivierung fehlgeschlagen', type: 'error' });
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
@@ -671,21 +726,20 @@ export function AdminPage() {
     }
   }
 
-  async function handleMembershipStatus(id: number, status: MembershipApplication['status']) {
+  async function handleMembershipArchive(id: number) {
     try {
       const res = await fetch(`${API_BASE}/submissions/memberships/${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status: 'archived' })
       });
       const data = await res.json();
       if (data.success) {
-        const statusLabels: Record<string, string> = { pending: 'Ausstehend', approved: 'Genehmigt', active: 'Aktiv', cancelled: 'Abgelehnt' };
-        setMessage({ text: `Status auf "${statusLabels[status]}" geändert`, type: 'success' });
+        setMessage({ text: 'Archiviert', type: 'success' });
         loadMemberships();
         loadStats();
       } else {
-        setMessage({ text: data.error || 'Statusänderung fehlgeschlagen', type: 'error' });
+        setMessage({ text: data.error || 'Archivierung fehlgeschlagen', type: 'error' });
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
@@ -866,13 +920,11 @@ export function AdminPage() {
           <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] space-y-4">
             <div className="flex justify-between items-start">
               <div>
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                  r.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                  r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {r.status === 'confirmed' ? 'Bestätigt' : r.status === 'pending' ? 'Ausstehend' : 'Storniert'}
-                </span>
+                {r.status === 'archived' && (
+                  <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e8e4df] text-[#666666]">
+                    Archiviert
+                  </span>
+                )}
               </div>
               <div className="text-sm text-[#666666]">#{r.id}</div>
             </div>
@@ -912,28 +964,20 @@ export function AdminPage() {
             </div>
 
             <div className="border-t border-[rgba(107,142,111,0.1)] pt-4 flex gap-2 flex-wrap">
-              {r.status !== 'confirmed' && (
-                <button
-                  onClick={() => { handleReservationStatus(r.id, 'confirmed'); setViewingReservation(null); }}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-                >
-                  <Check className="w-4 h-4" /> Bestätigen
-                </button>
-              )}
-              {r.status !== 'cancelled' && (
-                <button
-                  onClick={() => { handleReservationStatus(r.id, 'cancelled'); setViewingReservation(null); }}
-                  className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                >
-                  <X className="w-4 h-4" /> Stornieren
-                </button>
-              )}
-              <button
-                onClick={() => { setEditingReservation(r); setViewingReservation(null); }}
-                className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]"
+              <a
+                href={`mailto:${r.email}?subject=Ihre Reservierung - ${r.eventTitle}`}
+                className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e]"
               >
-                <Edit2 className="w-4 h-4" /> Bearbeiten
-              </button>
+                <Mail className="w-4 h-4" /> Antworten
+              </a>
+              {r.status !== 'archived' && (
+                <button
+                  onClick={() => { handleReservationArchive(r.id); setViewingReservation(null); }}
+                  className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]"
+                >
+                  <Archive className="w-4 h-4" /> Archivieren
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1033,9 +1077,8 @@ export function AdminPage() {
                     defaultValue={r.status}
                     className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
                   >
-                    <option value="pending">Ausstehend</option>
-                    <option value="confirmed">Bestätigt</option>
-                    <option value="cancelled">Storniert</option>
+                    <option value="active">Aktiv</option>
+                    <option value="archived">Archiviert</option>
                   </select>
                 </div>
               )}
@@ -1083,7 +1126,7 @@ export function AdminPage() {
               {event ? 'Veranstaltung bearbeiten' : 'Neue Veranstaltung'}
             </h1>
             <button
-              onClick={() => { setEditingEvent(null); setIsCreating(false); }}
+              onClick={() => { setEditingEvent(null); setIsCreating(false); setImagePreview(null); setSelectedImageFile(null); }}
               className="text-[#666666] hover:text-[#2d2d2d]"
             >
               Abbrechen
@@ -1127,10 +1170,38 @@ export function AdminPage() {
                   <option value="sold-out">Ausverkauft</option>
                 </select>
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Bild</label>
-                <input type="file" name="image" accept="image/*" className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
-                {event?.image && <input type="hidden" name="existing_image" value={event.image} />}
+                <div className="space-y-3">
+                  {/* Current/Preview Image */}
+                  {(imagePreview || event?.image) && (
+                    <div className="relative inline-block">
+                      <img
+                        src={imagePreview || event?.image || ''}
+                        alt="Vorschau"
+                        className="w-48 h-32 object-cover rounded-lg border border-[rgba(107,142,111,0.3)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        title="Bild entfernen"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  {/* File Input */}
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                    />
+                    <p className="text-xs text-[#666666] mt-1">Max. 2 MB. Empfohlen: 800x600px</p>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="mb-4">
@@ -1145,7 +1216,7 @@ export function AdminPage() {
             </div>
             <div className="flex gap-4">
               <button type="submit" className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">{event ? 'Speichern' : 'Erstellen'}</button>
-              <button type="button" onClick={() => { setEditingEvent(null); setIsCreating(false); }} className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors">Abbrechen</button>
+              <button type="button" onClick={() => { setEditingEvent(null); setIsCreating(false); setImagePreview(null); setSelectedImageFile(null); }} className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors">Abbrechen</button>
             </div>
           </form>
         </div>
@@ -1184,8 +1255,8 @@ export function AdminPage() {
           >
             <Ticket className="w-5 h-5" />
             Reservierungen
-            {stats?.reservations?.pending ? (
-              <span className="ml-auto bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.reservations.pending}</span>
+            {stats?.reservations?.active ? (
+              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.reservations.active}</span>
             ) : null}
           </button>
           <button
@@ -1204,8 +1275,8 @@ export function AdminPage() {
           >
             <MessageSquare className="w-5 h-5" />
             Nachrichten
-            {stats?.contacts?.new ? (
-              <span className="ml-auto bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.contacts.new}</span>
+            {stats?.contacts?.active ? (
+              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.contacts.active}</span>
             ) : null}
           </button>
           <button
@@ -1214,8 +1285,8 @@ export function AdminPage() {
           >
             <Gift className="w-5 h-5" />
             Gutscheine
-            {stats?.vouchers?.pending ? (
-              <span className="ml-auto bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.vouchers.pending}</span>
+            {stats?.vouchers?.active ? (
+              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.vouchers.active}</span>
             ) : null}
           </button>
           <button
@@ -1224,8 +1295,8 @@ export function AdminPage() {
           >
             <Users className="w-5 h-5" />
             Mitglieder
-            {stats?.memberships?.pending ? (
-              <span className="ml-auto bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.memberships.pending}</span>
+            {stats?.memberships?.active ? (
+              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.memberships.active}</span>
             ) : null}
           </button>
           <button
@@ -1271,7 +1342,7 @@ export function AdminPage() {
           <>
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Dashboard</h2>
-              <button onClick={() => setIsCreating(true)} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">
+              <button onClick={() => { setIsCreating(true); setImagePreview(null); setSelectedImageFile(null); }} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">
                 <Plus className="w-5 h-5" /> Neue Veranstaltung
               </button>
             </div>
@@ -1287,12 +1358,12 @@ export function AdminPage() {
                 <div className="text-[#666666]">Reservierte Tickets</div>
               </div>
               <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
-                <div className="font-['Playfair_Display',serif] text-4xl text-yellow-600 mb-1">{stats?.reservations?.pending || 0}</div>
-                <div className="text-[#666666]">Offene Reservierungen</div>
+                <div className="font-['Playfair_Display',serif] text-4xl text-[#6b8e6f] mb-1">{stats?.reservations?.active || 0}</div>
+                <div className="text-[#666666]">Aktive Reservierungen</div>
               </div>
               <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
-                <div className="font-['Playfair_Display',serif] text-4xl text-green-600 mb-1">{stats?.reservations?.confirmed || 0}</div>
-                <div className="text-[#666666]">Bestätigte Reservierungen</div>
+                <div className="font-['Playfair_Display',serif] text-4xl text-[#6b8e6f] mb-1">{stats?.reservations?.total || 0}</div>
+                <div className="text-[#666666]">Reservierungen gesamt</div>
               </div>
             </div>
 
@@ -1303,23 +1374,19 @@ export function AdminPage() {
                 <button onClick={() => setActiveView('reservations')} className="text-[#6b8e6f] hover:underline text-sm">Alle anzeigen</button>
               </div>
               <div className="divide-y divide-[rgba(107,142,111,0.1)]">
-                {reservations.slice(0, 5).map(r => (
+                {reservations.filter(r => r.status !== 'archived').slice(0, 5).map(r => (
                   <div key={r.id} className="p-4 flex justify-between items-center">
                     <div>
                       <div className="font-medium text-[#2d2d2d]">{r.name} - {r.tickets} Tickets</div>
                       <div className="text-sm text-[#666666]">{r.eventTitle}</div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-xs ${r.status === 'confirmed' ? 'bg-green-100 text-green-800' : r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                        {r.status === 'confirmed' ? 'Bestätigt' : r.status === 'pending' ? 'Offen' : 'Storniert'}
-                      </span>
-                      {r.status === 'pending' && (
-                        <button onClick={() => handleReservationStatus(r.id, 'confirmed')} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check className="w-4 h-4" /></button>
-                      )}
+                      <a href={`mailto:${r.email}?subject=Ihre Reservierung - ${r.eventTitle}`} className="p-1 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded" title="Antworten"><Mail className="w-4 h-4" /></a>
+                      <button onClick={() => handleReservationArchive(r.id)} className="p-1 text-[#666666] hover:bg-[#666666]/10 rounded" title="Archivieren"><Archive className="w-4 h-4" /></button>
                     </div>
                   </div>
                 ))}
-                {reservations.length === 0 && <div className="p-4 text-center text-[#666666]">Keine Reservierungen</div>}
+                {reservations.filter(r => r.status !== 'archived').length === 0 && <div className="p-4 text-center text-[#666666]">Keine Reservierungen</div>}
               </div>
             </div>
 
@@ -1335,7 +1402,7 @@ export function AdminPage() {
                       <div className="font-medium text-[#2d2d2d]">{event.title}</div>
                       <div className="text-sm text-[#666666]">{event.artist} • {event.date}</div>
                     </div>
-                    <button onClick={() => setEditingEvent(event)} className="text-[#6b8e6f] hover:text-[#5a7a5e]"><Edit2 className="w-5 h-5" /></button>
+                    <button onClick={() => { setEditingEvent(event); setImagePreview(event.image); setSelectedImageFile(null); }} className="text-[#6b8e6f] hover:text-[#5a7a5e]"><Edit2 className="w-5 h-5" /></button>
                   </div>
                 ))}
               </div>
@@ -1362,9 +1429,8 @@ export function AdminPage() {
                   className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
                 >
                   <option value="all">Alle</option>
-                  <option value="pending">Ausstehend</option>
-                  <option value="confirmed">Bestätigt</option>
-                  <option value="cancelled">Storniert</option>
+                  <option value="active">Aktiv</option>
+                  <option value="archived">Archiviert</option>
                 </select>
               </div>
               <div>
@@ -1397,7 +1463,7 @@ export function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
                   {reservations.map(r => (
-                    <tr key={r.id} className="hover:bg-[#faf9f7]">
+                    <tr key={r.id} className={`hover:bg-[#faf9f7] ${r.status === 'archived' ? 'opacity-60' : ''}`}>
                       <td className="p-4">
                         <div className="font-medium text-[#2d2d2d]">{r.name}</div>
                         <div className="text-sm text-[#666666]">{r.email}</div>
@@ -1408,25 +1474,20 @@ export function AdminPage() {
                       </td>
                       <td className="p-4 text-[#2d2d2d] font-medium">{r.tickets}</td>
                       <td className="p-4">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                          r.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                          r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {r.status === 'confirmed' ? 'Bestätigt' : r.status === 'pending' ? 'Ausstehend' : 'Storniert'}
-                        </span>
+                        {r.status === 'archived' && (
+                          <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e8e4df] text-[#666666]">
+                            Archiviert
+                          </span>
+                        )}
                       </td>
                       <td className="p-4 text-[#666666] text-sm">{formatDate(r.createdAt)}</td>
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
                           <button onClick={() => setViewingReservation(r)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Details"><Eye className="w-4 h-4" /></button>
-                          {r.status === 'pending' && (
-                            <button onClick={() => handleReservationStatus(r.id, 'confirmed')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Bestätigen"><Check className="w-4 h-4" /></button>
+                          <a href={`mailto:${r.email}?subject=Ihre Reservierung - ${r.eventTitle}`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
+                          {r.status !== 'archived' && (
+                            <button onClick={() => handleReservationArchive(r.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>
                           )}
-                          {r.status !== 'cancelled' && (
-                            <button onClick={() => handleReservationStatus(r.id, 'cancelled')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Stornieren"><X className="w-4 h-4" /></button>
-                          )}
-                          <button onClick={() => setEditingReservation(r)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Bearbeiten"><Edit2 className="w-4 h-4" /></button>
                           <button onClick={() => handleDeleteReservation(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
@@ -1445,7 +1506,7 @@ export function AdminPage() {
           <>
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">{showArchived ? 'Archiv' : 'Veranstaltungen'}</h2>
-              <button onClick={() => setIsCreating(true)} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">
+              <button onClick={() => { setIsCreating(true); setImagePreview(null); setSelectedImageFile(null); }} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">
                 <Plus className="w-5 h-5" /> Neue Veranstaltung
               </button>
             </div>
@@ -1481,7 +1542,7 @@ export function AdminPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => setEditingEvent(event)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Bearbeiten"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => { setEditingEvent(event); setImagePreview(event.image); setSelectedImageFile(null); }} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Bearbeiten"><Edit2 className="w-4 h-4" /></button>
                           <button onClick={() => handleToggleArchive(event.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title={event.is_archived ? 'Wiederherstellen' : 'Archivieren'}>
                             {event.is_archived ? <RotateCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                           </button>
@@ -1537,16 +1598,11 @@ export function AdminPage() {
                       <div className="text-[#2d2d2d]">{formatDate(viewingContact.createdAt)}</div>
                     </div>
                     <div className="flex gap-2 flex-wrap pt-4 border-t border-[rgba(107,142,111,0.1)]">
-                      {viewingContact.status === 'new' && (
-                        <button onClick={() => { handleContactStatus(viewingContact.id, 'read'); setViewingContact(null); }} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                          <Eye className="w-4 h-4" /> Als gelesen
-                        </button>
-                      )}
-                      <a href={`mailto:${viewingContact.email}?subject=Re: ${viewingContact.subject}`} onClick={() => handleContactStatus(viewingContact.id, 'replied')} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e]">
+                      <a href={`mailto:${viewingContact.email}?subject=Re: ${viewingContact.subject}`} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e]">
                         <Mail className="w-4 h-4" /> Antworten
                       </a>
                       {viewingContact.status !== 'archived' && (
-                        <button onClick={() => { handleContactStatus(viewingContact.id, 'archived'); setViewingContact(null); }} className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]">
+                        <button onClick={() => { handleContactArchive(viewingContact.id); setViewingContact(null); }} className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]">
                           <Archive className="w-4 h-4" /> Archivieren
                         </button>
                       )}
@@ -1566,9 +1622,7 @@ export function AdminPage() {
                   className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
                 >
                   <option value="all">Alle</option>
-                  <option value="new">Neu</option>
-                  <option value="read">Gelesen</option>
-                  <option value="replied">Beantwortet</option>
+                  <option value="active">Aktiv</option>
                   <option value="archived">Archiviert</option>
                 </select>
               </div>
@@ -1589,7 +1643,7 @@ export function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
                   {contacts.map(c => (
-                    <tr key={c.id} className={`hover:bg-[#faf9f7] ${c.status === 'new' ? 'bg-blue-50/30' : ''}`}>
+                    <tr key={c.id} className="hover:bg-[#faf9f7]">
                       <td className="p-4 text-[#666666] text-sm">{formatDate(c.createdAt)}</td>
                       <td className="p-4">
                         <div className="font-medium text-[#2d2d2d]">{c.name}</div>
@@ -1599,19 +1653,16 @@ export function AdminPage() {
                       <td className="p-4 text-[#666666]">{c.formType === 'general' ? 'Allgemein' : c.formType === 'artist' ? 'Künstler' : 'Förderer'}</td>
                       <td className="p-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                          c.status === 'new' ? 'bg-blue-100 text-blue-800' :
-                          c.status === 'read' ? 'bg-gray-100 text-gray-800' :
-                          c.status === 'replied' ? 'bg-green-100 text-green-800' :
-                          'bg-[#e8e4df] text-[#666666]'
+                          c.status === 'archived' ? 'bg-[#e8e4df] text-[#666666]' : 'bg-green-100 text-green-800'
                         }`}>
-                          {c.status === 'new' ? 'Neu' : c.status === 'read' ? 'Gelesen' : c.status === 'replied' ? 'Beantwortet' : 'Archiviert'}
+                          {c.status === 'archived' ? 'Archiviert' : 'Aktiv'}
                         </span>
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
-                          <button onClick={() => { setViewingContact(c); if (c.status === 'new') handleContactStatus(c.id, 'read'); }} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Anzeigen"><Eye className="w-4 h-4" /></button>
-                          <a href={`mailto:${c.email}?subject=Re: ${c.subject}`} onClick={() => handleContactStatus(c.id, 'replied')} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
-                          {c.status !== 'archived' && <button onClick={() => handleContactStatus(c.id, 'archived')} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>}
+                          <button onClick={() => setViewingContact(c)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Anzeigen"><Eye className="w-4 h-4" /></button>
+                          <a href={`mailto:${c.email}?subject=Re: ${c.subject}`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
+                          {c.status !== 'archived' && <button onClick={() => handleContactArchive(c.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>}
                           <button onClick={() => handleDeleteContact(c.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
@@ -1643,11 +1694,8 @@ export function AdminPage() {
                   className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
                 >
                   <option value="all">Alle</option>
-                  <option value="pending">Ausstehend</option>
-                  <option value="paid">Bezahlt</option>
-                  <option value="sent">Versendet</option>
-                  <option value="redeemed">Eingelöst</option>
-                  <option value="cancelled">Storniert</option>
+                  <option value="active">Aktiv</option>
+                  <option value="archived">Archiviert</option>
                 </select>
               </div>
             </div>
@@ -1679,28 +1727,16 @@ export function AdminPage() {
                       <td className="p-4 text-[#666666]">{v.delivery === 'email' ? 'E-Mail' : v.delivery === 'post' ? 'Post' : 'Abholung'}</td>
                       <td className="p-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                          v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          v.status === 'paid' ? 'bg-blue-100 text-blue-800' :
-                          v.status === 'sent' ? 'bg-green-100 text-green-800' :
-                          v.status === 'redeemed' ? 'bg-purple-100 text-purple-800' :
-                          'bg-red-100 text-red-800'
+                          v.status === 'archived' ? 'bg-[#e8e4df] text-[#666666]' : 'bg-green-100 text-green-800'
                         }`}>
-                          {v.status === 'pending' ? 'Ausstehend' : v.status === 'paid' ? 'Bezahlt' : v.status === 'sent' ? 'Versendet' : v.status === 'redeemed' ? 'Eingelöst' : 'Storniert'}
+                          {v.status === 'archived' ? 'Archiviert' : 'Aktiv'}
                         </span>
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
-                          {v.status === 'pending' && (
-                            <button onClick={() => handleVoucherStatus(v.id, 'paid')} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Als bezahlt markieren"><Check className="w-4 h-4" /></button>
-                          )}
-                          {v.status === 'paid' && (
-                            <button onClick={() => handleVoucherStatus(v.id, 'sent')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Als versendet markieren"><Check className="w-4 h-4" /></button>
-                          )}
-                          {v.status === 'sent' && (
-                            <button onClick={() => handleVoucherStatus(v.id, 'redeemed')} className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg" title="Als eingelöst markieren"><Check className="w-4 h-4" /></button>
-                          )}
-                          {v.status !== 'cancelled' && v.status !== 'redeemed' && (
-                            <button onClick={() => handleVoucherStatus(v.id, 'cancelled')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Stornieren"><X className="w-4 h-4" /></button>
+                          <a href={`mailto:${v.buyerEmail}?subject=Ihre Gutschein-Bestellung`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
+                          {v.status !== 'archived' && (
+                            <button onClick={() => handleVoucherArchive(v.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>
                           )}
                           <button onClick={() => handleDeleteVoucher(v.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
                         </div>
@@ -1733,10 +1769,8 @@ export function AdminPage() {
                   className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
                 >
                   <option value="all">Alle</option>
-                  <option value="pending">Ausstehend</option>
-                  <option value="approved">Genehmigt</option>
                   <option value="active">Aktiv</option>
-                  <option value="cancelled">Abgelehnt</option>
+                  <option value="archived">Archiviert</option>
                 </select>
               </div>
             </div>
@@ -1771,26 +1805,17 @@ export function AdminPage() {
                       </td>
                       <td className="p-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                          m.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          m.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                          m.status === 'active' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
+                          m.status === 'archived' ? 'bg-[#e8e4df] text-[#666666]' : 'bg-green-100 text-green-800'
                         }`}>
-                          {m.status === 'pending' ? 'Ausstehend' : m.status === 'approved' ? 'Genehmigt' : m.status === 'active' ? 'Aktiv' : 'Abgelehnt'}
+                          {m.status === 'archived' ? 'Archiviert' : 'Aktiv'}
                         </span>
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
-                          {m.status === 'pending' && (
-                            <button onClick={() => handleMembershipStatus(m.id, 'approved')} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg" title="Genehmigen"><Check className="w-4 h-4" /></button>
+                          <a href={`mailto:${m.email}?subject=Ihr Mitgliedsantrag`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
+                          {m.status !== 'archived' && (
+                            <button onClick={() => handleMembershipArchive(m.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>
                           )}
-                          {m.status === 'approved' && (
-                            <button onClick={() => handleMembershipStatus(m.id, 'active')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Aktivieren"><Check className="w-4 h-4" /></button>
-                          )}
-                          {m.status !== 'cancelled' && m.status !== 'active' && (
-                            <button onClick={() => handleMembershipStatus(m.id, 'cancelled')} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Ablehnen"><X className="w-4 h-4" /></button>
-                          )}
-                          <a href={`mailto:${m.email}`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="E-Mail senden"><Mail className="w-4 h-4" /></a>
                           <button onClick={() => handleDeleteMembership(m.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>

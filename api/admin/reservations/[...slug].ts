@@ -38,8 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const { status } = req.body || {};
-    if (!status || !['pending', 'confirmed', 'cancelled'].includes(status)) {
-      return res.status(400).json({ success: false, error: 'Invalid status. Must be: pending, confirmed, or cancelled' });
+    if (!status || !['active', 'archived'].includes(status)) {
+      return res.status(400).json({ success: false, error: 'Invalid status. Must be: active or archived' });
     }
 
     reservations[reservationIndex].status = status;

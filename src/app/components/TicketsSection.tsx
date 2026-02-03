@@ -15,15 +15,9 @@ export function TicketsSection() {
           <h2 className="font-['Playfair_Display',serif] text-4xl lg:text-5xl text-[#2d2d2d] mb-4">
             Tickets & Gutscheine
           </h2>
-          <p className="text-lg text-[#666666] max-w-2xl mx-auto mb-4">
+          <p className="text-lg text-[#666666] max-w-2xl mx-auto">
             Sichern Sie sich Ihre Tickets für unsere Veranstaltungen
           </p>
-          <Link
-            to="/programm"
-            className="inline-flex items-center text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors text-sm font-['Inter',sans-serif]"
-          >
-            Zum aktuellen Programm →
-          </Link>
         </div>
 
         {/* Helpful reminder */}

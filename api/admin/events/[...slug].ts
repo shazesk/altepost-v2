@@ -70,6 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       genre: body.genre ?? events[eventIndex].genre,
       availability: body.availability ?? events[eventIndex].availability,
       description: body.description ?? events[eventIndex].description,
+      image: body.image !== undefined ? body.image : events[eventIndex].image,
       is_archived: body.is_archived !== undefined ? (body.is_archived === 'true' || body.is_archived === true) : events[eventIndex].is_archived
     };
 

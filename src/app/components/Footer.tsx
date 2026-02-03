@@ -86,14 +86,6 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  to="/programm"
-                  className="text-[#d9cfc1] hover:text-white transition-colors font-['Inter',sans-serif]"
-                >
-                  Programm
-                </Link>
-              </li>
-              <li>
-                <Link
                   to="/tickets"
                   className="text-[#d9cfc1] hover:text-white transition-colors font-['Inter',sans-serif]"
                 >

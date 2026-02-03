@@ -56,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       email,
       phone: phone || '',
       tickets: parseInt(tickets),
-      status: 'pending',
+      status: 'active',
       notes: notes || '',
       createdAt: new Date().toISOString()
     };

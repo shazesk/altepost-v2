@@ -1,10 +1,9 @@
 import React from "react";
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ScrollToTop } from './components/ScrollToTop';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { HomePage } from './pages/HomePage';
-import { ProgrammPage } from './pages/ProgrammPage';
 import { AboutPage } from './pages/AboutPage';
 import { ArtistsPage } from './pages/ArtistsPage';
 import { MembershipPage } from './pages/MembershipPage';
@@ -31,8 +30,7 @@ export default function App() {
         {/* Public routes */}
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
-          <Route path="programm" element={<ProgrammPage />} />
-          <Route path="about" element={<AboutPage />} />
+                    <Route path="about" element={<AboutPage />} />
           <Route path="artists" element={<ArtistsPage />} />
           <Route path="membership" element={<MembershipPage />} />
           <Route path="mitglied-werden" element={<MitgliedwerdenPage />} />

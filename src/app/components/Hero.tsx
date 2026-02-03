@@ -17,10 +17,10 @@ export function Hero() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link
-                to="/programm"
+                to="/tickets"
                 className="inline-flex items-center justify-center rounded-md bg-[#6b8e6f] px-6 py-3 text-white hover:bg-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
               >
-                Aktuelles Programm
+                Tickets & Programm
               </Link>
               <Link
                 to="/about"

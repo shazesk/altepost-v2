@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subject,
       message,
       formType,
-      status: 'new',
+      status: 'active',
       createdAt: new Date().toISOString(),
       notes: ''
     };

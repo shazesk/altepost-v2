@@ -45,22 +45,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             archived: events.filter(e => e.is_archived).length,
             total: events.length,
             reservations: {
-              pending: reservations.filter(r => r.status === 'pending').length,
-              confirmed: reservations.filter(r => r.status === 'confirmed').length,
-              total: reservations.length,
-              totalTickets: reservations.filter(r => r.status !== 'cancelled').reduce((sum, r) => sum + r.tickets, 0)
+              active: reservations.filter(r => r.status === 'active').length,
+              total: reservations.filter(r => r.status !== 'archived').length,
+              totalTickets: reservations.filter(r => r.status !== 'archived').reduce((sum, r) => sum + r.tickets, 0)
             },
             contacts: {
-              new: contacts.filter(c => c.status === 'new').length,
-              total: contacts.length
+              active: contacts.filter(c => c.status === 'active').length,
+              total: contacts.filter(c => c.status !== 'archived').length
             },
             vouchers: {
-              pending: vouchers.filter(v => v.status === 'pending').length,
-              total: vouchers.length
+              active: vouchers.filter(v => v.status === 'active').length,
+              total: vouchers.filter(v => v.status !== 'archived').length
             },
             memberships: {
-              pending: memberships.filter(m => m.status === 'pending').length,
-              total: memberships.length
+              active: memberships.filter(m => m.status === 'active').length,
+              total: memberships.filter(m => m.status !== 'archived').length
             }
           }
         });

@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       recipientEmail: recipientEmail || '',
       message: message || '',
       delivery: delivery || 'email',
-      status: 'pending',
+      status: 'active',
       createdAt: new Date().toISOString(),
       notes: ''
     };

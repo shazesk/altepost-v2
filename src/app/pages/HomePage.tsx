@@ -163,11 +163,11 @@ export function HomePage() {
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
-                  to="/programm"
+                  to="/tickets"
                   className="group inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[#6b8e6f] bg-transparent px-8 py-4 text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-all font-['Inter',sans-serif]"
                 >
                   <Calendar className="h-5 w-5" />
-                  Gesamtes Programm
+                  Alle Veranstaltungen
                 </Link>
               </div>
             </div>
@@ -248,13 +248,13 @@ export function HomePage() {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <Link 
-              to="/programm" 
+              to="/tickets" 
               className="group relative overflow-hidden bg-gradient-to-br from-[#6b8e6f] to-[#5a7a5e] rounded-xl p-6 text-white hover:shadow-xl transition-all"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
               <Calendar className="h-10 w-10 mb-4 relative z-10" />
               <h3 className="font-['Playfair_Display',serif] text-xl mb-2 relative z-10">
-                Programm
+                Veranstaltungen
               </h3>
               <p className="text-white/90 text-sm font-['Inter',sans-serif] mb-3 relative z-10">
                 Alle kommenden Veranstaltungen
@@ -266,7 +266,7 @@ export function HomePage() {
             </Link>
 
             <Link 
-              to="/programm" 
+              to="/tickets" 
               className="group relative overflow-hidden bg-gradient-to-br from-[#8b4454] to-[#6d3642] rounded-xl p-6 text-white hover:shadow-xl transition-all"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>

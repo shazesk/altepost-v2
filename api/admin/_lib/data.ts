@@ -70,7 +70,7 @@ export interface Reservation {
   email: string;
   phone: string;
   tickets: number;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'active' | 'archived';
   notes: string;
   createdAt: string;
 }
@@ -104,7 +104,7 @@ export interface Contact {
   subject: string;
   message: string;
   formType: 'general' | 'artist' | 'sponsor';
-  status: 'new' | 'read' | 'replied' | 'archived';
+  status: 'active' | 'archived';
   createdAt: string;
   notes: string;
 }
@@ -121,7 +121,7 @@ export interface VoucherOrder {
   recipientEmail: string;
   message: string;
   delivery: 'email' | 'pickup';
-  status: 'pending' | 'paid' | 'sent' | 'redeemed' | 'cancelled';
+  status: 'active' | 'archived';
   createdAt: string;
   notes: string;
 }
@@ -137,7 +137,7 @@ export interface MembershipApplication {
   membershipType: string;
   membershipPrice: string;
   message: string;
-  status: 'pending' | 'approved' | 'active' | 'cancelled';
+  status: 'active' | 'archived';
   createdAt: string;
   notes: string;
 }

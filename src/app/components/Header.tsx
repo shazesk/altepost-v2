@@ -10,7 +10,7 @@ export function Header() {
 
   const navigation = [
     { name: 'Home', href: '/' },
-    { name: 'Programm', href: '/programm' },
+    { name: 'Tickets', href: '/tickets' },
     { name: 'Über Uns', href: '/about' },
     { name: 'Für Künstler', href: '/artists' },
     { name: 'Mitglied werden', href: '/membership' },
@@ -65,7 +65,7 @@ export function Header() {
           {/* Desktop CTA */}
           <div className="hidden lg:flex lg:flex-1 lg:justify-end">
             <Link
-              to="/programm"
+              to="/tickets"
               className="rounded-md bg-[#6b8e6f] px-5 py-2.5 text-[15px] text-white hover:bg-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
             >
               Tickets
@@ -88,7 +88,7 @@ export function Header() {
                 </Link>
               ))}
               <Link
-                to="/programm"
+                to="/tickets"
                 className="block rounded-lg bg-[#6b8e6f] px-3 py-2 text-[15px] leading-7 text-white hover:bg-[#5a7a5e] font-['Inter',sans-serif]"
                 onClick={() => setMobileMenuOpen(false)}
               >

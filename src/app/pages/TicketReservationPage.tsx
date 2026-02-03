@@ -120,10 +120,10 @@ export function TicketReservationPage() {
                 Zurück zu Tickets
               </Link>
               <Link
-                to="/programm"
+                to="/tickets"
                 className="inline-flex items-center justify-center rounded-md border border-[rgba(107,142,111,0.3)] px-6 py-3 text-[#2d2d2d] hover:bg-[#faf9f7] transition-colors font-['Inter',sans-serif]"
               >
-                Zum Programm
+                Alle Veranstaltungen
               </Link>
             </div>
           </div>

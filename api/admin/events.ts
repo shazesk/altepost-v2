@@ -46,7 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       month: getMonthYear(body.date),
       availability: body.availability || 'available',
       description: body.description || '',
-      image: null,
+      image: body.image || null,
       is_archived: body.is_archived === 'true' || body.is_archived === true
     };
 

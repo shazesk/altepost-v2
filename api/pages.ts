@@ -1,5 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readPageContent, readTestimonials, listPages, readSettings } from './admin/_lib/data.js';
+import { readPageContent, readTestimonials, listPages, readSettings, readEvents } from './admin/_lib/data.js';
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = date.getDate();
+  const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  const month = monthNames[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day}. ${month} ${year}`;
+}
+
+function formatTime(timeStr: string): string {
+  return `${timeStr} Uhr`;
+}
+
+function formatPrice(price: number): string {
+  return price === 0 ? 'Eintritt frei' : `${price.toFixed(2).replace('.', ',')} EUR`;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers for public endpoint
@@ -16,6 +33,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { name, type } = req.query;
+
+  // Get public events
+  if (type === 'events') {
+    const events = await readEvents();
+    const isArchived = req.query.archived === '1';
+
+    if (isArchived) {
+      // Return archived events grouped by year
+      const archivedEvents = events
+        .filter(e => e.is_archived)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .map(e => ({
+          id: String(e.id),
+          title: e.title,
+          artist: e.artist,
+          date: formatDate(e.date),
+          genre: e.genre
+        }));
+
+      // Group by year
+      const groupedByYear: Record<string, any[]> = {};
+      archivedEvents.forEach(e => {
+        const year = e.date.split(' ').pop() || 'Unbekannt';
+        if (!groupedByYear[year]) {
+          groupedByYear[year] = [];
+        }
+        groupedByYear[year].push(e);
+      });
+
+      return res.status(200).json({ success: true, data: groupedByYear });
+    }
+
+    // Return upcoming (non-archived) events
+    const upcomingEvents = events
+      .filter(e => !e.is_archived)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(e => ({
+        id: String(e.id),
+        title: e.title,
+        artist: e.artist,
+        date: formatDate(e.date),
+        time: formatTime(e.time),
+        price: formatPrice(e.price),
+        genre: e.genre,
+        month: e.month,
+        availability: e.availability,
+        description: e.description,
+        image: e.image
+      }));
+
+    return res.status(200).json({ success: true, data: upcomingEvents });
+  }
 
   // Get site settings (replaces /api/settings)
   if (type === 'settings') {
@@ -49,5 +118,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true, data: content });
   }
 
-  return res.status(400).json({ success: false, error: 'Missing name or type parameter. Use: type=settings, type=list, type=testimonials, or name=<pagename>' });
+  return res.status(400).json({ success: false, error: 'Missing name or type parameter. Use: type=events, type=settings, type=list, type=testimonials, or name=<pagename>' });
 }
