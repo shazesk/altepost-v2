@@ -34,6 +34,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { name, type } = req.query;
 
+  // Public version check - no auth required
+  if (type === 'version') {
+    return res.status(200).json({ success: true, version: 'v4-final', build: 'c3acf33', timestamp: new Date().toISOString() });
+  }
+
   // Get public events
   if (type === 'events') {
     const events = await readEvents();

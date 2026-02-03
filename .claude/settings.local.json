@@ -38,7 +38,8 @@
       "Bash(npx tsc:*)",
       "Bash(git fetch:*)",
       "Bash(npm uninstall:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "WebFetch(domain:altepost.vercel.app)"
     ]
   }
 }
