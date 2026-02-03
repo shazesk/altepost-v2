@@ -80,9 +80,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Handle DELETE with query parameter
   if (req.method === 'DELETE') {
+    console.log('DELETE request received, query:', JSON.stringify(req.query));
     const id = req.query.id;
     if (!id) {
-      return res.status(400).json({ success: false, error: 'Missing event ID' });
+      console.log('No id in query params');
+      return res.status(400).json({ success: false, error: 'Missing event ID', query: req.query });
     }
 
     const eventId = parseInt(id as string);

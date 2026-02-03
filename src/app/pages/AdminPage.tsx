@@ -523,15 +523,26 @@ export function AdminPage() {
   }
 
   async function handleDelete(id: number) {
+    console.log('handleDelete called with id:', id, 'type:', typeof id);
+
+    if (id === undefined || id === null) {
+      setMessage({ text: 'Fehler: Event-ID fehlt', type: 'error' });
+      return;
+    }
+
     if (!confirm('Wirklich löschen?')) return;
 
+    const url = `${API_BASE}/events?id=${id}`;
+    console.log('DELETE URL:', url);
+
     try {
-      const res = await fetch(`${API_BASE}/events?id=${id}`, {
+      const res = await fetch(url, {
         method: 'DELETE',
         headers: { 'x-session-id': sessionId! }
       });
 
       const data = await res.json();
+      console.log('DELETE response:', data);
 
       if (data.success) {
         setMessage({ text: 'Event gelöscht', type: 'success' });
@@ -540,7 +551,8 @@ export function AdminPage() {
       } else {
         setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
       }
-    } catch {
+    } catch (err) {
+      console.error('DELETE error:', err);
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
     }
   }
