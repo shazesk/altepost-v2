@@ -32,6 +32,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
+    const { id, action } = req.query;
+
+    // Handle toggle-archive action
+    if (action === 'toggle-archive' && id) {
+      const eventId = parseInt(id as string);
+      if (isNaN(eventId)) {
+        return res.status(400).json({ success: false, error: 'Invalid event ID' });
+      }
+
+      const events = await readEvents();
+      const eventIndex = events.findIndex(e => e.id === eventId);
+
+      if (eventIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Event not found' });
+      }
+
+      events[eventIndex].is_archived = !events[eventIndex].is_archived;
+      await writeEvents(events);
+      return res.status(200).json({ success: true, data: events[eventIndex] });
+    }
+
+    // Create new event
     const events = await readEvents();
     const body = req.body || {};
 
@@ -54,6 +76,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await writeEvents(events);
 
     return res.status(200).json({ success: true, data: newEvent });
+  }
+
+  // Handle DELETE with query parameter as fallback
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Missing event ID' });
+    }
+
+    const eventId = parseInt(id as string);
+    if (isNaN(eventId)) {
+      return res.status(400).json({ success: false, error: 'Invalid event ID' });
+    }
+
+    const events = await readEvents();
+    const eventIndex = events.findIndex(e => e.id === eventId);
+
+    if (eventIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+
+    const deletedEvent = events.splice(eventIndex, 1)[0];
+    await writeEvents(events);
+
+    return res.status(200).json({ success: true, data: deletedEvent });
+  }
+
+  // Handle PUT with query parameter as fallback
+  if (req.method === 'PUT') {
+    const { id } = req.query;
+    if (!id) {
+      return res.status(400).json({ success: false, error: 'Missing event ID' });
+    }
+
+    const eventId = parseInt(id as string);
+    if (isNaN(eventId)) {
+      return res.status(400).json({ success: false, error: 'Invalid event ID' });
+    }
+
+    const events = await readEvents();
+    const eventIndex = events.findIndex(e => e.id === eventId);
+
+    if (eventIndex === -1) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+
+    const body = req.body || {};
+    const updatedEvent = {
+      ...events[eventIndex],
+      title: body.title ?? events[eventIndex].title,
+      artist: body.artist ?? events[eventIndex].artist,
+      date: body.date ?? events[eventIndex].date,
+      time: body.time ?? events[eventIndex].time,
+      price: body.price !== undefined ? parseFloat(body.price) : events[eventIndex].price,
+      genre: body.genre ?? events[eventIndex].genre,
+      availability: body.availability ?? events[eventIndex].availability,
+      description: body.description ?? events[eventIndex].description,
+      image: body.image !== undefined ? body.image : events[eventIndex].image,
+      is_archived: body.is_archived !== undefined ? (body.is_archived === 'true' || body.is_archived === true) : events[eventIndex].is_archived
+    };
+
+    if (body.date) {
+      updatedEvent.month = getMonthYear(body.date);
+    }
+
+    events[eventIndex] = updatedEvent;
+    await writeEvents(events);
+
+    return res.status(200).json({ success: true, data: updatedEvent });
   }
 
   return res.status(405).json({ success: false, error: 'Method not allowed' });

@@ -472,7 +472,7 @@ export function AdminPage() {
       }
 
       const url = editingEvent
-        ? `${API_BASE}/events/${editingEvent.id}`
+        ? `${API_BASE}/events?id=${editingEvent.id}`
         : `${API_BASE}/events`;
 
       const res = await fetch(url, {
@@ -526,7 +526,7 @@ export function AdminPage() {
     if (!confirm('Wirklich löschen?')) return;
 
     try {
-      const res = await fetch(`${API_BASE}/events/${id}`, {
+      const res = await fetch(`${API_BASE}/events?id=${id}`, {
         method: 'DELETE',
         headers: { 'x-session-id': sessionId! }
       });
@@ -547,7 +547,7 @@ export function AdminPage() {
 
   async function handleToggleArchive(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/events/${id}/toggle-archive`, {
+      const res = await fetch(`${API_BASE}/events?id=${id}&action=toggle-archive`, {
         method: 'POST',
         headers: { 'x-session-id': sessionId! }
       });
