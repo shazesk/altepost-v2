@@ -24,6 +24,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
+    // Version check endpoint
+    if (req.query.version === '1') {
+      return res.status(200).json({ success: true, version: 'v2-delete-fix', timestamp: new Date().toISOString() });
+    }
+
     const events = await readEvents();
     const archived = req.query.archived === '1';
     const filteredEvents = events.filter(e => e.is_archived === archived);

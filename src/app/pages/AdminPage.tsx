@@ -1340,6 +1340,7 @@ export function AdminPage() {
             <LogOut className="w-5 h-5" />
             Abmelden
           </button>
+          <p className="text-white/40 text-xs mt-4 text-center">build: v2-delete-fix</p>
         </div>
       </aside>
 
