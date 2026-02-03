@@ -32,11 +32,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const { id, action } = req.query;
+    const { action } = req.query;
+    const body = req.body || {};
 
     // Handle toggle-archive action
-    if (action === 'toggle-archive' && id) {
-      const eventId = parseInt(id as string);
+    if (action === 'toggle-archive') {
+      const id = body.id || req.query.id;
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Missing event ID' });
+      }
+      const eventId = parseInt(String(id));
       if (isNaN(eventId)) {
         return res.status(400).json({ success: false, error: 'Invalid event ID' });
       }
@@ -78,16 +83,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true, data: newEvent });
   }
 
-  // Handle DELETE with query parameter
+  // Handle DELETE - check body first, then query params
   if (req.method === 'DELETE') {
-    console.log('DELETE request received, query:', JSON.stringify(req.query));
-    const id = req.query.id;
+    console.log('DELETE request received');
+    console.log('Query:', JSON.stringify(req.query));
+    console.log('Body:', JSON.stringify(req.body));
+
+    // Get id from body or query params
+    const id = req.body?.id || req.query.id;
     if (!id) {
-      console.log('No id in query params');
-      return res.status(400).json({ success: false, error: 'Missing event ID', query: req.query });
+      return res.status(400).json({ success: false, error: 'Missing event ID', query: req.query, body: req.body });
     }
 
-    const eventId = parseInt(id as string);
+    const eventId = parseInt(String(id));
     if (isNaN(eventId)) {
       return res.status(400).json({ success: false, error: 'Invalid event ID' });
     }
@@ -105,14 +113,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true, data: deletedEvent });
   }
 
-  // Handle PUT with query parameter as fallback
+  // Handle PUT - check body.id first, then query params
   if (req.method === 'PUT') {
-    const { id } = req.query;
+    const body = req.body || {};
+    const id = body.id || req.query.id;
     if (!id) {
       return res.status(400).json({ success: false, error: 'Missing event ID' });
     }
 
-    const eventId = parseInt(id as string);
+    const eventId = parseInt(String(id));
     if (isNaN(eventId)) {
       return res.status(400).json({ success: false, error: 'Invalid event ID' });
     }

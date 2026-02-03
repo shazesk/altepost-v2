@@ -471,17 +471,13 @@ export function AdminPage() {
         eventData.image = null;
       }
 
-      const url = editingEvent
-        ? `${API_BASE}/events?id=${editingEvent.id}`
-        : `${API_BASE}/events`;
-
-      const res = await fetch(url, {
+      const res = await fetch(`${API_BASE}/events`, {
         method: editingEvent ? 'PUT' : 'POST',
         headers: {
           'x-session-id': sessionId!,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(eventData)
+        body: JSON.stringify(editingEvent ? { ...eventData, id: editingEvent.id } : eventData)
       });
 
       const data = await res.json();
@@ -532,13 +528,14 @@ export function AdminPage() {
 
     if (!confirm('Wirklich löschen?')) return;
 
-    const url = `${API_BASE}/events?id=${id}`;
-    console.log('DELETE URL:', url);
-
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`${API_BASE}/events`, {
         method: 'DELETE',
-        headers: { 'x-session-id': sessionId! }
+        headers: {
+          'x-session-id': sessionId!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id })
       });
 
       const data = await res.json();
@@ -559,9 +556,13 @@ export function AdminPage() {
 
   async function handleToggleArchive(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/events?id=${id}&action=toggle-archive`, {
+      const res = await fetch(`${API_BASE}/events?action=toggle-archive`, {
         method: 'POST',
-        headers: { 'x-session-id': sessionId! }
+        headers: {
+          'x-session-id': sessionId!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id })
       });
 
       const data = await res.json();
