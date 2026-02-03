@@ -30,7 +30,8 @@ export default function App() {
         {/* Public routes */}
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
-                    <Route path="about" element={<AboutPage />} />
+          <Route path="programm" element={<Navigate to="/tickets" replace />} />
+          <Route path="about" element={<AboutPage />} />
           <Route path="artists" element={<ArtistsPage />} />
           <Route path="membership" element={<MembershipPage />} />
           <Route path="mitglied-werden" element={<MitgliedwerdenPage />} />
