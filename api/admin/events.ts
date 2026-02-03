@@ -78,9 +78,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true, data: newEvent });
   }
 
-  // Handle DELETE with query parameter as fallback
+  // Handle DELETE with query parameter
   if (req.method === 'DELETE') {
-    const { id } = req.query;
+    const id = req.query.id;
     if (!id) {
       return res.status(400).json({ success: false, error: 'Missing event ID' });
     }
