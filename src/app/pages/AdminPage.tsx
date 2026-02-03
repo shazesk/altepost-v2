@@ -519,8 +519,6 @@ export function AdminPage() {
   }
 
   async function handleDelete(id: number) {
-    console.log('handleDelete called with id:', id, 'type:', typeof id);
-
     if (id === undefined || id === null) {
       setMessage({ text: 'Fehler: Event-ID fehlt', type: 'error' });
       return;
@@ -529,8 +527,9 @@ export function AdminPage() {
     if (!confirm('Wirklich löschen?')) return;
 
     try {
-      const res = await fetch(`${API_BASE}/events`, {
-        method: 'DELETE',
+      // Use POST with action=delete (more reliable than DELETE with body)
+      const res = await fetch(`${API_BASE}/events?action=delete`, {
+        method: 'POST',
         headers: {
           'x-session-id': sessionId!,
           'Content-Type': 'application/json'
@@ -539,7 +538,6 @@ export function AdminPage() {
       });
 
       const data = await res.json();
-      console.log('DELETE response:', data);
 
       if (data.success) {
         setMessage({ text: 'Event gelöscht', type: 'success' });
@@ -549,7 +547,6 @@ export function AdminPage() {
         setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
       }
     } catch (err) {
-      console.error('DELETE error:', err);
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
     }
   }
@@ -1340,7 +1337,7 @@ export function AdminPage() {
             <LogOut className="w-5 h-5" />
             Abmelden
           </button>
-          <p className="text-white/40 text-xs mt-4 text-center">build: v2-delete-fix</p>
+          <p className="text-white/40 text-xs mt-4 text-center">build: v3-post-delete</p>
         </div>
       </aside>
 

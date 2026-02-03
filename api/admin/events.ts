@@ -40,9 +40,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { action } = req.query;
     const body = req.body || {};
 
+    // Handle delete action (POST with action=delete is more reliable than DELETE with body)
+    if (action === 'delete') {
+      const id = body.id;
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Missing event ID' });
+      }
+      const eventId = parseInt(String(id));
+      if (isNaN(eventId)) {
+        return res.status(400).json({ success: false, error: 'Invalid event ID' });
+      }
+
+      const events = await readEvents();
+      const eventIndex = events.findIndex(e => e.id === eventId);
+
+      if (eventIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Event not found' });
+      }
+
+      const deletedEvent = events.splice(eventIndex, 1)[0];
+      await writeEvents(events);
+      return res.status(200).json({ success: true, data: deletedEvent });
+    }
+
     // Handle toggle-archive action
     if (action === 'toggle-archive') {
-      const id = body.id || req.query.id;
+      const id = body.id;
       if (!id) {
         return res.status(400).json({ success: false, error: 'Missing event ID' });
       }
@@ -63,9 +86,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: events[eventIndex] });
     }
 
-    // Create new event
+    // Create new event (no action specified)
     const events = await readEvents();
-    const body = req.body || {};
 
     const newEvent: Event = {
       id: events.length > 0 ? Math.max(...events.map(e => e.id)) + 1 : 1,
@@ -121,7 +143,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle PUT - check body.id first, then query params
   if (req.method === 'PUT') {
     const body = req.body || {};
-    const id = body.id || req.query.id;
+    const id = body.id;
     if (!id) {
       return res.status(400).json({ success: false, error: 'Missing event ID' });
     }
@@ -138,7 +160,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
 
-    const body = req.body || {};
     const updatedEvent = {
       ...events[eventIndex],
       title: body.title ?? events[eventIndex].title,
