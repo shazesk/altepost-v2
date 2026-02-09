@@ -94,6 +94,7 @@ export interface SiteSettings {
     description: string;
   };
   officeHours: { days: string; hours: string };
+  images?: { logo: string; hero: string };
 }
 
 export interface Contact {

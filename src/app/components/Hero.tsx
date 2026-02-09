@@ -1,7 +1,10 @@
 import React from "react";
 import { Link } from 'react-router-dom';
+import { useSettings } from '../contexts/SettingsContext';
 
 export function Hero() {
+  const settings = useSettings();
+
   return (
     <section className="relative overflow-hidden">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
@@ -35,7 +38,7 @@ export function Hero() {
           <div className="relative">
             <div className="aspect-[3/4] overflow-hidden rounded-lg shadow-2xl">
               <img
-                src="/hero-band.jpg"
+                src={settings.images?.hero || '/hero-band.jpg'}
                 alt="Live-Auftritt in der Alten Post Brensbach"
                 className="w-full h-full object-cover"
               />

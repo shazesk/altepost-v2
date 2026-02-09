@@ -19,6 +19,7 @@ interface SiteSettings {
     description: string;
   };
   officeHours: { days: string; hours: string };
+  images?: { logo: string; hero: string };
 }
 
 const defaultSettings: SiteSettings = {

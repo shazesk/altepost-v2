@@ -27,7 +27,7 @@ export function Header() {
             <Link to="/" className="-m-1.5 p-1.5">
               <span className="sr-only">{settings.logo.mainText} {settings.logo.subtitle}</span>
               <img
-                src="/logo.png"
+                src={settings.images?.logo || '/logo.png'}
                 alt={`${settings.logo.mainText} ${settings.logo.subtitle}`}
                 className="h-10 lg:h-14 w-auto"
               />

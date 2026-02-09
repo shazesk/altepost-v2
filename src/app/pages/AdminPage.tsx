@@ -111,6 +111,7 @@ interface SiteSettings {
     description: string;
   };
   officeHours: { days: string; hours: string };
+  images?: { logo: string; hero: string };
 }
 
 const API_BASE = '/api/admin';
@@ -156,6 +157,12 @@ export function AdminPage() {
   // Image upload state
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+
+  // Settings image state
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
 
   // Gallery state
   const [galleryImages, setGalleryImages] = useState<Array<{ id: number; position: number; image: string; alt: string; label: string }>>([]);
@@ -896,7 +903,31 @@ export function AdminPage() {
         days: formData.get('hours_days') as string,
         hours: formData.get('hours_hours') as string,
       },
+      images: {
+        logo: siteSettings?.images?.logo || '/logo.png',
+        hero: siteSettings?.images?.hero || '/hero-band.jpg',
+      },
     };
+
+    // Handle logo upload
+    if (logoFile) {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(logoFile);
+      });
+      updatedSettings.images!.logo = base64;
+    }
+
+    // Handle hero image upload
+    if (heroFile) {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(heroFile);
+      });
+      updatedSettings.images!.hero = base64;
+    }
 
     try {
       const res = await fetch(`${API_BASE}/data?type=settings`, {
@@ -909,6 +940,10 @@ export function AdminPage() {
         setMessage({ text: 'Einstellungen gespeichert', type: 'success' });
         setSiteSettings(updatedSettings);
         setEditingSettings(false);
+        setLogoPreview(null);
+        setHeroPreview(null);
+        setLogoFile(null);
+        setHeroFile(null);
       } else {
         setMessage({ text: data.error || 'Speichern fehlgeschlagen', type: 'error' });
       }
@@ -1956,6 +1991,73 @@ export function AdminPage() {
                     <div>
                       <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Untertitel</label>
                       <input type="text" name="logo_subtitle" defaultValue={siteSettings.logo.subtitle} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Site Images */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Bilder</h3>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Logo</label>
+                      <div className="w-full h-24 bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] flex items-center justify-center mb-2">
+                        <img
+                          src={logoPreview || siteSettings.images?.logo || '/logo.png'}
+                          alt="Logo Vorschau"
+                          className="max-h-full max-w-full object-contain p-2"
+                        />
+                      </div>
+                      {editingSettings && (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                setMessage({ text: 'Bild zu groß. Maximum: 2MB', type: 'error' });
+                                return;
+                              }
+                              setLogoFile(file);
+                              const reader = new FileReader();
+                              reader.onloadend = () => setLogoPreview(reader.result as string);
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full text-sm text-[#666666]"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Hero-Bild (Startseite)</label>
+                      <div className="w-full h-24 bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] mb-2">
+                        <img
+                          src={heroPreview || siteSettings.images?.hero || '/hero-band.jpg'}
+                          alt="Hero Vorschau"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {editingSettings && (
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (file.size > 2 * 1024 * 1024) {
+                                setMessage({ text: 'Bild zu groß. Maximum: 2MB', type: 'error' });
+                                return;
+                              }
+                              setHeroFile(file);
+                              const reader = new FileReader();
+                              reader.onloadend = () => setHeroPreview(reader.result as string);
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full text-sm text-[#666666]"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
