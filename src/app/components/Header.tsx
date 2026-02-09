@@ -26,10 +26,11 @@ export function Header() {
           <div className="flex lg:flex-1">
             <Link to="/" className="-m-1.5 p-1.5">
               <span className="sr-only">{settings.logo.mainText} {settings.logo.subtitle}</span>
-              <div className="flex flex-col items-center">
-                <span className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] leading-tight">{settings.logo.mainText}</span>
-                <span className="text-xs lg:text-sm text-[#6b8e6f] font-['Inter',sans-serif] tracking-wider">{settings.logo.subtitle}</span>
-              </div>
+              <img
+                src="/logo.png"
+                alt={`${settings.logo.mainText} ${settings.logo.subtitle}`}
+                className="h-10 lg:h-14 w-auto"
+              />
             </Link>
           </div>
 

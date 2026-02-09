@@ -31,14 +31,14 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Image placeholder */}
+          {/* Hero image */}
           <div className="relative">
-            <div className="aspect-[3/4] overflow-hidden rounded-lg shadow-2xl bg-gradient-to-br from-[#6b8e6f] via-[#8b9f8d] to-[#d9cfc1] flex items-center justify-center">
-              <div className="text-center text-white p-8">
-                <div className="font-['Playfair_Display',serif] text-4xl lg:text-5xl mb-4">Alte Post</div>
-                <div className="text-lg opacity-90">Brensbach</div>
-                <div className="mt-6 text-sm opacity-75">Seit 1994</div>
-              </div>
+            <div className="aspect-[3/4] overflow-hidden rounded-lg shadow-2xl">
+              <img
+                src="/hero-band.jpg"
+                alt="Live-Auftritt in der Alten Post Brensbach"
+                className="w-full h-full object-cover"
+              />
             </div>
             {/* Decorative element */}
             <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-[#d9cfc1] rounded-lg -z-10 hidden lg:block"></div>
