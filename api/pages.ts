@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Public version check - no auth required
   if (type === 'version') {
-    return res.status(200).json({ success: true, version: 'v4-final', build: 'c3acf33', timestamp: new Date().toISOString() });
+    return res.status(200).json({ success: true, version: 'v5-logging', build: 'e2e-log', timestamp: new Date().toISOString() });
   }
 
   // Get public events

@@ -1,23 +1,38 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from './_lib/cors.js';
 import { sendEmail } from './_lib/resend.js';
+import { generateRequestId, log } from './_lib/logger.js';
 import { membershipNotification, membershipConfirmation } from './_lib/templates.js';
 import { readMemberships, writeMemberships, MembershipApplication } from '../admin/_lib/data.js';
 
 const ADMIN_EMAIL = 'shahzad.esc@gmail.com';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (cors(req, res)) return;
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const requestId = generateRequestId();
+  log(requestId, 'Membership request received', { method: req.method, hasBody: !!req.body, bodyKeys: req.body ? Object.keys(req.body) : [] });
+
+  if (cors(req, res)) {
+    log(requestId, 'CORS preflight handled');
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    log(requestId, 'Method not allowed', { method: req.method });
+    return res.status(405).json({ error: 'Method not allowed', requestId });
+  }
 
   try {
     const { name, email, phone, address, postalCode, city, message, membershipType, membershipPrice } = req.body || {};
 
+    log(requestId, 'Validating fields', { name: !!name, email: !!email, address: !!address, postalCode: !!postalCode, city: !!city, membershipType });
+
     if (!name || !email || !address || !postalCode || !city || !membershipType) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      log(requestId, 'Validation failed - missing fields');
+      return res.status(400).json({ error: 'Missing required fields', requestId });
     }
 
     // Store membership application
+    log(requestId, 'Storing membership application');
     const memberships = await readMemberships();
     const newMembership: MembershipApplication = {
       id: memberships.length > 0 ? Math.max(...memberships.map(m => m.id)) + 1 : 1,
@@ -36,24 +51,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     memberships.push(newMembership);
     await writeMemberships(memberships);
+    log(requestId, 'Membership stored', { membershipId: newMembership.id });
 
     // Send emails
+    log(requestId, 'Sending notification + confirmation emails');
     await Promise.all([
       sendEmail({
         to: ADMIN_EMAIL,
         subject: `Neuer Mitgliedsantrag: ${membershipType} – ${name}`,
         html: membershipNotification({ name, email, phone, address, postalCode, city, message, membershipType, membershipPrice }),
         replyTo: email,
+        requestId,
       }),
       sendEmail({
         to: email,
         subject: 'Ihr Mitgliedsantrag – Alte Post Brensbach',
         html: membershipConfirmation({ name, membershipType, membershipPrice }),
+        requestId,
       }),
     ]);
 
-    return res.status(200).json({ success: true });
+    log(requestId, 'Membership handler completed successfully');
+    return res.status(200).json({ success: true, requestId });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: error.message });
+    log(requestId, 'Membership handler ERROR', { error: error.message, stack: error.stack });
+    return res.status(500).json({ success: false, error: error.message, requestId });
   }
 }

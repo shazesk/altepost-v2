@@ -1,31 +1,48 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from './_lib/cors.js';
 import { sendEmail } from './_lib/resend.js';
+import { generateRequestId, log } from './_lib/logger.js';
 import { ticketNotification, ticketConfirmation } from './_lib/templates.js';
 import { readReservations, writeReservations, readEvents, Reservation } from '../admin/_lib/data.js';
 
 const ADMIN_EMAIL = 'shahzad.esc@gmail.com';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (cors(req, res)) return;
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const requestId = generateRequestId();
+  log(requestId, 'Ticket reservation request received', { method: req.method, hasBody: !!req.body, bodyKeys: req.body ? Object.keys(req.body) : [] });
+
+  if (cors(req, res)) {
+    log(requestId, 'CORS preflight handled');
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    log(requestId, 'Method not allowed', { method: req.method });
+    return res.status(405).json({ error: 'Method not allowed', requestId });
+  }
 
   try {
     const { name, email, phone, message, ticketCount, eventTitle, eventArtist, eventDate, eventTime, eventPrice, totalPrice, eventId } = req.body || {};
 
+    log(requestId, 'Validating fields', { name: !!name, email: !!email, phone: !!phone, ticketCount, eventTitle, eventId });
+
     if (!name || !email || !phone || !ticketCount || !eventTitle) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      log(requestId, 'Validation failed - missing fields');
+      return res.status(400).json({ error: 'Missing required fields', requestId });
     }
 
     // Find eventId if not provided
     let resolvedEventId = eventId;
     if (!resolvedEventId) {
+      log(requestId, 'Resolving eventId from title/date', { eventTitle, eventDate });
       const events = await readEvents();
       const event = events.find(e => e.title === eventTitle && e.date === eventDate);
       resolvedEventId = event?.id || 0;
+      log(requestId, 'Resolved eventId', { resolvedEventId });
     }
 
     // Save reservation to database
+    log(requestId, 'Storing reservation');
     const reservations = await readReservations();
     const newReservation: Reservation = {
       id: reservations.length > 0 ? Math.max(...reservations.map(r => r.id)) + 1 : 1,
@@ -40,24 +57,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     reservations.push(newReservation);
     await writeReservations(reservations);
+    log(requestId, 'Reservation stored', { reservationId: newReservation.id, eventId: resolvedEventId });
 
     // Send emails
+    log(requestId, 'Sending notification + confirmation emails');
     const [venueResult, confirmResult] = await Promise.all([
       sendEmail({
         to: ADMIN_EMAIL,
         subject: `Ticketreservierung: ${eventTitle} – ${ticketCount}x – ${name}`,
         html: ticketNotification({ name, email, phone, message, ticketCount, eventTitle, eventArtist, eventDate, eventTime, eventPrice, totalPrice }),
         replyTo: email,
+        requestId,
       }),
       sendEmail({
         to: email,
         subject: `Ihre Ticketreservierung – ${eventTitle}`,
         html: ticketConfirmation({ name, ticketCount, eventTitle, eventDate, eventTime, totalPrice }),
+        requestId,
       }),
     ]);
 
-    return res.status(200).json({ success: true, reservationId: newReservation.id, ids: [venueResult?.id, confirmResult?.id] });
+    log(requestId, 'Ticket reservation handler completed successfully', { reservationId: newReservation.id, emailIds: [venueResult?.id, confirmResult?.id] });
+    return res.status(200).json({ success: true, reservationId: newReservation.id, requestId, ids: [venueResult?.id, confirmResult?.id] });
   } catch (error: any) {
-    return res.status(500).json({ success: false, error: error.message });
+    log(requestId, 'Ticket reservation handler ERROR', { error: error.message, stack: error.stack });
+    return res.status(500).json({ success: false, error: error.message, requestId });
   }
 }
