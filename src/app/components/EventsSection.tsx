@@ -1,6 +1,7 @@
 import React from "react";
 import { useState, useEffect } from 'react';
 import { Calendar, Clock, Euro, Ticket, Grid, List, Download, Gift } from 'lucide-react';
+// Build trigger: ticket-reservation-fix-v2
 import { Link } from 'react-router-dom';
 
 interface Event {
