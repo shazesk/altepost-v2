@@ -143,7 +143,7 @@ export function EventsSection() {
             <p className="text-[#666666]">Aktuell sind keine Veranstaltungen geplant. Schauen Sie bald wieder vorbei!</p>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid gap-8 md:grid-cols-2 lg:gap-10">
+          <div className="grid gap-8 lg:gap-10">
             {filteredEvents.map((event) => (
               <EventCard key={event.id} event={event} />
             ))}
@@ -185,51 +185,53 @@ function EventCard({ event }: { event: Event }) {
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
-      {event.image && (
-        <div className="h-48 overflow-hidden">
-          <ImageWithFallback
-            src={event.image}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
-      <div className="p-6 lg:p-8">
-        <div className="mb-4">
-          <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-sm text-[#666666]">{event.genre}</span>
-        </div>
-        <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{event.title}</h3>
-        <p className="text-lg text-[#666666] mb-4">{event.artist}</p>
-        <p className="text-[#666666] mb-6 leading-relaxed line-clamp-2">{event.description}</p>
-        <div className="space-y-2 mb-6">
-          <div className="flex items-center text-[#666666]">
-            <Calendar className="h-4 w-4 mr-2 text-[#6b8e6f]" />
-            <span>{event.date}</span>
+      <div className="flex flex-col md:flex-row">
+        {event.image && (
+          <div className="md:w-72 lg:w-80 flex-shrink-0 overflow-hidden">
+            <ImageWithFallback
+              src={event.image}
+              alt={event.title}
+              className="w-full h-48 md:h-full object-cover"
+            />
           </div>
-          <div className="flex items-center text-[#666666]">
-            <Clock className="h-4 w-4 mr-2 text-[#6b8e6f]" />
-            <span>{event.time}</span>
+        )}
+        <div className="flex-1 p-6 lg:p-8">
+          <div className="mb-4">
+            <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-sm text-[#666666]">{event.genre}</span>
           </div>
-          <div className="flex items-center text-[#666666]">
-            <Euro className="h-4 w-4 mr-2 text-[#6b8e6f]" />
-            <span>{event.price}</span>
+          <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{event.title}</h3>
+          <p className="text-lg text-[#666666] mb-4">{event.artist}</p>
+          <p className="text-[#666666] mb-6 leading-relaxed">{event.description}</p>
+          <div className="flex flex-wrap gap-4 mb-6">
+            <div className="flex items-center text-[#666666]">
+              <Calendar className="h-4 w-4 mr-2 text-[#6b8e6f]" />
+              <span>{event.date}</span>
+            </div>
+            <div className="flex items-center text-[#666666]">
+              <Clock className="h-4 w-4 mr-2 text-[#6b8e6f]" />
+              <span>{event.time}</span>
+            </div>
+            <div className="flex items-center text-[#666666]">
+              <Euro className="h-4 w-4 mr-2 text-[#6b8e6f]" />
+              <span>{event.price}</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className={`text-sm ${config.color}`}>{config.text}</span>
-          <Link
-            to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
-            state={event.availability === 'sold-out' ? undefined : { event }}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
-              event.availability === 'sold-out'
-                ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
-                : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
-            }`}
-            onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
-          >
-            <Ticket className="h-4 w-4" />
-            {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
-          </Link>
+          <div className="flex items-center justify-between">
+            <span className={`text-sm ${config.color}`}>{config.text}</span>
+            <Link
+              to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
+              state={event.availability === 'sold-out' ? undefined : { event }}
+              className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
+                event.availability === 'sold-out'
+                  ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
+                  : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
+              }`}
+              onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+            >
+              <Ticket className="h-4 w-4" />
+              {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
+            </Link>
+          </div>
         </div>
       </div>
     </article>
