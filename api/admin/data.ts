@@ -14,8 +14,11 @@ import {
   listPages,
   readTestimonials,
   writeTestimonials,
+  readGallery,
+  writeGallery,
   SiteSettings,
-  Testimonial
+  Testimonial,
+  GalleryImage
 } from './_lib/data.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -125,8 +128,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, data: testimonials });
       }
 
+      case 'gallery': {
+        const gallery = await readGallery();
+        return res.status(200).json({ success: true, data: gallery });
+      }
+
       default:
-        return res.status(400).json({ success: false, error: 'Invalid type parameter. Use: stats, settings, contacts, vouchers, memberships, pages, page, testimonials' });
+        return res.status(400).json({ success: false, error: 'Invalid type parameter. Use: stats, settings, contacts, vouchers, memberships, pages, page, testimonials, gallery' });
     }
   }
 
@@ -163,7 +171,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: testimonials });
     }
 
-    return res.status(400).json({ success: false, error: 'PUT supported for: settings, page, testimonials' });
+    if (type === 'gallery') {
+      const gallery = req.body as GalleryImage[];
+      if (!gallery) {
+        return res.status(400).json({ success: false, error: 'Missing gallery data' });
+      }
+      await writeGallery(gallery);
+      return res.status(200).json({ success: true, data: gallery });
+    }
+
+    return res.status(400).json({ success: false, error: 'PUT supported for: settings, page, testimonials, gallery' });
   }
 
   return res.status(405).json({ success: false, error: 'Method not allowed' });

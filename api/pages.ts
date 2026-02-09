@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readPageContent, readTestimonials, listPages, readSettings, readEvents } from './admin/_lib/data.js';
+import { readPageContent, readTestimonials, listPages, readSettings, readEvents, readGallery } from './admin/_lib/data.js';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -89,6 +89,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }));
 
     return res.status(200).json({ success: true, data: upcomingEvents });
+  }
+
+  // Get gallery images
+  if (type === 'gallery') {
+    const gallery = await readGallery();
+    return res.status(200).json({ success: true, data: gallery });
   }
 
   // Get site settings (replaces /api/settings)

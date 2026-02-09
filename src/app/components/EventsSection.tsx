@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, Euro, Ticket, Grid, List, Download, Gift } from 'lucide-react';
 // Build trigger: ticket-reservation-fix-v2
 import { Link } from 'react-router-dom';
+import { ImageWithFallback } from './figma/ImageWithFallback';
 
 interface Event {
   id: string;
@@ -184,6 +185,15 @@ function EventCard({ event }: { event: Event }) {
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
+      {event.image && (
+        <div className="h-48 overflow-hidden">
+          <ImageWithFallback
+            src={event.image}
+            alt={event.title}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
       <div className="p-6 lg:p-8">
         <div className="mb-4">
           <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-sm text-[#666666]">{event.genre}</span>
@@ -238,6 +248,15 @@ function EventListItem({ event }: { event: Event }) {
   return (
     <article className="group bg-[#faf9f7] rounded-lg p-6 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        {event.image && (
+          <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden">
+            <ImageWithFallback
+              src={event.image}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-xs text-[#666666]">{event.genre}</span>

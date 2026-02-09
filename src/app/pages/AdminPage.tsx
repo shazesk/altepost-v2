@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, LayoutDashboard, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, LayoutDashboard, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -130,7 +130,7 @@ export function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [activeView, setActiveView] = useState<'dashboard' | 'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms' | 'gallery'>('dashboard');
   const [reservationFilter, setReservationFilter] = useState<'all' | 'active' | 'archived'>('all');
   const [selectedEventFilter, setSelectedEventFilter] = useState<number | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
@@ -156,6 +156,14 @@ export function AdminPage() {
   // Image upload state
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+
+  // Gallery state
+  const [galleryImages, setGalleryImages] = useState<Array<{ id: number; position: number; image: string; alt: string; label: string }>>([]);
+  const [editingGallerySlot, setEditingGallerySlot] = useState<number | null>(null);
+  const [galleryAlt, setGalleryAlt] = useState('');
+  const [galleryImagePreview, setGalleryImagePreview] = useState<string | null>(null);
+  const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);
+  const [savingGallery, setSavingGallery] = useState(false);
 
   // Check stored session on mount
   useEffect(() => {
@@ -435,6 +443,81 @@ export function AdminPage() {
       loadCmsPages();
     }
   }, [activeView, isAuthenticated, sessionId]);
+
+  // Load gallery when entering gallery view
+  useEffect(() => {
+    if (isAuthenticated && sessionId && activeView === 'gallery') {
+      loadGallery();
+    }
+  }, [activeView, isAuthenticated, sessionId]);
+
+  async function loadGallery() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=gallery`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGalleryImages(data.data);
+      }
+    } catch {
+      console.error('Failed to load gallery');
+    }
+  }
+
+  function handleGalleryImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setMessage({ text: 'Bild zu groß. Maximum: 2MB', type: 'error' });
+        return;
+      }
+      setGalleryImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setGalleryImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  }
+
+  async function handleSaveGallerySlot() {
+    if (editingGallerySlot === null) return;
+    setSavingGallery(true);
+    try {
+      const updated = galleryImages.map(img => {
+        if (img.position === editingGallerySlot) {
+          return {
+            ...img,
+            image: galleryImagePreview || img.image,
+            alt: galleryAlt || img.alt
+          };
+        }
+        return img;
+      });
+      const res = await fetch(`${API_BASE}/data?type=gallery`, {
+        method: 'PUT',
+        headers: {
+          'x-session-id': sessionId!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updated)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGalleryImages(updated);
+        setEditingGallerySlot(null);
+        setGalleryImagePreview(null);
+        setGalleryImageFile(null);
+        setGalleryAlt('');
+        setMessage({ text: 'Galerie-Bild aktualisiert', type: 'success' });
+      } else {
+        setMessage({ text: data.error || 'Speichern fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    } finally {
+      setSavingGallery(false);
+    }
+  }
 
   async function handleSaveEvent(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -1327,6 +1410,13 @@ export function AdminPage() {
             <FileText className="w-5 h-5" />
             Seiten bearbeiten
           </button>
+          <button
+            onClick={() => { setActiveView('gallery'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'gallery' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <ImageIcon className="w-5 h-5" />
+            Galerie
+          </button>
         </nav>
 
         <div className="p-4 border-t border-white/10">
@@ -1987,6 +2077,96 @@ export function AdminPage() {
                 Einstellungen werden geladen...
               </div>
             )}
+          </>
+        )}
+
+        {/* Gallery View */}
+        {activeView === 'gallery' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Galerie verwalten</h2>
+            </div>
+            <p className="text-[#666666] mb-6">Verwalten Sie die Bilder der Instagram-Galerie auf der Startseite. Klicken Sie auf ein Bild, um es zu ändern.</p>
+
+            {editingGallerySlot !== null ? (
+              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] mb-6">
+                <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">
+                  Bild bearbeiten: {galleryImages.find(g => g.position === editingGallerySlot)?.label}
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Aktuelles Bild</label>
+                    <div className="w-full h-48 bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)]">
+                      <img
+                        src={galleryImagePreview || galleryImages.find(g => g.position === editingGallerySlot)?.image}
+                        alt="Vorschau"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Neues Bild hochladen (max. 2MB)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleGalleryImageChange}
+                        className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Alt-Text</label>
+                      <input
+                        type="text"
+                        value={galleryAlt}
+                        onChange={(e) => setGalleryAlt(e.target.value)}
+                        className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                        placeholder="Bildbeschreibung"
+                      />
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleSaveGallerySlot}
+                        disabled={savingGallery}
+                        className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
+                      >
+                        <Save className="w-4 h-4 inline mr-2" />
+                        {savingGallery ? 'Speichern...' : 'Speichern'}
+                      </button>
+                      <button
+                        onClick={() => { setEditingGallerySlot(null); setGalleryImagePreview(null); setGalleryImageFile(null); setGalleryAlt(''); }}
+                        className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {galleryImages
+                .sort((a, b) => a.position - b.position)
+                .map((img) => (
+                <div
+                  key={img.id}
+                  onClick={() => { setEditingGallerySlot(img.position); setGalleryAlt(img.alt); setGalleryImagePreview(null); setGalleryImageFile(null); }}
+                  className="cursor-pointer group relative bg-white rounded-xl overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg"
+                >
+                  <div className={`overflow-hidden ${img.position === 0 ? 'aspect-square' : img.position === 1 || img.position === 4 ? 'aspect-[1/2]' : 'aspect-square'}`}>
+                    <img src={img.image} alt={img.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  </div>
+                  <div className="p-3">
+                    <p className="text-sm font-medium text-[#2d2d2d]">{img.label}</p>
+                    <p className="text-xs text-[#666666] truncate">{img.alt}</p>
+                  </div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <Edit2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+              ))}
+            </div>
           </>
         )}
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Hero } from '../components/Hero';
 import { SponsorsCarousel } from '../components/SponsorsCarousel';
 import { Link } from 'react-router-dom';
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { QuoteCard } from '../components/QuoteCard';
 import { useCmsPage } from '../hooks/useCmsPage';
+import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
 interface HomePageContent {
   hero: {
@@ -82,8 +83,48 @@ const defaultContent: HomePageContent = {
   },
 };
 
+interface GalleryImage {
+  id: number;
+  position: number;
+  image: string;
+  alt: string;
+  label: string;
+}
+
+const defaultGallery: GalleryImage[] = [
+  { id: 1, position: 0, image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=200&h=200&fit=crop', alt: 'Alte Post Brensbach', label: 'Profilbild' },
+  { id: 2, position: 1, image: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=500&h=1000&fit=crop', alt: 'Live performance', label: 'Großes Bild links' },
+  { id: 3, position: 2, image: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop', alt: 'Audience', label: 'Klein oben links' },
+  { id: 4, position: 3, image: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&h=400&fit=crop', alt: 'Jazz concert', label: 'Klein oben rechts' },
+  { id: 5, position: 4, image: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500&h=1000&fit=crop', alt: 'Venue atmosphere', label: 'Großes Bild rechts' },
+  { id: 6, position: 5, image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop', alt: 'Performer', label: 'Klein unten links' },
+  { id: 7, position: 6, image: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=400&h=400&fit=crop', alt: 'Stage', label: 'Klein unten rechts' },
+];
+
 export function HomePage() {
   const { content } = useCmsPage<HomePageContent>('home', defaultContent);
+  const [gallery, setGallery] = useState<GalleryImage[]>(defaultGallery);
+
+  useEffect(() => {
+    async function fetchGallery() {
+      try {
+        const res = await fetch('/api/pages?type=gallery');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            setGallery(data.data);
+          }
+        }
+      } catch {
+        // Use defaults on error
+      }
+    }
+    fetchGallery();
+  }, []);
+
+  function getGalleryImage(position: number): GalleryImage {
+    return gallery.find(g => g.position === position) || defaultGallery[position];
+  }
 
   // Use CMS content for the next event
   const nextEvent = {
@@ -363,9 +404,9 @@ export function HomePage() {
           <div className="text-center mb-8">
             {/* Profile Picture */}
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-[#e8e4df]">
-              <img 
-                src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=200&h=200&fit=crop"
-                alt="Alte Post Brensbach"
+              <ImageWithFallback
+                src={getGalleryImage(0).image}
+                alt={getGalleryImage(0).alt}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -390,54 +431,54 @@ export function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {/* Large left image - On mobile: regular, on desktop: tall */}
             <div className="lg:col-span-1 lg:row-span-2 bg-[#e8e4df] rounded-lg overflow-hidden aspect-square lg:aspect-auto">
-              <img 
-                src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=500&h=1000&fit=crop"
-                alt="Live performance"
+              <ImageWithFallback
+                src={getGalleryImage(1).image}
+                alt={getGalleryImage(1).alt}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Small top-left */}
             <div className="bg-[#e8e4df] rounded-lg aspect-square overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=400&fit=crop"
-                alt="Audience"
+              <ImageWithFallback
+                src={getGalleryImage(2).image}
+                alt={getGalleryImage(2).alt}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Small top-right */}
             <div className="bg-[#e8e4df] rounded-lg aspect-square overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&h=400&fit=crop"
-                alt="Jazz concert"
+              <ImageWithFallback
+                src={getGalleryImage(3).image}
+                alt={getGalleryImage(3).alt}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Large right image - On mobile: regular, on desktop: tall */}
             <div className="lg:col-span-1 lg:row-span-2 bg-[#e8e4df] rounded-lg overflow-hidden aspect-square lg:aspect-auto">
-              <img 
-                src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500&h=1000&fit=crop"
-                alt="Venue atmosphere"
+              <ImageWithFallback
+                src={getGalleryImage(4).image}
+                alt={getGalleryImage(4).alt}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Small bottom-left */}
             <div className="bg-[#e8e4df] rounded-lg aspect-square overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&h=400&fit=crop"
-                alt="Performer"
+              <ImageWithFallback
+                src={getGalleryImage(5).image}
+                alt={getGalleryImage(5).alt}
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             {/* Small bottom-right */}
             <div className="bg-[#e8e4df] rounded-lg aspect-square overflow-hidden">
-              <img 
-                src="https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=400&h=400&fit=crop"
-                alt="Stage"
+              <ImageWithFallback
+                src={getGalleryImage(6).image}
+                alt={getGalleryImage(6).alt}
                 className="w-full h-full object-cover"
               />
             </div>

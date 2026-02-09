@@ -142,6 +142,14 @@ export interface MembershipApplication {
   notes: string;
 }
 
+export interface GalleryImage {
+  id: number;
+  position: number;
+  image: string;
+  alt: string;
+  label: string;
+}
+
 export interface Testimonial {
   id: number;
   quote: string;
@@ -413,6 +421,31 @@ export async function writeTestimonials(testimonials: Testimonial[]): Promise<vo
     }
   }
   writeLocalFile('content/testimonials.json', testimonials);
+}
+
+// ============ GALLERY ============
+export async function readGallery(): Promise<GalleryImage[]> {
+  if (isRedisConfigured()) {
+    try {
+      const data = await getRedis()!.get<GalleryImage[]>('gallery');
+      if (data) return data;
+    } catch (e) {
+      console.error('Redis error reading gallery:', e);
+    }
+  }
+  return readLocalFile<GalleryImage[]>('gallery.json', []);
+}
+
+export async function writeGallery(gallery: GalleryImage[]): Promise<void> {
+  if (isRedisConfigured()) {
+    try {
+      await getRedis()!.set('gallery', gallery);
+      return;
+    } catch (e) {
+      console.error('Redis error writing gallery:', e);
+    }
+  }
+  writeLocalFile('gallery.json', gallery);
 }
 
 // ============ SESSIONS (for auth) ============
