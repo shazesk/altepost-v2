@@ -207,12 +207,14 @@ function EventCard({ event }: { event: Event }) {
         <div className="flex items-center justify-between">
           <span className={`text-sm ${config.color}`}>{config.text}</span>
           <Link
-            to="/tickets"
+            to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
+            state={event.availability === 'sold-out' ? undefined : { event }}
             className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
               event.availability === 'sold-out'
                 ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
                 : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
             }`}
+            onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
           >
             <Ticket className="h-4 w-4" />
             {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
@@ -259,12 +261,14 @@ function EventListItem({ event }: { event: Event }) {
         </div>
         <div className="lg:flex-shrink-0">
           <Link
-            to="/tickets"
+            to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
+            state={event.availability === 'sold-out' ? undefined : { event }}
             className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
               event.availability === 'sold-out'
                 ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
                 : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
             }`}
+            onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
           >
             <Ticket className="h-4 w-4" />
             {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
