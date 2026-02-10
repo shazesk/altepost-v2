@@ -27,7 +27,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const resourceType = slug[0]; // 'contacts', 'vouchers', or 'memberships'
-  const resourceId = slug[1] ? parseInt(slug[1]) : null;
+  // Support ID from path segment OR query parameter (Vercel catch-all may not match 2+ segments)
+  const resourceId = slug[1] ? parseInt(slug[1]) : (req.query.id ? parseInt(req.query.id as string) : null);
 
   // Handle contacts
   if (resourceType === 'contacts') {
