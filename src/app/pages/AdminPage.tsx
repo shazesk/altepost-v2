@@ -38,12 +38,13 @@ interface Stats {
   total: number;
   reservations?: {
     active: number;
+    archived: number;
     total: number;
     totalTickets: number;
   };
-  contacts?: { active: number; total: number };
-  vouchers?: { active: number; total: number };
-  memberships?: { active: number; total: number };
+  contacts?: { active: number; archived: number; total: number };
+  vouchers?: { active: number; archived: number; total: number };
+  memberships?: { active: number; archived: number; total: number };
 }
 
 interface Contact {
@@ -672,6 +673,8 @@ export function AdminPage() {
   }
 
   async function handleReservationRestore(id: number) {
+    // Optimistic: move item to active immediately
+    setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'active' } : r));
     try {
       const res = await fetch(`${API_BASE}/data?type=reservations&id=${id}`, {
         method: 'PUT',
@@ -681,17 +684,20 @@ export function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setMessage({ text: 'Wiederhergestellt', type: 'success' });
-        loadReservations();
         loadStats();
       } else {
         setMessage({ text: data.error || 'Wiederherstellen fehlgeschlagen', type: 'error' });
+        loadReservations(); // revert on failure
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
+      loadReservations(); // revert on failure
     }
   }
 
   async function handleReservationArchive(id: number) {
+    // Optimistic: move item to archived immediately
+    setReservations(prev => prev.map(r => r.id === id ? { ...r, status: 'archived' } : r));
     try {
       const res = await fetch(`${API_BASE}/data?type=reservations&id=${id}`, {
         method: 'PUT',
@@ -703,19 +709,22 @@ export function AdminPage() {
 
       if (data.success) {
         setMessage({ text: 'Archiviert', type: 'success' });
-        loadReservations();
         loadStats();
       } else {
         setMessage({ text: data.error || 'Archivierung fehlgeschlagen', type: 'error' });
+        loadReservations(); // revert on failure
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
+      loadReservations(); // revert on failure
     }
   }
 
   async function handleDeleteReservation(id: number) {
     if (!confirm('Reservierung wirklich löschen?')) return;
 
+    // Optimistic: remove item immediately
+    setReservations(prev => prev.filter(r => r.id !== id));
     try {
       const res = await fetch(`${API_BASE}/data?type=reservations&id=${id}`, {
         method: 'DELETE',
@@ -726,13 +735,14 @@ export function AdminPage() {
 
       if (data.success) {
         setMessage({ text: 'Reservierung gelöscht', type: 'success' });
-        loadReservations();
         loadStats();
       } else {
         setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
+        loadReservations(); // revert on failure
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
+      loadReservations(); // revert on failure
     }
   }
 
@@ -1628,7 +1638,7 @@ export function AdminPage() {
                         : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
                     }`}
                   >
-                    Archiv {stats?.reservations && (stats.reservations.total - stats.reservations.active) > 0 && <span>({stats.reservations.total - stats.reservations.active})</span>}
+                    Archiv {stats?.reservations?.archived > 0 && <span>({stats.reservations.archived})</span>}
                   </button>
                 </div>
               </div>
@@ -1670,7 +1680,7 @@ export function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
-                  {reservations.map(r => (
+                  {reservations.filter(r => r.status === reservationFilter).map(r => (
                     <tr key={r.id} className="hover:bg-[#faf9f7]">
                       <td className="p-4">
                         <div className="font-medium text-[#2d2d2d]">{r.name}</div>
@@ -1705,7 +1715,7 @@ export function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {reservations.length === 0 && (
+              {reservations.filter(r => r.status === reservationFilter).length === 0 && (
                 <div className="p-8 text-center text-[#666666]">{reservationFilter === 'archived' ? 'Keine archivierten Reservierungen.' : 'Keine aktiven Reservierungen.'}</div>
               )}
             </div>
