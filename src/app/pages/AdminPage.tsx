@@ -673,7 +673,7 @@ export function AdminPage() {
 
   async function handleReservationRestore(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/reservations/${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=reservations&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'active' })
@@ -693,7 +693,7 @@ export function AdminPage() {
 
   async function handleReservationArchive(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/reservations/${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=reservations&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'archived' })
@@ -717,7 +717,7 @@ export function AdminPage() {
     if (!confirm('Reservierung wirklich löschen?')) return;
 
     try {
-      const res = await fetch(`${API_BASE}/reservations/${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=reservations&id=${id}`, {
         method: 'DELETE',
         headers: { 'x-session-id': sessionId! }
       });

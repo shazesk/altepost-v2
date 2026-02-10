@@ -4,6 +4,7 @@ import { validateSession } from './_lib/auth.js';
 import {
   readEvents,
   readReservations,
+  writeReservations,
   readSettings,
   writeSettings,
   readContacts,
@@ -183,7 +184,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: gallery });
     }
 
-    // Update individual contact/voucher/membership by ID
+    // Update individual reservation/contact/voucher/membership by ID
+    if (type === 'reservations') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const reservations = await readReservations();
+      const index = reservations.findIndex(r => r.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      reservations[index] = { ...reservations[index], ...req.body };
+      await writeReservations(reservations);
+      return res.status(200).json({ success: true, data: reservations[index] });
+    }
+
     if (type === 'contacts') {
       const id = parseInt(req.query.id as string);
       if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
@@ -222,6 +234,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // DELETE requests
   if (req.method === 'DELETE') {
+    if (type === 'reservations') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const reservations = await readReservations();
+      const index = reservations.findIndex(r => r.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      const deleted = reservations.splice(index, 1)[0];
+      await writeReservations(reservations);
+      return res.status(200).json({ success: true, data: deleted });
+    }
+
     if (type === 'contacts') {
       const id = parseInt(req.query.id as string);
       if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
