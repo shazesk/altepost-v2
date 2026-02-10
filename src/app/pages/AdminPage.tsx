@@ -132,7 +132,7 @@ export function AdminPage() {
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [activeView, setActiveView] = useState<'dashboard' | 'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms' | 'gallery'>('dashboard');
-  const [reservationFilter, setReservationFilter] = useState<'all' | 'active' | 'archived'>('all');
+  const [reservationFilter, setReservationFilter] = useState<'active' | 'archived'>('active');
   const [selectedEventFilter, setSelectedEventFilter] = useState<number | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
 
@@ -141,9 +141,9 @@ export function AdminPage() {
   const [vouchers, setVouchers] = useState<VoucherOrder[]>([]);
   const [memberships, setMemberships] = useState<MembershipApplication[]>([]);
   const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
-  const [contactFilter, setContactFilter] = useState<'all' | 'active' | 'archived'>('all');
-  const [voucherFilter, setVoucherFilter] = useState<'all' | 'active' | 'archived'>('all');
-  const [membershipFilter, setMembershipFilter] = useState<'all' | 'active' | 'archived'>('all');
+  const [contactFilter, setContactFilter] = useState<'active' | 'archived'>('active');
+  const [voucherFilter, setVoucherFilter] = useState<'active' | 'archived'>('active');
+  const [membershipFilter, setMembershipFilter] = useState<'active' | 'archived'>('active');
   const [viewingContact, setViewingContact] = useState<Contact | null>(null);
   const [editingSettings, setEditingSettings] = useState(false);
 
@@ -281,7 +281,7 @@ export function AdminPage() {
     try {
       let url = `${API_BASE}/reservations`;
       const params = new URLSearchParams();
-      if (reservationFilter !== 'all') params.append('status', reservationFilter);
+      params.append('status', reservationFilter);
       if (selectedEventFilter) params.append('eventId', String(selectedEventFilter));
       if (params.toString()) url += `?${params.toString()}`;
 
@@ -311,11 +311,7 @@ export function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        let filtered = data.data;
-        if (contactFilter !== 'all') {
-          filtered = filtered.filter((c: Contact) => c.status === contactFilter);
-        }
-        setContacts(filtered);
+        setContacts(data.data);
       }
     } catch (e) {
       console.error('Failed to load contacts');
@@ -329,11 +325,7 @@ export function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        let filtered = data.data;
-        if (voucherFilter !== 'all') {
-          filtered = filtered.filter((v: VoucherOrder) => v.status === voucherFilter);
-        }
-        setVouchers(filtered);
+        setVouchers(data.data);
       }
     } catch (e) {
       console.error('Failed to load vouchers');
@@ -347,11 +339,7 @@ export function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        let filtered = data.data;
-        if (membershipFilter !== 'all') {
-          filtered = filtered.filter((m: MembershipApplication) => m.status === membershipFilter);
-        }
-        setMemberships(filtered);
+        setMemberships(data.data);
       }
     } catch (e) {
       console.error('Failed to load memberships');
@@ -372,24 +360,7 @@ export function AdminPage() {
     }
   }
 
-  // Reload contacts/vouchers/memberships when filters change
-  useEffect(() => {
-    if (isAuthenticated && sessionId) {
-      loadContacts();
-    }
-  }, [contactFilter]);
-
-  useEffect(() => {
-    if (isAuthenticated && sessionId) {
-      loadVouchers();
-    }
-  }, [voucherFilter]);
-
-  useEffect(() => {
-    if (isAuthenticated && sessionId) {
-      loadMemberships();
-    }
-  }, [membershipFilter]);
+  // No need to reload on filter change - contacts/vouchers/memberships are filtered at render time
 
   // CMS functions
   async function loadCmsPages() {
@@ -700,6 +671,26 @@ export function AdminPage() {
     }
   }
 
+  async function handleReservationRestore(id: number) {
+    try {
+      const res = await fetch(`${API_BASE}/reservations/${id}/status`, {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Wiederhergestellt', type: 'success' });
+        loadReservations();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Wiederherstellen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
   async function handleReservationArchive(id: number) {
     try {
       const res = await fetch(`${API_BASE}/reservations/${id}/status`, {
@@ -746,6 +737,26 @@ export function AdminPage() {
   }
 
   // Handler functions for contacts, vouchers, memberships
+  async function handleContactRestore(id: number) {
+    try {
+      const res = await fetch(`${API_BASE}/submissions/contacts/${id}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Wiederhergestellt', type: 'success' });
+        loadContacts();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Wiederherstellen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
   async function handleContactArchive(id: number) {
     try {
       const res = await fetch(`${API_BASE}/submissions/contacts/${id}`, {
@@ -786,6 +797,26 @@ export function AdminPage() {
     }
   }
 
+  async function handleVoucherRestore(id: number) {
+    try {
+      const res = await fetch(`${API_BASE}/submissions/vouchers/${id}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Wiederhergestellt', type: 'success' });
+        loadVouchers();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Wiederherstellen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
   async function handleVoucherArchive(id: number) {
     try {
       const res = await fetch(`${API_BASE}/submissions/vouchers/${id}`, {
@@ -820,6 +851,26 @@ export function AdminPage() {
         loadStats();
       } else {
         setMessage({ text: data.error || 'Löschen fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleMembershipRestore(id: number) {
+    try {
+      const res = await fetch(`${API_BASE}/submissions/memberships/${id}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Wiederhergestellt', type: 'success' });
+        loadMemberships();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Wiederherstellen fehlgeschlagen', type: 'error' });
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
@@ -1098,7 +1149,14 @@ export function AdminPage() {
               >
                 <Mail className="w-4 h-4" /> Antworten
               </a>
-              {r.status !== 'archived' && (
+              {r.status === 'archived' ? (
+                <button
+                  onClick={() => { handleReservationRestore(r.id); setViewingReservation(null); }}
+                  className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]"
+                >
+                  <RotateCcw className="w-4 h-4" /> Wiederherstellen
+                </button>
+              ) : (
                 <button
                   onClick={() => { handleReservationArchive(r.id); setViewingReservation(null); }}
                   className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]"
@@ -1549,40 +1607,54 @@ export function AdminPage() {
         {activeView === 'reservations' && (
           <>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Reservierungen</h2>
+              <div className="flex items-center gap-4">
+                <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Reservierungen</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setReservationFilter('active')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      reservationFilter === 'active'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Aktiv
+                  </button>
+                  <button
+                    onClick={() => setReservationFilter('archived')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      reservationFilter === 'archived'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Archiv {stats?.reservations && (stats.reservations.total - stats.reservations.active) > 0 && <span>({stats.reservations.total - stats.reservations.active})</span>}
+                  </button>
+                </div>
+              </div>
               <button onClick={() => setIsCreatingReservation(true)} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">
                 <Plus className="w-5 h-5" /> Neue Reservierung
               </button>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div>
-                <label className="block text-sm text-[#666666] mb-1">Status</label>
-                <select
-                  value={reservationFilter}
-                  onChange={(e) => setReservationFilter(e.target.value as typeof reservationFilter)}
-                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
-                >
-                  <option value="all">Alle</option>
-                  <option value="active">Aktiv</option>
-                  <option value="archived">Archiviert</option>
-                </select>
+            {/* Event filter - only show for active view */}
+            {reservationFilter === 'active' && (
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div>
+                  <label className="block text-sm text-[#666666] mb-1">Veranstaltung</label>
+                  <select
+                    value={selectedEventFilter || ''}
+                    onChange={(e) => setSelectedEventFilter(e.target.value ? parseInt(e.target.value) : null)}
+                    className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                  >
+                    <option value="">Alle</option>
+                    {events.filter(e => !e.is_archived).map(e => (
+                      <option key={e.id} value={e.id}>{e.title}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm text-[#666666] mb-1">Veranstaltung</label>
-                <select
-                  value={selectedEventFilter || ''}
-                  onChange={(e) => setSelectedEventFilter(e.target.value ? parseInt(e.target.value) : null)}
-                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
-                >
-                  <option value="">Alle</option>
-                  {events.filter(e => !e.is_archived).map(e => (
-                    <option key={e.id} value={e.id}>{e.title}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            )}
 
             {/* Reservations table */}
             <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
@@ -1599,7 +1671,7 @@ export function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
                   {reservations.map(r => (
-                    <tr key={r.id} className={`hover:bg-[#faf9f7] ${r.status === 'archived' ? 'opacity-60' : ''}`}>
+                    <tr key={r.id} className="hover:bg-[#faf9f7]">
                       <td className="p-4">
                         <div className="font-medium text-[#2d2d2d]">{r.name}</div>
                         <div className="text-sm text-[#666666]">{r.email}</div>
@@ -1610,18 +1682,20 @@ export function AdminPage() {
                       </td>
                       <td className="p-4 text-[#2d2d2d] font-medium">{r.tickets}</td>
                       <td className="p-4">
-                        {r.status === 'archived' && (
-                          <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#e8e4df] text-[#666666]">
-                            Archiviert
-                          </span>
-                        )}
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                          r.status === 'archived' ? 'bg-[#e8e4df] text-[#666666]' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {r.status === 'archived' ? 'Archiviert' : 'Aktiv'}
+                        </span>
                       </td>
                       <td className="p-4 text-[#666666] text-sm">{formatDate(r.createdAt)}</td>
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
                           <button onClick={() => setViewingReservation(r)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Details"><Eye className="w-4 h-4" /></button>
                           <a href={`mailto:${r.email}?subject=Ihre Reservierung - ${r.eventTitle}`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
-                          {r.status !== 'archived' && (
+                          {r.status === 'archived' ? (
+                            <button onClick={() => handleReservationRestore(r.id)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Wiederherstellen"><RotateCcw className="w-4 h-4" /></button>
+                          ) : (
                             <button onClick={() => handleReservationArchive(r.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>
                           )}
                           <button onClick={() => handleDeleteReservation(r.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
@@ -1632,7 +1706,7 @@ export function AdminPage() {
                 </tbody>
               </table>
               {reservations.length === 0 && (
-                <div className="p-8 text-center text-[#666666]">Keine Reservierungen gefunden.</div>
+                <div className="p-8 text-center text-[#666666]">{reservationFilter === 'archived' ? 'Keine archivierten Reservierungen.' : 'Keine aktiven Reservierungen.'}</div>
               )}
             </div>
           </>
@@ -1698,7 +1772,31 @@ export function AdminPage() {
         {activeView === 'contacts' && (
           <>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Nachrichten</h2>
+              <div className="flex items-center gap-4">
+                <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Nachrichten</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setContactFilter('active')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      contactFilter === 'active'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Aktiv
+                  </button>
+                  <button
+                    onClick={() => setContactFilter('archived')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      contactFilter === 'archived'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Archiv {contacts.filter(c => c.status === 'archived').length > 0 && <span>({contacts.filter(c => c.status === 'archived').length})</span>}
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Contact Detail Modal */}
@@ -1737,7 +1835,11 @@ export function AdminPage() {
                       <a href={`mailto:${viewingContact.email}?subject=Re: ${viewingContact.subject}`} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e]">
                         <Mail className="w-4 h-4" /> Antworten
                       </a>
-                      {viewingContact.status !== 'archived' && (
+                      {viewingContact.status === 'archived' ? (
+                        <button onClick={() => { handleContactRestore(viewingContact.id); setViewingContact(null); }} className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]">
+                          <RotateCcw className="w-4 h-4" /> Wiederherstellen
+                        </button>
+                      ) : (
                         <button onClick={() => { handleContactArchive(viewingContact.id); setViewingContact(null); }} className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]">
                           <Archive className="w-4 h-4" /> Archivieren
                         </button>
@@ -1747,22 +1849,6 @@ export function AdminPage() {
                 </div>
               </div>
             )}
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div>
-                <label className="block text-sm text-[#666666] mb-1">Status</label>
-                <select
-                  value={contactFilter}
-                  onChange={(e) => setContactFilter(e.target.value as typeof contactFilter)}
-                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
-                >
-                  <option value="all">Alle</option>
-                  <option value="active">Aktiv</option>
-                  <option value="archived">Archiviert</option>
-                </select>
-              </div>
-            </div>
 
             {/* Contacts table */}
             <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
@@ -1778,7 +1864,7 @@ export function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
-                  {contacts.map(c => (
+                  {contacts.filter(c => c.status === contactFilter).map(c => (
                     <tr key={c.id} className="hover:bg-[#faf9f7]">
                       <td className="p-4 text-[#666666] text-sm">{formatDate(c.createdAt)}</td>
                       <td className="p-4">
@@ -1798,7 +1884,11 @@ export function AdminPage() {
                         <div className="flex justify-end gap-1">
                           <button onClick={() => setViewingContact(c)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Anzeigen"><Eye className="w-4 h-4" /></button>
                           <a href={`mailto:${c.email}?subject=Re: ${c.subject}`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
-                          {c.status !== 'archived' && <button onClick={() => handleContactArchive(c.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>}
+                          {c.status === 'archived' ? (
+                            <button onClick={() => handleContactRestore(c.id)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Wiederherstellen"><RotateCcw className="w-4 h-4" /></button>
+                          ) : (
+                            <button onClick={() => handleContactArchive(c.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>
+                          )}
                           <button onClick={() => handleDeleteContact(c.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
                         </div>
                       </td>
@@ -1806,8 +1896,8 @@ export function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {contacts.length === 0 && (
-                <div className="p-8 text-center text-[#666666]">Keine Nachrichten gefunden.</div>
+              {contacts.filter(c => c.status === contactFilter).length === 0 && (
+                <div className="p-8 text-center text-[#666666]">{contactFilter === 'archived' ? 'Keine archivierten Nachrichten.' : 'Keine aktiven Nachrichten.'}</div>
               )}
             </div>
           </>
@@ -1817,22 +1907,30 @@ export function AdminPage() {
         {activeView === 'vouchers' && (
           <>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Gutschein-Bestellungen</h2>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div>
-                <label className="block text-sm text-[#666666] mb-1">Status</label>
-                <select
-                  value={voucherFilter}
-                  onChange={(e) => setVoucherFilter(e.target.value as typeof voucherFilter)}
-                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
-                >
-                  <option value="all">Alle</option>
-                  <option value="active">Aktiv</option>
-                  <option value="archived">Archiviert</option>
-                </select>
+              <div className="flex items-center gap-4">
+                <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Gutschein-Bestellungen</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setVoucherFilter('active')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      voucherFilter === 'active'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Aktiv
+                  </button>
+                  <button
+                    onClick={() => setVoucherFilter('archived')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      voucherFilter === 'archived'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Archiv {vouchers.filter(v => v.status === 'archived').length > 0 && <span>({vouchers.filter(v => v.status === 'archived').length})</span>}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1851,7 +1949,7 @@ export function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
-                  {vouchers.map(v => (
+                  {vouchers.filter(v => v.status === voucherFilter).map(v => (
                     <tr key={v.id} className="hover:bg-[#faf9f7]">
                       <td className="p-4 text-[#666666] text-sm">{formatDate(v.createdAt)}</td>
                       <td className="p-4">
@@ -1871,7 +1969,9 @@ export function AdminPage() {
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
                           <a href={`mailto:${v.buyerEmail}?subject=Ihre Gutschein-Bestellung`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
-                          {v.status !== 'archived' && (
+                          {v.status === 'archived' ? (
+                            <button onClick={() => handleVoucherRestore(v.id)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Wiederherstellen"><RotateCcw className="w-4 h-4" /></button>
+                          ) : (
                             <button onClick={() => handleVoucherArchive(v.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>
                           )}
                           <button onClick={() => handleDeleteVoucher(v.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
@@ -1881,8 +1981,8 @@ export function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {vouchers.length === 0 && (
-                <div className="p-8 text-center text-[#666666]">Keine Gutschein-Bestellungen gefunden.</div>
+              {vouchers.filter(v => v.status === voucherFilter).length === 0 && (
+                <div className="p-8 text-center text-[#666666]">{voucherFilter === 'archived' ? 'Keine archivierten Gutschein-Bestellungen.' : 'Keine aktiven Gutschein-Bestellungen.'}</div>
               )}
             </div>
           </>
@@ -1892,22 +1992,30 @@ export function AdminPage() {
         {activeView === 'memberships' && (
           <>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Mitgliedsanträge</h2>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4 mb-6">
-              <div>
-                <label className="block text-sm text-[#666666] mb-1">Status</label>
-                <select
-                  value={membershipFilter}
-                  onChange={(e) => setMembershipFilter(e.target.value as typeof membershipFilter)}
-                  className="px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
-                >
-                  <option value="all">Alle</option>
-                  <option value="active">Aktiv</option>
-                  <option value="archived">Archiviert</option>
-                </select>
+              <div className="flex items-center gap-4">
+                <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Mitgliedsanträge</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMembershipFilter('active')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      membershipFilter === 'active'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Aktiv
+                  </button>
+                  <button
+                    onClick={() => setMembershipFilter('archived')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      membershipFilter === 'archived'
+                        ? 'bg-[#6b8e6f] text-white'
+                        : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                    }`}
+                  >
+                    Archiv {memberships.filter(m => m.status === 'archived').length > 0 && <span>({memberships.filter(m => m.status === 'archived').length})</span>}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1925,7 +2033,7 @@ export function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
-                  {memberships.map(m => (
+                  {memberships.filter(m => m.status === membershipFilter).map(m => (
                     <tr key={m.id} className="hover:bg-[#faf9f7]">
                       <td className="p-4 text-[#666666] text-sm">{formatDate(m.createdAt)}</td>
                       <td className="p-4">
@@ -1949,7 +2057,9 @@ export function AdminPage() {
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
                           <a href={`mailto:${m.email}?subject=Ihr Mitgliedsantrag`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
-                          {m.status !== 'archived' && (
+                          {m.status === 'archived' ? (
+                            <button onClick={() => handleMembershipRestore(m.id)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Wiederherstellen"><RotateCcw className="w-4 h-4" /></button>
+                          ) : (
                             <button onClick={() => handleMembershipArchive(m.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title="Archivieren"><Archive className="w-4 h-4" /></button>
                           )}
                           <button onClick={() => handleDeleteMembership(m.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg" title="Löschen"><Trash2 className="w-4 h-4" /></button>
@@ -1959,8 +2069,8 @@ export function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {memberships.length === 0 && (
-                <div className="p-8 text-center text-[#666666]">Keine Mitgliedsanträge gefunden.</div>
+              {memberships.filter(m => m.status === membershipFilter).length === 0 && (
+                <div className="p-8 text-center text-[#666666]">{membershipFilter === 'archived' ? 'Keine archivierten Mitgliedsanträge.' : 'Keine aktiven Mitgliedsanträge.'}</div>
               )}
             </div>
           </>
