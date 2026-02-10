@@ -7,8 +7,11 @@ import {
   readSettings,
   writeSettings,
   readContacts,
+  writeContacts,
   readVouchers,
+  writeVouchers,
   readMemberships,
+  writeMemberships,
   readPageContent,
   writePageContent,
   listPages,
@@ -180,7 +183,79 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: gallery });
     }
 
-    return res.status(400).json({ success: false, error: 'PUT supported for: settings, page, testimonials, gallery' });
+    // Update individual contact/voucher/membership by ID
+    if (type === 'contacts') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const contacts = await readContacts();
+      const index = contacts.findIndex(c => c.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      contacts[index] = { ...contacts[index], ...req.body };
+      await writeContacts(contacts);
+      return res.status(200).json({ success: true, data: contacts[index] });
+    }
+
+    if (type === 'vouchers') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const vouchers = await readVouchers();
+      const index = vouchers.findIndex(v => v.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      vouchers[index] = { ...vouchers[index], ...req.body };
+      await writeVouchers(vouchers);
+      return res.status(200).json({ success: true, data: vouchers[index] });
+    }
+
+    if (type === 'memberships') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const memberships = await readMemberships();
+      const index = memberships.findIndex(m => m.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      memberships[index] = { ...memberships[index], ...req.body };
+      await writeMemberships(memberships);
+      return res.status(200).json({ success: true, data: memberships[index] });
+    }
+
+    return res.status(400).json({ success: false, error: 'PUT supported for: settings, page, testimonials, gallery, contacts, vouchers, memberships' });
+  }
+
+  // DELETE requests
+  if (req.method === 'DELETE') {
+    if (type === 'contacts') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const contacts = await readContacts();
+      const index = contacts.findIndex(c => c.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      const deleted = contacts.splice(index, 1)[0];
+      await writeContacts(contacts);
+      return res.status(200).json({ success: true, data: deleted });
+    }
+
+    if (type === 'vouchers') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const vouchers = await readVouchers();
+      const index = vouchers.findIndex(v => v.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      const deleted = vouchers.splice(index, 1)[0];
+      await writeVouchers(vouchers);
+      return res.status(200).json({ success: true, data: deleted });
+    }
+
+    if (type === 'memberships') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const memberships = await readMemberships();
+      const index = memberships.findIndex(m => m.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      const deleted = memberships.splice(index, 1)[0];
+      await writeMemberships(memberships);
+      return res.status(200).json({ success: true, data: deleted });
+    }
+
+    return res.status(400).json({ success: false, error: 'DELETE supported for: contacts, vouchers, memberships' });
   }
 
   return res.status(405).json({ success: false, error: 'Method not allowed' });

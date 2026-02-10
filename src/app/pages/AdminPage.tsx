@@ -739,7 +739,7 @@ export function AdminPage() {
   // Handler functions for contacts, vouchers, memberships
   async function handleContactRestore(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/submissions/contacts?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=contacts&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'active' })
@@ -759,7 +759,7 @@ export function AdminPage() {
 
   async function handleContactArchive(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/submissions/contacts?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=contacts&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'archived' })
@@ -780,7 +780,7 @@ export function AdminPage() {
   async function handleDeleteContact(id: number) {
     if (!confirm('Nachricht wirklich löschen?')) return;
     try {
-      const res = await fetch(`${API_BASE}/submissions/contacts?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=contacts&id=${id}`, {
         method: 'DELETE',
         headers: { 'x-session-id': sessionId! }
       });
@@ -799,7 +799,7 @@ export function AdminPage() {
 
   async function handleVoucherRestore(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/submissions/vouchers?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=vouchers&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'active' })
@@ -819,7 +819,7 @@ export function AdminPage() {
 
   async function handleVoucherArchive(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/submissions/vouchers?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=vouchers&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'archived' })
@@ -840,7 +840,7 @@ export function AdminPage() {
   async function handleDeleteVoucher(id: number) {
     if (!confirm('Gutschein-Bestellung wirklich löschen?')) return;
     try {
-      const res = await fetch(`${API_BASE}/submissions/vouchers?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=vouchers&id=${id}`, {
         method: 'DELETE',
         headers: { 'x-session-id': sessionId! }
       });
@@ -859,7 +859,7 @@ export function AdminPage() {
 
   async function handleMembershipRestore(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/submissions/memberships?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=memberships&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'active' })
@@ -879,7 +879,7 @@ export function AdminPage() {
 
   async function handleMembershipArchive(id: number) {
     try {
-      const res = await fetch(`${API_BASE}/submissions/memberships?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=memberships&id=${id}`, {
         method: 'PUT',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'archived' })
@@ -900,7 +900,7 @@ export function AdminPage() {
   async function handleDeleteMembership(id: number) {
     if (!confirm('Mitgliedsantrag wirklich löschen?')) return;
     try {
-      const res = await fetch(`${API_BASE}/submissions/memberships?id=${id}`, {
+      const res = await fetch(`${API_BASE}/data?type=memberships&id=${id}`, {
         method: 'DELETE',
         headers: { 'x-session-id': sessionId! }
       });
