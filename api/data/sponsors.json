@@ -1,0 +1,12 @@
+[
+  { "id": 1, "name": "Sparkasse Odenwaldkreis", "logo": null, "url": null, "category": "hauptfoerderer", "position": 1 },
+  { "id": 2, "name": "Gemeinde Brensbach", "logo": null, "url": null, "category": "hauptfoerderer", "position": 2 },
+  { "id": 3, "name": "Hessisches Ministerium für Wissenschaft und Kunst", "logo": null, "url": null, "category": "hauptfoerderer", "position": 3 },
+  { "id": 4, "name": "VR Bank Dreieich-Offenbach", "logo": null, "url": null, "category": "foerderer", "position": 1 },
+  { "id": 5, "name": "Druckerei Schmidt, Brensbach", "logo": null, "url": null, "category": "foerderer", "position": 2 },
+  { "id": 6, "name": "Volksbank Odenwald", "logo": null, "url": null, "category": "foerderer", "position": 3 },
+  { "id": 7, "name": "Odenwald Tourismus", "logo": null, "url": null, "category": "foerderer", "position": 4 },
+  { "id": 8, "name": "Odenwald Kulturtage e.V.", "logo": null, "url": null, "category": "kooperationspartner", "position": 1 },
+  { "id": 9, "name": "Jazz Initiative Darmstadt", "logo": null, "url": null, "category": "kooperationspartner", "position": 2 },
+  { "id": 10, "name": "Theaterverband Südhessen", "logo": null, "url": null, "category": "kooperationspartner", "position": 3 }
+]

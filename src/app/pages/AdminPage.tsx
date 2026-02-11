@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, LayoutDashboard, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -45,6 +45,7 @@ interface Stats {
   contacts?: { active: number; archived: number; total: number };
   vouchers?: { active: number; archived: number; total: number };
   memberships?: { active: number; archived: number; total: number };
+  newsletter?: { active: number; unsubscribed: number; total: number };
 }
 
 interface Contact {
@@ -115,6 +116,24 @@ interface SiteSettings {
   images?: { logo: string; hero: string };
 }
 
+interface Sponsor {
+  id: number;
+  name: string;
+  logo: string | null;
+  url: string | null;
+  category: 'hauptfoerderer' | 'foerderer' | 'kooperationspartner';
+  position: number;
+}
+
+interface NewsletterSubscriber {
+  id: number;
+  email: string;
+  name: string;
+  source: string;
+  subscribedAt: string;
+  status: 'active' | 'unsubscribed';
+}
+
 const API_BASE = '/api/admin';
 
 export function AdminPage() {
@@ -132,7 +151,7 @@ export function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [activeView, setActiveView] = useState<'dashboard' | 'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms' | 'gallery'>('dashboard');
+  const [activeView, setActiveView] = useState<'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms' | 'gallery' | 'sponsors' | 'newsletter'>('events');
   const [reservationFilter, setReservationFilter] = useState<'active' | 'archived'>('active');
   const [selectedEventFilter, setSelectedEventFilter] = useState<number | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
@@ -172,6 +191,14 @@ export function AdminPage() {
   const [galleryImagePreview, setGalleryImagePreview] = useState<string | null>(null);
   const [galleryImageFile, setGalleryImageFile] = useState<File | null>(null);
   const [savingGallery, setSavingGallery] = useState(false);
+
+  // Sponsors state
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
+  const [isCreatingSponsor, setIsCreatingSponsor] = useState(false);
+
+  // Newsletter state
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
 
   // Check stored session on mount
   useEffect(() => {
@@ -363,6 +390,124 @@ export function AdminPage() {
 
   // No need to reload on filter change - contacts/vouchers/memberships are filtered at render time
 
+  // Sponsors functions
+  async function loadSponsors() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=sponsors`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSponsors(data.data);
+      }
+    } catch (e) {
+      console.error('Failed to load sponsors');
+    }
+  }
+
+  async function handleSaveSponsor(sponsor: Sponsor) {
+    try {
+      if (sponsor.id) {
+        // Update existing
+        const res = await fetch(`${API_BASE}/data?type=sponsors&id=${sponsor.id}`, {
+          method: 'PUT',
+          headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+          body: JSON.stringify(sponsor)
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessage({ text: 'Sponsor aktualisiert', type: 'success' });
+          loadSponsors();
+        }
+      } else {
+        // Create new
+        const res = await fetch(`${API_BASE}/data?type=sponsors`, {
+          method: 'POST',
+          headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+          body: JSON.stringify(sponsor)
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessage({ text: 'Sponsor erstellt', type: 'success' });
+          loadSponsors();
+        }
+      }
+    } catch {
+      setMessage({ text: 'Fehler beim Speichern', type: 'error' });
+    }
+    setEditingSponsor(null);
+    setIsCreatingSponsor(false);
+  }
+
+  async function handleDeleteSponsor(id: number) {
+    if (!confirm('Sponsor wirklich löschen?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/data?type=sponsors&id=${id}`, {
+        method: 'DELETE',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Sponsor gelöscht', type: 'success' });
+        loadSponsors();
+      }
+    } catch {
+      setMessage({ text: 'Fehler beim Löschen', type: 'error' });
+    }
+  }
+
+  // Newsletter functions
+  async function loadNewsletter() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=newsletter`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNewsletterSubscribers(data.data);
+      }
+    } catch (e) {
+      console.error('Failed to load newsletter');
+    }
+  }
+
+  async function handleToggleSubscription(subscriber: NewsletterSubscriber) {
+    const newStatus = subscriber.status === 'active' ? 'unsubscribed' : 'active';
+    try {
+      const res = await fetch(`${API_BASE}/data?type=newsletter&id=${subscriber.id}`, {
+        method: 'PUT',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: newStatus === 'active' ? 'Abo reaktiviert' : 'Abo deaktiviert', type: 'success' });
+        loadNewsletter();
+        loadStats();
+      }
+    } catch {
+      setMessage({ text: 'Fehler beim Aktualisieren', type: 'error' });
+    }
+  }
+
+  async function handleDeleteSubscriber(id: number) {
+    if (!confirm('Abonnent wirklich löschen?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/data?type=newsletter&id=${id}`, {
+        method: 'DELETE',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Abonnent gelöscht', type: 'success' });
+        loadNewsletter();
+        loadStats();
+      }
+    } catch {
+      setMessage({ text: 'Fehler beim Löschen', type: 'error' });
+    }
+  }
+
   // CMS functions
   async function loadCmsPages() {
     try {
@@ -427,6 +572,20 @@ export function AdminPage() {
   useEffect(() => {
     if (isAuthenticated && sessionId && activeView === 'gallery') {
       loadGallery();
+    }
+  }, [activeView, isAuthenticated, sessionId]);
+
+  // Load sponsors when entering sponsors view
+  useEffect(() => {
+    if (isAuthenticated && sessionId && activeView === 'sponsors') {
+      loadSponsors();
+    }
+  }, [activeView, isAuthenticated, sessionId]);
+
+  // Load newsletter when entering newsletter view
+  useEffect(() => {
+    if (isAuthenticated && sessionId && activeView === 'newsletter') {
+      loadNewsletter();
     }
   }, [activeView, isAuthenticated, sessionId]);
 
@@ -1432,13 +1591,6 @@ export function AdminPage() {
 
         <nav className="flex-1 p-4">
           <button
-            onClick={() => { setActiveView('dashboard'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'dashboard' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            Dashboard
-          </button>
-          <button
             onClick={() => { setActiveView('events'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'events' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
@@ -1496,6 +1648,23 @@ export function AdminPage() {
             ) : null}
           </button>
           <button
+            onClick={() => { setActiveView('sponsors'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'sponsors' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <Handshake className="w-5 h-5" />
+            Sponsoren
+          </button>
+          <button
+            onClick={() => { setActiveView('newsletter'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'newsletter' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <Newspaper className="w-5 h-5" />
+            Newsletter
+            {stats?.newsletter?.active ? (
+              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.newsletter.active}</span>
+            ) : null}
+          </button>
+          <button
             onClick={() => { setActiveView('settings'); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'settings' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
@@ -1542,77 +1711,13 @@ export function AdminPage() {
           </div>
         )}
 
-        {activeView === 'dashboard' && (
-          <>
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Dashboard</h2>
-              <button onClick={() => { setIsCreating(true); setImagePreview(null); setSelectedImageFile(null); }} className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">
-                <Plus className="w-5 h-5" /> Neue Veranstaltung
-              </button>
-            </div>
-
-            {/* Stats */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
-                <div className="font-['Playfair_Display',serif] text-4xl text-[#6b8e6f] mb-1">{stats?.upcoming || 0}</div>
-                <div className="text-[#666666]">Kommende Events</div>
-              </div>
-              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
-                <div className="font-['Playfair_Display',serif] text-4xl text-[#6b8e6f] mb-1">{stats?.reservations?.totalTickets || 0}</div>
-                <div className="text-[#666666]">Reservierte Tickets</div>
-              </div>
-              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
-                <div className="font-['Playfair_Display',serif] text-4xl text-[#6b8e6f] mb-1">{stats?.reservations?.active || 0}</div>
-                <div className="text-[#666666]">Aktive Reservierungen</div>
-              </div>
-              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
-                <div className="font-['Playfair_Display',serif] text-4xl text-[#6b8e6f] mb-1">{stats?.reservations?.total || 0}</div>
-                <div className="text-[#666666]">Reservierungen gesamt</div>
-              </div>
-            </div>
-
-            {/* Recent reservations */}
-            <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] mb-8">
-              <div className="p-6 border-b border-[rgba(107,142,111,0.1)] flex justify-between items-center">
-                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">Neueste Reservierungen</h3>
-                <button onClick={() => setActiveView('reservations')} className="text-[#6b8e6f] hover:underline text-sm">Alle anzeigen</button>
-              </div>
-              <div className="divide-y divide-[rgba(107,142,111,0.1)]">
-                {reservations.filter(r => r.status !== 'archived').slice(0, 5).map(r => (
-                  <div key={r.id} className="p-4 flex justify-between items-center">
-                    <div>
-                      <div className="font-medium text-[#2d2d2d]">{r.name} - {r.tickets} Tickets</div>
-                      <div className="text-sm text-[#666666]">{r.eventTitle}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <a href={`mailto:${r.email}?subject=Ihre Reservierung - ${r.eventTitle}`} className="p-1 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded" title="Antworten"><Mail className="w-4 h-4" /></a>
-                      <button onClick={() => handleReservationArchive(r.id)} className="p-1 text-[#666666] hover:bg-[#666666]/10 rounded" title="Archivieren"><Archive className="w-4 h-4" /></button>
-                    </div>
-                  </div>
-                ))}
-                {reservations.filter(r => r.status !== 'archived').length === 0 && <div className="p-4 text-center text-[#666666]">Keine Reservierungen</div>}
-              </div>
-            </div>
-
-            {/* Recent events preview */}
-            <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)]">
-              <div className="p-6 border-b border-[rgba(107,142,111,0.1)]">
-                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">Kommende Veranstaltungen</h3>
-              </div>
-              <div className="divide-y divide-[rgba(107,142,111,0.1)]">
-                {events.slice(0, 5).map(event => (
-                  <div key={event.id} className="p-4 flex justify-between items-center">
-                    <div>
-                      <div className="font-medium text-[#2d2d2d]">{event.title}</div>
-                      <div className="text-sm text-[#666666]">{event.artist} • {event.date}</div>
-                    </div>
-                    <button onClick={() => { setEditingEvent(event); setImagePreview(event.image); setSelectedImageFile(null); }} className="text-[#6b8e6f] hover:text-[#5a7a5e]"><Edit2 className="w-5 h-5" /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
+        {/* Refresh notice */}
+        <div className="mb-6 bg-[#f5f3ef] border border-[rgba(107,142,111,0.25)] rounded-xl px-5 py-4 flex items-start gap-3">
+          <RefreshCw className="w-5 h-5 text-[#6b8e6f] mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-[#555555] leading-relaxed">
+            Neue Nachrichten, Reservierungen, Gutschein-Bestellungen und Mitgliedsanträge werden beim Laden der Seite abgerufen. Bitte aktualisieren Sie die Seite, um die neuesten Eingänge zu sehen.
+          </p>
+        </div>
 
         {activeView === 'reservations' && (
           <>
@@ -2389,6 +2494,271 @@ export function AdminPage() {
                 </div>
               ))}
             </div>
+          </>
+        )}
+
+        {/* Sponsors View */}
+        {activeView === 'sponsors' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Sponsoren verwalten</h2>
+              <button
+                onClick={() => { setIsCreatingSponsor(true); setEditingSponsor({ id: 0, name: '', logo: null, url: null, category: 'foerderer', position: 0 }); }}
+                className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Sponsor hinzufügen
+              </button>
+            </div>
+
+            {/* Sponsor Edit Form */}
+            {(editingSponsor || isCreatingSponsor) && (
+              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] mb-6">
+                <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">
+                  {isCreatingSponsor ? 'Neuer Sponsor' : 'Sponsor bearbeiten'}
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Name *</label>
+                    <input
+                      type="text"
+                      value={editingSponsor?.name || ''}
+                      onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, name: e.target.value } : null)}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                      placeholder="Name des Sponsors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Kategorie *</label>
+                    <select
+                      value={editingSponsor?.category || 'foerderer'}
+                      onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, category: e.target.value as Sponsor['category'] } : null)}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                    >
+                      <option value="hauptfoerderer">Hauptförderer</option>
+                      <option value="foerderer">Förderer</option>
+                      <option value="kooperationspartner">Kooperationspartner</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Website URL</label>
+                    <input
+                      type="url"
+                      value={editingSponsor?.url || ''}
+                      onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, url: e.target.value || null } : null)}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Logo URL</label>
+                    <input
+                      type="url"
+                      value={editingSponsor?.logo || ''}
+                      onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, logo: e.target.value || null } : null)}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                      placeholder="https://... oder leer lassen"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() => editingSponsor && handleSaveSponsor(editingSponsor)}
+                    disabled={!editingSponsor?.name}
+                    className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4 inline mr-2" />
+                    Speichern
+                  </button>
+                  <button
+                    onClick={() => { setEditingSponsor(null); setIsCreatingSponsor(false); }}
+                    className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sponsor List by Category */}
+            {(['hauptfoerderer', 'foerderer', 'kooperationspartner'] as const).map(cat => {
+              const categoryNames = { hauptfoerderer: 'Hauptförderer', foerderer: 'Förderer', kooperationspartner: 'Kooperationspartner' };
+              const catSponsors = sponsors.filter(s => s.category === cat).sort((a, b) => a.position - b.position);
+              if (catSponsors.length === 0) return null;
+              return (
+                <div key={cat} className="mb-8">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">{categoryNames[cat]}</h3>
+                  <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-[#faf9f7] border-b border-[rgba(107,142,111,0.1)]">
+                          <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Name</th>
+                          <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Website</th>
+                          <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Logo</th>
+                          <th className="text-right px-4 py-3 text-sm font-medium text-[#666666]">Aktionen</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
+                        {catSponsors.map(sponsor => (
+                          <tr key={sponsor.id} className="hover:bg-[#faf9f7] transition-colors">
+                            <td className="px-4 py-3 text-[#2d2d2d]">{sponsor.name}</td>
+                            <td className="px-4 py-3 text-[#666666] text-sm">
+                              {sponsor.url ? (
+                                <a href={sponsor.url} target="_blank" rel="noopener noreferrer" className="text-[#6b8e6f] hover:underline flex items-center gap-1">
+                                  Link <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-[#666666] text-sm">
+                              {sponsor.logo ? (
+                                <img src={sponsor.logo} alt={sponsor.name} className="h-8 max-w-[120px] object-contain" />
+                              ) : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => { setEditingSponsor(sponsor); setIsCreatingSponsor(false); }}
+                                className="text-[#6b8e6f] hover:text-[#5a7a5e] p-1"
+                                title="Bearbeiten"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteSponsor(sponsor.id)}
+                                className="text-[#8b4454] hover:text-[#7a3343] p-1 ml-2"
+                                title="Löschen"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+
+            {sponsors.length === 0 && (
+              <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] p-12 text-center">
+                <Handshake className="w-16 h-16 text-[#e8e4df] mx-auto mb-4" />
+                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">Keine Sponsoren</h3>
+                <p className="text-[#666666]">Fügen Sie den ersten Sponsor hinzu.</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Newsletter View */}
+        {activeView === 'newsletter' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Newsletter-Abonnenten</h2>
+              {newsletterSubscribers.length > 0 && (
+                <button
+                  onClick={() => {
+                    const active = newsletterSubscribers.filter(s => s.status === 'active');
+                    const csv = ['Name,E-Mail,Quelle,Angemeldet am', ...active.map(s => `"${s.name}","${s.email}","${s.source}","${new Date(s.subscribedAt).toLocaleDateString('de-DE')}"`  )].join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `newsletter-abonnenten-${new Date().toISOString().split('T')[0]}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  CSV exportieren
+                </button>
+              )}
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="bg-white rounded-xl p-4 border border-[rgba(107,142,111,0.2)]">
+                <p className="text-sm text-[#666666]">Aktive Abonnenten</p>
+                <p className="text-2xl font-bold text-[#6b8e6f]">{newsletterSubscribers.filter(s => s.status === 'active').length}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-[rgba(107,142,111,0.2)]">
+                <p className="text-sm text-[#666666]">Abgemeldet</p>
+                <p className="text-2xl font-bold text-[#8b4454]">{newsletterSubscribers.filter(s => s.status === 'unsubscribed').length}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 border border-[rgba(107,142,111,0.2)]">
+                <p className="text-sm text-[#666666]">Gesamt</p>
+                <p className="text-2xl font-bold text-[#2d2d2d]">{newsletterSubscribers.length}</p>
+              </div>
+            </div>
+
+            {/* Subscriber Table */}
+            {newsletterSubscribers.length > 0 ? (
+              <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#faf9f7] border-b border-[rgba(107,142,111,0.1)]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Name</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">E-Mail</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Quelle</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Datum</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Status</th>
+                      <th className="text-right px-4 py-3 text-sm font-medium text-[#666666]">Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
+                    {newsletterSubscribers.map(sub => (
+                      <tr key={sub.id} className="hover:bg-[#faf9f7] transition-colors">
+                        <td className="px-4 py-3 text-[#2d2d2d]">{sub.name || '—'}</td>
+                        <td className="px-4 py-3 text-[#666666] text-sm">{sub.email}</td>
+                        <td className="px-4 py-3 text-[#666666] text-sm">
+                          {{
+                            'contact-form': 'Kontaktformular',
+                            'ticket-reservation': 'Ticketreservierung',
+                            'membership': 'Mitgliedschaft',
+                            'voucher': 'Gutschein',
+                            'website': 'Website'
+                          }[sub.source] || sub.source}
+                        </td>
+                        <td className="px-4 py-3 text-[#666666] text-sm">
+                          {new Date(sub.subscribedAt).toLocaleDateString('de-DE')}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${
+                            sub.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {sub.status === 'active' ? 'Aktiv' : 'Abgemeldet'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => handleToggleSubscription(sub)}
+                            className={`text-sm px-2 py-1 rounded ${
+                              sub.status === 'active' ? 'text-[#8b4454] hover:bg-red-50' : 'text-[#6b8e6f] hover:bg-green-50'
+                            }`}
+                            title={sub.status === 'active' ? 'Deaktivieren' : 'Reaktivieren'}
+                          >
+                            {sub.status === 'active' ? 'Abmelden' : 'Aktivieren'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSubscriber(sub.id)}
+                            className="text-[#8b4454] hover:text-[#7a3343] p-1 ml-2"
+                            title="Löschen"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] p-12 text-center">
+                <Newspaper className="w-16 h-16 text-[#e8e4df] mx-auto mb-4" />
+                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">Keine Abonnenten</h3>
+                <p className="text-[#666666]">Newsletter-Anmeldungen erscheinen hier, sobald Besucher sich anmelden.</p>
+              </div>
+            )}
           </>
         )}
 

@@ -159,6 +159,24 @@ export interface Testimonial {
   page: string;
 }
 
+export interface Sponsor {
+  id: number;
+  name: string;
+  logo: string | null;
+  url: string | null;
+  category: 'hauptfoerderer' | 'foerderer' | 'kooperationspartner';
+  position: number;
+}
+
+export interface NewsletterSubscriber {
+  id: number;
+  email: string;
+  name: string;
+  source: string;
+  subscribedAt: string;
+  status: 'active' | 'unsubscribed';
+}
+
 // Default settings
 const defaultSettings: SiteSettings = {
   logo: { mainText: 'Alte Post', subtitle: 'BRENSBACH' },
@@ -472,6 +490,56 @@ export async function writeSessions(sessions: any[]): Promise<void> {
     }
   }
   writeLocalFile('sessions.json', sessions);
+}
+
+// ============ SPONSORS ============
+export async function readSponsors(): Promise<Sponsor[]> {
+  if (isRedisConfigured()) {
+    try {
+      const data = await getRedis()!.get<Sponsor[]>('sponsors');
+      if (data) return data;
+    } catch (e) {
+      console.error('Redis error reading sponsors:', e);
+    }
+  }
+  return readLocalFile<Sponsor[]>('sponsors.json', []);
+}
+
+export async function writeSponsors(sponsors: Sponsor[]): Promise<void> {
+  if (isRedisConfigured()) {
+    try {
+      await getRedis()!.set('sponsors', sponsors);
+      return;
+    } catch (e) {
+      console.error('Redis error writing sponsors:', e);
+    }
+  }
+  writeLocalFile('sponsors.json', sponsors);
+}
+
+// ============ NEWSLETTER ============
+export async function readNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
+  if (isRedisConfigured()) {
+    try {
+      const data = await getRedis()!.get<NewsletterSubscriber[]>('newsletter');
+      if (data) return data;
+    } catch (e) {
+      console.error('Redis error reading newsletter:', e);
+    }
+  }
+  return readLocalFile<NewsletterSubscriber[]>('newsletter.json', []);
+}
+
+export async function writeNewsletterSubscribers(subscribers: NewsletterSubscriber[]): Promise<void> {
+  if (isRedisConfigured()) {
+    try {
+      await getRedis()!.set('newsletter', subscribers);
+      return;
+    } catch (e) {
+      console.error('Redis error writing newsletter:', e);
+    }
+  }
+  writeLocalFile('newsletter.json', subscribers);
 }
 
 // ============ ADMINS ============

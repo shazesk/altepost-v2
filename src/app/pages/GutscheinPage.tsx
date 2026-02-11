@@ -17,6 +17,7 @@ export function GutscheinPage() {
     buyerPhone: '',
     message: '',
     delivery: 'email', // 'email' or 'pickup'
+    newsletterOptIn: false,
   });
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +37,14 @@ export function GutscheinPage() {
       const data = await res.json();
       if (!res.ok || !data.success) {
         throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      // Newsletter subscription (fire-and-forget, don't block form)
+      if (formData.newsletterOptIn) {
+        fetch('/api/admin/data?type=newsletter-subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.buyerEmail, name: formData.buyerName, source: 'voucher' }),
+        }).catch(() => {}); // silently ignore errors
       }
       setSubmitted(true);
     } catch (err: any) {
@@ -369,6 +378,21 @@ export function GutscheinPage() {
                 </div>
               </label>
             </div>
+          </div>
+
+          {/* Newsletter Opt-in */}
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="newsletterOptIn"
+              name="newsletterOptIn"
+              checked={formData.newsletterOptIn}
+              onChange={(e) => setFormData({ ...formData, newsletterOptIn: e.target.checked })}
+              className="mt-1 h-4 w-4 rounded border-[rgba(107,142,111,0.3)] text-[#6b8e6f] focus:ring-[#6b8e6f]"
+            />
+            <label htmlFor="newsletterOptIn" className="text-sm text-[#666666] font-['Inter',sans-serif]">
+              Ich möchte den Newsletter der Alten Post erhalten und über kommende Veranstaltungen und Neuigkeiten informiert werden.
+            </label>
           </div>
 
           {/* Info Box */}

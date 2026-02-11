@@ -17,6 +17,7 @@ export function MitgliedwerdenPage() {
     city: '',
     postalCode: '',
     message: '',
+    newsletterOptIn: false,
   });
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,6 +35,14 @@ export function MitgliedwerdenPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
+      // Newsletter subscription (fire-and-forget, don't block form)
+      if (formData.newsletterOptIn) {
+        fetch('/api/admin/data?type=newsletter-subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, name: formData.name, source: 'membership' }),
+        }).catch(() => {}); // silently ignore errors
+      }
       setSubmitted(true);
     } catch (err: any) {
       setError(`Fehler: ${err.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es später erneut.`);
@@ -224,6 +233,21 @@ export function MitgliedwerdenPage() {
               className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
               placeholder="Haben Sie Fragen oder möchten Sie uns etwas mitteilen?"
             />
+          </div>
+
+          {/* Newsletter Opt-in */}
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="newsletterOptIn"
+              name="newsletterOptIn"
+              checked={formData.newsletterOptIn}
+              onChange={(e) => setFormData({ ...formData, newsletterOptIn: e.target.checked })}
+              className="mt-1 h-4 w-4 rounded border-[rgba(107,142,111,0.3)] text-[#6b8e6f] focus:ring-[#6b8e6f]"
+            />
+            <label htmlFor="newsletterOptIn" className="text-sm text-[#666666] font-['Inter',sans-serif]">
+              Ich möchte den Newsletter der Alten Post erhalten und über kommende Veranstaltungen und Neuigkeiten informiert werden.
+            </label>
           </div>
 
           {/* Info Box */}

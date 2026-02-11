@@ -20,20 +20,64 @@ import {
   writeTestimonials,
   readGallery,
   writeGallery,
+  readSponsors,
+  writeSponsors,
+  readNewsletterSubscribers,
+  writeNewsletterSubscribers,
   SiteSettings,
   Testimonial,
-  GalleryImage
+  GalleryImage,
+  Sponsor,
+  NewsletterSubscriber
 } from './_lib/data.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
 
+  const { type } = req.query;
+
+  // Public GET endpoint for sponsors (no auth required)
+  if (req.method === 'GET' && type === 'sponsors-public') {
+    const sponsors = await readSponsors();
+    sponsors.sort((a, b) => a.position - b.position);
+    return res.status(200).json({ success: true, data: sponsors });
+  }
+
+  // Public POST endpoint for newsletter subscription (no auth required)
+  if (req.method === 'POST' && type === 'newsletter-subscribe') {
+    const { email, name, source } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'E-Mail-Adresse ist erforderlich' });
+    }
+    const subscribers = await readNewsletterSubscribers();
+    const existing = subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      if (existing.status === 'unsubscribed') {
+        existing.status = 'active';
+        existing.subscribedAt = new Date().toISOString();
+        await writeNewsletterSubscribers(subscribers);
+        return res.status(200).json({ success: true, message: 'Erfolgreich erneut angemeldet' });
+      }
+      return res.status(200).json({ success: true, message: 'Bereits angemeldet' });
+    }
+    const newSubscriber: NewsletterSubscriber = {
+      id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
+      email,
+      name: name || '',
+      source: source || 'website',
+      subscribedAt: new Date().toISOString(),
+      status: 'active'
+    };
+    subscribers.push(newSubscriber);
+    await writeNewsletterSubscribers(subscribers);
+    return res.status(200).json({ success: true, message: 'Erfolgreich angemeldet' });
+  }
+
+  // All other endpoints require authentication
   const sessionId = req.headers['x-session-id'] as string;
   if (!sessionId || !validateSession(sessionId)) {
     return res.status(401).json({ success: false, error: 'Not authenticated' });
   }
-
-  const { type } = req.query;
 
   // GET requests
   if (req.method === 'GET') {
@@ -44,6 +88,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const contacts = await readContacts();
         const vouchers = await readVouchers();
         const memberships = await readMemberships();
+        const newsletter = await readNewsletterSubscribers();
 
         return res.status(200).json({
           success: true,
@@ -71,6 +116,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               active: memberships.filter(m => m.status === 'active').length,
               archived: memberships.filter(m => m.status === 'archived').length,
               total: memberships.length
+            },
+            newsletter: {
+              active: newsletter.filter(n => n.status === 'active').length,
+              unsubscribed: newsletter.filter(n => n.status === 'unsubscribed').length,
+              total: newsletter.length
             }
           }
         });
@@ -141,9 +191,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, data: gallery });
       }
 
+      case 'sponsors': {
+        const sponsors = await readSponsors();
+        sponsors.sort((a, b) => a.position - b.position);
+        return res.status(200).json({ success: true, data: sponsors });
+      }
+
+      case 'newsletter': {
+        const subscribers = await readNewsletterSubscribers();
+        subscribers.sort((a, b) => new Date(b.subscribedAt).getTime() - new Date(a.subscribedAt).getTime());
+        return res.status(200).json({ success: true, data: subscribers });
+      }
+
       default:
-        return res.status(400).json({ success: false, error: 'Invalid type parameter. Use: stats, settings, contacts, vouchers, memberships, pages, page, testimonials, gallery' });
+        return res.status(400).json({ success: false, error: 'Invalid type parameter' });
     }
+  }
+
+  // POST requests (for creating new items)
+  if (req.method === 'POST') {
+    if (type === 'sponsors') {
+      const sponsors = await readSponsors();
+      const { name, logo, url, category, position } = req.body;
+      if (!name || !category) {
+        return res.status(400).json({ success: false, error: 'Name und Kategorie sind erforderlich' });
+      }
+      const newSponsor: Sponsor = {
+        id: sponsors.length > 0 ? Math.max(...sponsors.map(s => s.id)) + 1 : 1,
+        name,
+        logo: logo || null,
+        url: url || null,
+        category,
+        position: position || sponsors.filter(s => s.category === category).length + 1
+      };
+      sponsors.push(newSponsor);
+      await writeSponsors(sponsors);
+      return res.status(200).json({ success: true, data: newSponsor });
+    }
+
+    return res.status(400).json({ success: false, error: 'POST not supported for this type' });
   }
 
   // PUT requests
@@ -186,6 +272,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       await writeGallery(gallery);
       return res.status(200).json({ success: true, data: gallery });
+    }
+
+    if (type === 'sponsors') {
+      // If body is an array, replace all sponsors
+      if (Array.isArray(req.body)) {
+        const sponsors = req.body as Sponsor[];
+        await writeSponsors(sponsors);
+        return res.status(200).json({ success: true, data: sponsors });
+      }
+      // If body has an id query param, update single sponsor
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const sponsors = await readSponsors();
+      const index = sponsors.findIndex(s => s.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      sponsors[index] = { ...sponsors[index], ...req.body };
+      await writeSponsors(sponsors);
+      return res.status(200).json({ success: true, data: sponsors[index] });
     }
 
     // Update individual reservation/contact/voucher/membership by ID
@@ -233,7 +337,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: memberships[index] });
     }
 
-    return res.status(400).json({ success: false, error: 'PUT supported for: settings, page, testimonials, gallery, contacts, vouchers, memberships' });
+    if (type === 'newsletter') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const subscribers = await readNewsletterSubscribers();
+      const index = subscribers.findIndex(s => s.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      subscribers[index] = { ...subscribers[index], ...req.body };
+      await writeNewsletterSubscribers(subscribers);
+      return res.status(200).json({ success: true, data: subscribers[index] });
+    }
+
+    return res.status(400).json({ success: false, error: 'PUT not supported for this type' });
   }
 
   // DELETE requests
@@ -282,7 +397,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: deleted });
     }
 
-    return res.status(400).json({ success: false, error: 'DELETE supported for: contacts, vouchers, memberships' });
+    if (type === 'sponsors') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const sponsors = await readSponsors();
+      const index = sponsors.findIndex(s => s.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      const deleted = sponsors.splice(index, 1)[0];
+      await writeSponsors(sponsors);
+      return res.status(200).json({ success: true, data: deleted });
+    }
+
+    if (type === 'newsletter') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const subscribers = await readNewsletterSubscribers();
+      const index = subscribers.findIndex(s => s.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      const deleted = subscribers.splice(index, 1)[0];
+      await writeNewsletterSubscribers(subscribers);
+      return res.status(200).json({ success: true, data: deleted });
+    }
+
+    return res.status(400).json({ success: false, error: 'DELETE not supported for this type' });
   }
 
   return res.status(405).json({ success: false, error: 'Method not allowed' });

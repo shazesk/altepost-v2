@@ -15,6 +15,7 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
     phone: '',
     subject: '',
     message: '',
+    newsletterOptIn: false,
     privacyAccepted: false,
   });
 
@@ -75,6 +76,14 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
       console.log('[ContactForm] Response:', res.status, JSON.stringify(data));
       if (!res.ok || !data.success) {
         throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      // Newsletter subscription (fire-and-forget, don't block form)
+      if (formData.newsletterOptIn) {
+        fetch('/api/admin/data?type=newsletter-subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: formData.email, name: formData.name, source: 'contact-form' }),
+        }).catch(() => {}); // silently ignore errors
       }
       setIsSubmitted(true);
     } catch (err: any) {
@@ -206,6 +215,21 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
                 : 'Ihre Nachricht an uns...'
             }
           />
+        </div>
+
+        {/* Newsletter Opt-in */}
+        <div className="flex items-start gap-3">
+          <input
+            type="checkbox"
+            id="newsletterOptIn"
+            name="newsletterOptIn"
+            checked={formData.newsletterOptIn}
+            onChange={handleChange}
+            className="mt-1 h-4 w-4 rounded border-[rgba(107,142,111,0.3)] text-[#6b8e6f] focus:ring-[#6b8e6f]"
+          />
+          <label htmlFor="newsletterOptIn" className="text-sm text-[#666666] font-['Inter',sans-serif]">
+            Ich möchte den Newsletter der Alten Post erhalten und über kommende Veranstaltungen und Neuigkeiten informiert werden.
+          </label>
         </div>
 
         {/* Privacy Policy */}
