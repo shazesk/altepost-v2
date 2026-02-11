@@ -293,7 +293,7 @@ export function TicketReservationPage() {
               />
               <label htmlFor="privacyAccepted" className="text-sm text-[#666666] font-['Inter',sans-serif]">
                 Ich habe die{' '}
-                <Link to="/datenschutz" className="text-[#6b8e6f] hover:text-[#5a7a5e] underline">
+                <Link to="/datenschutz" target="_blank" rel="noopener noreferrer" className="text-[#6b8e6f] hover:text-[#5a7a5e] underline">
                   Datenschutzerklärung
                 </Link>{' '}
                 zur Kenntnis genommen und stimme zu, dass meine Angaben zur Bearbeitung der 
