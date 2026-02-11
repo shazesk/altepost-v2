@@ -4,6 +4,7 @@ import { Calendar, Clock, Euro, Ticket, Grid, List, Download, Gift } from 'lucid
 // Build trigger: ticket-reservation-fix-v2
 import { Link } from 'react-router-dom';
 import { ImageWithFallback } from './figma/ImageWithFallback';
+import jsPDF from 'jspdf';
 
 interface Event {
   id: string;
@@ -17,6 +18,86 @@ interface Event {
   availability: 'available' | 'few-left' | 'sold-out';
   description: string;
   image?: string | null;
+}
+
+function generateProgramPDF(events: Event[]) {
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentWidth = pageWidth - margin * 2;
+  let y = 20;
+
+  // Title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(22);
+  doc.setTextColor(45, 45, 45);
+  doc.text('Alte Post – Aktuelles Programm', pageWidth / 2, y, { align: 'center' });
+  y += 12;
+
+  // Subtitle
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(102, 102, 102);
+  doc.text('Kulturzentrum Alte Post – Veranstaltungen', pageWidth / 2, y, { align: 'center' });
+  y += 14;
+
+  // Divider line
+  doc.setDrawColor(107, 142, 111);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  if (events.length === 0) {
+    doc.setFontSize(12);
+    doc.setTextColor(102, 102, 102);
+    doc.text('Aktuell sind keine Veranstaltungen geplant.', pageWidth / 2, y, { align: 'center' });
+  } else {
+    events.forEach((event, index) => {
+      // Check if we need a new page
+      if (y > 260) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Event title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(45, 45, 45);
+      doc.text(event.title, margin, y);
+      y += 7;
+
+      // Artist
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(102, 102, 102);
+      doc.text(event.artist, margin, y);
+      y += 7;
+
+      // Date, time, price, genre
+      doc.setFontSize(10);
+      doc.setTextColor(107, 142, 111);
+      const details = `${event.date}  |  ${event.time}  |  ${event.price}  |  ${event.genre}`;
+      doc.text(details, margin, y);
+      y += 7;
+
+      // Description
+      doc.setTextColor(80, 80, 80);
+      doc.setFontSize(10);
+      const lines = doc.splitTextToSize(event.description, contentWidth);
+      doc.text(lines, margin, y);
+      y += lines.length * 5 + 4;
+
+      // Separator between events
+      if (index < events.length - 1) {
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.2);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 8;
+      }
+    });
+  }
+
+  doc.save('Alte_Post_Programm.pdf');
 }
 
 export function EventsSection() {
@@ -65,11 +146,14 @@ export function EventsSection() {
             Entdecken Sie unsere kommenden Veranstaltungen – von Jazz über Kabarett bis Theater
           </p>
           <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <Link to="/tickets" className="inline-flex items-center text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors">
+            <button
+              onClick={() => generateProgramPDF(events)}
+              className="inline-flex items-center text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors cursor-pointer"
+            >
               <Download className="h-4 w-4 mr-1.5" />
               Programm als PDF herunterladen
-            </Link>
-            <Link to="/tickets" className="inline-flex items-center text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors">
+            </button>
+            <Link to="/gutschein" className="inline-flex items-center text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors">
               <Gift className="h-4 w-4 mr-1.5" />
               Gutschein verschenken
             </Link>
