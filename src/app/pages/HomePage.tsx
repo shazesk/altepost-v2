@@ -104,6 +104,7 @@ const defaultGallery: GalleryImage[] = [
 export function HomePage() {
   const { content } = useCmsPage<HomePageContent>('home', defaultContent);
   const [gallery, setGallery] = useState<GalleryImage[]>(defaultGallery);
+  const [latestEvent, setLatestEvent] = useState<{ title: string; artist: string; date: string; time: string; price: string; genre: string; description: string } | null>(null);
 
   useEffect(() => {
     async function fetchGallery() {
@@ -122,12 +123,39 @@ export function HomePage() {
     fetchGallery();
   }, []);
 
+  useEffect(() => {
+    async function fetchLatestEvent() {
+      try {
+        const res = await fetch('/api/pages?type=events');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            const events = data.data;
+            const last = events[events.length - 1];
+            setLatestEvent({
+              title: last.title,
+              artist: last.artist || '',
+              date: last.date,
+              time: last.time,
+              price: last.price?.replace(/[^\d,\.]/g, '') || '',
+              genre: last.genre,
+              description: last.description,
+            });
+          }
+        }
+      } catch {
+        // Use CMS defaults on error
+      }
+    }
+    fetchLatestEvent();
+  }, []);
+
   function getGalleryImage(position: number): GalleryImage {
     return gallery.find(g => g.position === position) || defaultGallery[position];
   }
 
-  // Use CMS content for the next event
-  const nextEvent = {
+  // Use latest event from API, fallback to CMS content
+  const nextEvent = latestEvent || {
     title: content.hero.title,
     artist: content.hero.subtitle,
     date: content.hero.date,
