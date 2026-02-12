@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Use verified domain for FROM address (set in Vercel)
 // Example: "Alte Post Brensbach <noreply@alte-post-brensbach.de>"
-const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'Alte Post Brensbach <onboarding@resend.dev>';
+const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'Alte Post Brensbach <noreply@friedrichholdings.de>';
 
 interface SendEmailOptions {
   to: string;
