@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const event = events.find(e => e.id === r.eventId);
       return {
         ...r,
-        eventTitle: event ? event.title : 'Unbekannt',
+        eventTitle: event ? event.title : (r.eventTitle || 'Unbekannt'),
         eventDate: event ? event.date : null,
         eventArtist: event ? event.artist : null
       };

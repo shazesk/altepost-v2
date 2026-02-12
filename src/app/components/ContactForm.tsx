@@ -77,16 +77,6 @@ export function ContactForm({ formType, emailTo }: ContactFormProps) {
       if (!res.ok || !data.success) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      // Newsletter subscription
-      if (formData.newsletterOptIn) {
-        try {
-          await fetch('/api/admin/data?type=newsletter-subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email, name: formData.name, source: 'contact-form' }),
-          });
-        } catch {} // don't block form on newsletter error
-      }
       setIsSubmitted(true);
     } catch (err: any) {
       console.error('[ContactForm] Error:', err);

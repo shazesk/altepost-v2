@@ -66,6 +66,7 @@ export interface Event {
 export interface Reservation {
   id: number;
   eventId: number;
+  eventTitle?: string;
   name: string;
   email: string;
   phone: string;

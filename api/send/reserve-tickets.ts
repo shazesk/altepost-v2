@@ -3,7 +3,7 @@ import { cors } from './_lib/cors.js';
 import { sendEmail } from './_lib/resend.js';
 import { generateRequestId, log } from './_lib/logger.js';
 import { ticketNotification, ticketConfirmation } from './_lib/templates.js';
-import { readReservations, writeReservations, readEvents, Reservation } from '../admin/_lib/data.js';
+import { readReservations, writeReservations, readEvents, Reservation, readNewsletterSubscribers, writeNewsletterSubscribers } from '../admin/_lib/data.js';
 
 const ADMIN_EMAIL = 'shahzad.esc@gmail.com';
 
@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { name, email, phone, message, ticketCount, eventTitle, eventArtist, eventDate, eventTime, eventPrice, totalPrice, eventId } = req.body || {};
+    const { name, email, phone, message, ticketCount, eventTitle, eventArtist, eventDate, eventTime, eventPrice, totalPrice, eventId, newsletterOptIn } = req.body || {};
 
     log(requestId, 'Validating fields', { name: !!name, email: !!email, phone: !!phone, ticketCount, eventTitle, eventId });
 
@@ -31,12 +31,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing required fields', requestId });
     }
 
-    // Find eventId if not provided
-    let resolvedEventId = eventId;
+    // Resolve eventId - parse to number for consistent storage
+    let resolvedEventId = eventId ? parseInt(eventId) : 0;
     if (!resolvedEventId) {
       log(requestId, 'Resolving eventId from title/date', { eventTitle, eventDate });
       const events = await readEvents();
-      const event = events.find(e => e.title === eventTitle && e.date === eventDate);
+      const event = events.find(e => e.title === eventTitle);
       resolvedEventId = event?.id || 0;
       log(requestId, 'Resolved eventId', { resolvedEventId });
     }
@@ -47,6 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const newReservation: Reservation = {
       id: reservations.length > 0 ? Math.max(...reservations.map(r => r.id)) + 1 : 1,
       eventId: resolvedEventId,
+      eventTitle: eventTitle || '',
       name,
       email,
       phone,
@@ -76,6 +77,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requestId,
       }),
     ]);
+
+    // Newsletter subscription (server-side)
+    if (newsletterOptIn && email) {
+      try {
+        const subscribers = await readNewsletterSubscribers();
+        const existing = subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
+        if (!existing) {
+          subscribers.push({
+            id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
+            email, name: name || '', source: 'ticket-reservation',
+            subscribedAt: new Date().toISOString(), status: 'active'
+          });
+          await writeNewsletterSubscribers(subscribers);
+        } else if (existing.status === 'unsubscribed') {
+          existing.status = 'active';
+          existing.subscribedAt = new Date().toISOString();
+          await writeNewsletterSubscribers(subscribers);
+        }
+      } catch (e) { log(requestId, 'Newsletter subscription error', { error: (e as Error).message }); }
+    }
 
     log(requestId, 'Ticket reservation handler completed successfully', { reservationId: newReservation.id, emailIds: [venueResult?.id, confirmResult?.id] });
     return res.status(200).json({ success: true, reservationId: newReservation.id, requestId, ids: [venueResult?.id, confirmResult?.id] });

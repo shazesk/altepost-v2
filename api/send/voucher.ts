@@ -3,7 +3,7 @@ import { cors } from './_lib/cors.js';
 import { sendEmail } from './_lib/resend.js';
 import { generateRequestId, log } from './_lib/logger.js';
 import { voucherNotification, voucherConfirmation } from './_lib/templates.js';
-import { readVouchers, writeVouchers, VoucherOrder } from '../admin/_lib/data.js';
+import { readVouchers, writeVouchers, VoucherOrder, readNewsletterSubscribers, writeNewsletterSubscribers } from '../admin/_lib/data.js';
 
 const ADMIN_EMAIL = 'shahzad.esc@gmail.com';
 
@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { voucherType, amount, customAmount, eventName, buyerName, buyerEmail, buyerPhone, recipientName, recipientEmail, message, delivery } = req.body || {};
+    const { voucherType, amount, customAmount, eventName, buyerName, buyerEmail, buyerPhone, recipientName, recipientEmail, message, delivery, newsletterOptIn } = req.body || {};
 
     log(requestId, 'Validating fields', { buyerName: !!buyerName, buyerEmail: !!buyerEmail, buyerPhone: !!buyerPhone, voucherType });
 
@@ -84,6 +84,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requestId,
       }),
     ]);
+
+    // Newsletter subscription (server-side)
+    if (newsletterOptIn && buyerEmail) {
+      try {
+        const subscribers = await readNewsletterSubscribers();
+        const existing = subscribers.find(s => s.email.toLowerCase() === buyerEmail.toLowerCase());
+        if (!existing) {
+          subscribers.push({
+            id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
+            email: buyerEmail, name: buyerName || '', source: 'voucher',
+            subscribedAt: new Date().toISOString(), status: 'active'
+          });
+          await writeNewsletterSubscribers(subscribers);
+        } else if (existing.status === 'unsubscribed') {
+          existing.status = 'active';
+          existing.subscribedAt = new Date().toISOString();
+          await writeNewsletterSubscribers(subscribers);
+        }
+      } catch (e) { log(requestId, 'Newsletter subscription error', { error: (e as Error).message }); }
+    }
 
     log(requestId, 'Voucher handler completed successfully');
     return res.status(200).json({ success: true, requestId });

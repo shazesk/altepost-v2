@@ -56,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const enriched = {
       ...reservation,
-      eventTitle: event ? event.title : 'Unbekannt',
+      eventTitle: event ? event.title : (reservation.eventTitle || 'Unbekannt'),
       eventDate: event ? event.date : null,
       eventArtist: event ? event.artist : null
     };

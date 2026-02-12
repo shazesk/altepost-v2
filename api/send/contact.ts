@@ -3,7 +3,7 @@ import { cors } from './_lib/cors.js';
 import { sendEmail } from './_lib/resend.js';
 import { generateRequestId, log } from './_lib/logger.js';
 import { contactNotification, contactConfirmation } from './_lib/templates.js';
-import { readContacts, writeContacts, Contact } from '../admin/_lib/data.js';
+import { readContacts, writeContacts, Contact, readNewsletterSubscribers, writeNewsletterSubscribers, NewsletterSubscriber } from '../admin/_lib/data.js';
 
 const ADMIN_EMAIL = 'shahzad.esc@gmail.com';
 
@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { name, email, phone, subject, message, formType } = req.body || {};
+    const { name, email, phone, subject, message, formType, newsletterOptIn } = req.body || {};
 
     log(requestId, 'Validating fields', { name: !!name, email: !!email, subject: !!subject, message: !!message, formType });
 
@@ -67,6 +67,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requestId,
       }),
     ]);
+
+    // Newsletter subscription (server-side)
+    if (newsletterOptIn && email) {
+      try {
+        const subscribers = await readNewsletterSubscribers();
+        const existing = subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
+        if (!existing) {
+          subscribers.push({
+            id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
+            email, name: name || '', source: `contact-${formType}`,
+            subscribedAt: new Date().toISOString(), status: 'active'
+          });
+          await writeNewsletterSubscribers(subscribers);
+        } else if (existing.status === 'unsubscribed') {
+          existing.status = 'active';
+          existing.subscribedAt = new Date().toISOString();
+          await writeNewsletterSubscribers(subscribers);
+        }
+      } catch (e) { log(requestId, 'Newsletter subscription error', { error: (e as Error).message }); }
+    }
 
     log(requestId, 'Contact handler completed successfully');
     return res.status(200).json({ success: true, requestId });
