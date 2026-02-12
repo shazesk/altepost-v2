@@ -35,13 +35,15 @@ export function MitgliedwerdenPage() {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
-      // Newsletter subscription (fire-and-forget, don't block form)
+      // Newsletter subscription
       if (formData.newsletterOptIn) {
-        fetch('/api/admin/data?type=newsletter-subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: formData.email, name: formData.name, source: 'membership' }),
-        }).catch(() => {}); // silently ignore errors
+        try {
+          await fetch('/api/admin/data?type=newsletter-subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: formData.email, name: formData.name, source: 'membership' }),
+          });
+        } catch {} // don't block form on newsletter error
       }
       setSubmitted(true);
     } catch (err: any) {
