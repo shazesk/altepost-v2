@@ -60,6 +60,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await writeReservations(reservations);
     log(requestId, 'Reservation stored', { reservationId: newReservation.id, eventId: resolvedEventId });
 
+    // Newsletter subscription (server-side, before emails so it always runs)
+    if (newsletterOptIn && email) {
+      try {
+        const subscribers = await readNewsletterSubscribers();
+        const existing = subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
+        if (!existing) {
+          subscribers.push({
+            id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
+            email, name: name || '', source: 'ticket-reservation',
+            subscribedAt: new Date().toISOString(), status: 'active'
+          });
+          await writeNewsletterSubscribers(subscribers);
+          log(requestId, 'Newsletter subscription saved');
+        } else if (existing.status === 'unsubscribed') {
+          existing.status = 'active';
+          existing.subscribedAt = new Date().toISOString();
+          await writeNewsletterSubscribers(subscribers);
+          log(requestId, 'Newsletter re-subscription saved');
+        }
+      } catch (e) { log(requestId, 'Newsletter subscription error', { error: (e as Error).message }); }
+    }
+
     // Send emails
     log(requestId, 'Sending notification + confirmation emails');
     const [venueResult, confirmResult] = await Promise.all([
@@ -77,26 +99,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         requestId,
       }),
     ]);
-
-    // Newsletter subscription (server-side)
-    if (newsletterOptIn && email) {
-      try {
-        const subscribers = await readNewsletterSubscribers();
-        const existing = subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
-        if (!existing) {
-          subscribers.push({
-            id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
-            email, name: name || '', source: 'ticket-reservation',
-            subscribedAt: new Date().toISOString(), status: 'active'
-          });
-          await writeNewsletterSubscribers(subscribers);
-        } else if (existing.status === 'unsubscribed') {
-          existing.status = 'active';
-          existing.subscribedAt = new Date().toISOString();
-          await writeNewsletterSubscribers(subscribers);
-        }
-      } catch (e) { log(requestId, 'Newsletter subscription error', { error: (e as Error).message }); }
-    }
 
     log(requestId, 'Ticket reservation handler completed successfully', { reservationId: newReservation.id, emailIds: [venueResult?.id, confirmResult?.id] });
     return res.status(200).json({ success: true, reservationId: newReservation.id, requestId, ids: [venueResult?.id, confirmResult?.id] });
