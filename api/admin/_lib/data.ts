@@ -351,24 +351,33 @@ export async function writeMemberships(memberships: MembershipApplication[]): Pr
 
 // ============ PAGE CONTENT (CMS) ============
 export async function readPageContent(pageName: string): Promise<any> {
+  let content: any = null;
   if (isRedisConfigured()) {
     try {
       const data = await getRedis()!.get(`page:${pageName}`);
-      if (data) return data;
+      if (data) content = data;
     } catch (e) {
       console.error(`Redis error reading page ${pageName}:`, e);
     }
   }
-  // Fallback to local file
-  try {
-    const filePath = path.join(PAGES_DIR, `${pageName}.json`);
-    if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  if (!content) {
+    // Fallback to local file
+    try {
+      const filePath = path.join(PAGES_DIR, `${pageName}.json`);
+      if (fs.existsSync(filePath)) {
+        content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      }
+    } catch (e) {
+      console.error(`Error reading page ${pageName}:`, e);
     }
-  } catch (e) {
-    console.error(`Error reading page ${pageName}:`, e);
   }
-  return null;
+  // Strip hero from home page — event data is now fetched dynamically
+  if (pageName === 'home' && content && content.hero) {
+    delete content.hero;
+    // Persist the cleanup
+    writePageContent(pageName, content).catch(() => {});
+  }
+  return content;
 }
 
 export async function writePageContent(pageName: string, content: any): Promise<void> {

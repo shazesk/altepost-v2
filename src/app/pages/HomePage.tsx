@@ -24,16 +24,6 @@ import { useCmsPage } from '../hooks/useCmsPage';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
 interface HomePageContent {
-  hero: {
-    badge: string;
-    title: string;
-    subtitle: string;
-    description: string;
-    date: string;
-    time: string;
-    price: string;
-    genre: string;
-  };
   intro: {
     title: string;
     subtitle: string;
@@ -54,16 +44,6 @@ interface HomePageContent {
 }
 
 const defaultContent: HomePageContent = {
-  hero: {
-    badge: 'Nächste Veranstaltung',
-    title: 'Winterkonzert',
-    subtitle: 'Maria Schneider Quartett',
-    description: 'Ein intimer Jazzabend mit der preisgekrönten Pianistin Maria Schneider und ihrem Quartett.',
-    date: '15. Januar 2026',
-    time: '20:00 Uhr',
-    price: '18,00',
-    genre: 'Jazz',
-  },
   intro: {
     title: 'Willkommen in der Alten Post',
     subtitle: 'Was unsere Kleinkunstkneipe seit 1994 zu einem besonderen Ort macht',
@@ -154,22 +134,15 @@ export function HomePage() {
     return gallery.find(g => g.position === position) || defaultGallery[position];
   }
 
-  // Use latest event from API, fallback to CMS content
-  const nextEvent = latestEvent || {
-    title: content.hero.title,
-    artist: content.hero.subtitle,
-    date: content.hero.date,
-    time: content.hero.time,
-    price: content.hero.price,
-    genre: content.hero.genre,
-    description: content.hero.description,
-  };
+  // Use latest event from API
+  const nextEvent = latestEvent;
 
   return (
     <>
       <Hero />
       
-      {/* Featured Event Highlight */}
+      {/* Featured Event Highlight - only shown when events exist */}
+      {nextEvent && (
       <section className="py-20 lg:py-28 bg-gradient-to-b from-white to-[#faf9f7]">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -186,7 +159,7 @@ export function HomePage() {
               {nextEvent.artist}
             </p>
           </div>
-          
+
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-2xl p-8 lg:p-12 shadow-xl border border-[rgba(107,142,111,0.1)]">
               <div className="flex items-center justify-center gap-3 mb-6">
@@ -194,11 +167,11 @@ export function HomePage() {
                   {nextEvent.genre}
                 </span>
               </div>
-              
+
               <p className="text-lg text-[#666666] mb-8 leading-relaxed text-center font-['Inter',sans-serif] max-w-2xl mx-auto">
                 {nextEvent.description}
               </p>
-              
+
               <div className="flex flex-wrap justify-center gap-8 mb-10 text-[#666666]">
                 <div className="flex flex-col items-center">
                   <Calendar className="h-6 w-6 mb-2 text-[#6b8e6f]" />
@@ -221,7 +194,7 @@ export function HomePage() {
                   <span className="font-['Inter',sans-serif]">Alte Post</span>
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/tickets"
@@ -243,6 +216,7 @@ export function HomePage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Why Us Section */}
       <section className="py-16 lg:py-20 bg-white">
