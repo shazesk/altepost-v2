@@ -42,6 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subject,
       message,
       formType,
+      newsletterOptIn: !!newsletterOptIn,
       status: 'active',
       createdAt: new Date().toISOString(),
       notes: ''

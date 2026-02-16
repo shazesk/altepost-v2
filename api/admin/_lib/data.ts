@@ -106,6 +106,7 @@ export interface Contact {
   subject: string;
   message: string;
   formType: 'general' | 'artist' | 'sponsor';
+  newsletterOptIn?: boolean;
   status: 'active' | 'archived';
   createdAt: string;
   notes: string;

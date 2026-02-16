@@ -56,6 +56,7 @@ interface Contact {
   subject: string;
   message: string;
   formType: 'general' | 'artist' | 'sponsor';
+  newsletterOptIn?: boolean;
   status: 'active' | 'archived';
   createdAt: string;
   notes: string;
@@ -1943,6 +1944,16 @@ export function AdminPage() {
                       <div className="text-[#2d2d2d] whitespace-pre-wrap bg-[#faf9f7] p-4 rounded-lg">{viewingContact.message}</div>
                     </div>
                     <div>
+                      <div className="text-sm text-[#666666]">Newsletter</div>
+                      <div className="text-[#2d2d2d]">
+                        {viewingContact.newsletterOptIn ? (
+                          <span className="inline-flex items-center gap-1 text-green-700">Ja, angemeldet</span>
+                        ) : (
+                          <span className="text-[#999999]">Nein</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
                       <div className="text-sm text-[#666666]">Erhalten am</div>
                       <div className="text-[#2d2d2d]">{formatDate(viewingContact.createdAt)}</div>
                     </div>
@@ -1974,6 +1985,7 @@ export function AdminPage() {
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Name</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Betreff</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Typ</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Newsletter</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Status</th>
                     <th className="text-right p-4 font-medium text-[#2d2d2d]">Aktionen</th>
                   </tr>
@@ -1988,6 +2000,13 @@ export function AdminPage() {
                       </td>
                       <td className="p-4 text-[#2d2d2d]">{c.subject}</td>
                       <td className="p-4 text-[#666666]">{c.formType === 'general' ? 'Allgemein' : c.formType === 'artist' ? 'Künstler' : 'Förderer'}</td>
+                      <td className="p-4">
+                        {c.newsletterOptIn ? (
+                          <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Ja</span>
+                        ) : (
+                          <span className="text-[#999999] text-sm">—</span>
+                        )}
+                      </td>
                       <td className="p-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                           c.status === 'archived' ? 'bg-[#e8e4df] text-[#666666]' : 'bg-green-100 text-green-800'
@@ -2713,6 +2732,9 @@ export function AdminPage() {
                         <td className="px-4 py-3 text-[#666666] text-sm">
                           {{
                             'contact-form': 'Kontaktformular',
+                            'contact-general': 'Kontakt (Allgemein)',
+                            'contact-artist': 'Kontakt (Künstler)',
+                            'contact-sponsor': 'Kontakt (Förderer)',
                             'ticket-reservation': 'Ticketreservierung',
                             'membership': 'Mitgliedschaft',
                             'voucher': 'Gutschein',
