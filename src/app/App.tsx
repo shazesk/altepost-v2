@@ -10,6 +10,7 @@ import { MembershipPage } from './pages/MembershipPage';
 import { TicketsPage } from './pages/TicketsPage';
 import { TicketReservationPage } from './pages/TicketReservationPage';
 import { ArchivePage } from './pages/ArchivePage';
+import { BelegungsplanPage } from './pages/BelegungsplanPage';
 import { SponsorsPage } from './pages/SponsorsPage';
 import { ImpressumPage } from './pages/ImpressumPage';
 import { DatenschutzPage } from './pages/DatenschutzPage';
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="ticket-reservation" element={<TicketReservationPage />} />
           <Route path="gutschein" element={<GutscheinPage />} />
           <Route path="archiv" element={<ArchivePage />} />
+          <Route path="belegungsplan" element={<BelegungsplanPage />} />
           <Route path="sponsors" element={<SponsorsPage />} />
           <Route path="kontakt" element={<KontaktPage />} />
           <Route path="impressum" element={<ImpressumPage />} />

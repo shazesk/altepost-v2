@@ -15,6 +15,7 @@ export function Header() {
     { name: 'Für Künstler', href: '/artists' },
     { name: 'Mitglied werden', href: '/membership' },
     { name: 'Kontakt', href: '/kontakt' },
+    { name: 'Kalender', href: '/belegungsplan' },
     { name: 'Archiv', href: '/archiv' },
   ];
 
