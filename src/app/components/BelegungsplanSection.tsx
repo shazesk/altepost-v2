@@ -63,7 +63,7 @@ const GERMAN_MONTHS: Record<string, number> = {
 
 function parseGermanDate(dateStr: string): Date | null {
   // Format: "15. Januar 2026" or "15. Februar 2026"
-  const match = dateStr.match(/^(\d{1,2})\.\s*(\w+)\s+(\d{4})$/);
+  const match = dateStr.match(/^(\d{1,2})\.\s*([A-Za-zÄäÖöÜüß]+)\s+(\d{4})$/);
   if (!match) return null;
   const day = parseInt(match[1], 10);
   const monthIndex = GERMAN_MONTHS[match[2].toLowerCase()];
