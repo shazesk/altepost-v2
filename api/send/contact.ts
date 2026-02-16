@@ -52,32 +52,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     log(requestId, 'Contact stored', { contactId: newContact.id });
 
     // Newsletter subscription (server-side, before emails so it always runs)
-    log(requestId, 'Newsletter check', { newsletterOptIn, newsletterOptInType: typeof newsletterOptIn, email: !!email });
     if (newsletterOptIn && email) {
       try {
         const subscribers = await readNewsletterSubscribers();
-        log(requestId, 'Newsletter subscribers loaded', { count: subscribers.length, isArray: Array.isArray(subscribers) });
         const existing = subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
         if (!existing) {
-          const newSub = {
+          subscribers.push({
             id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
             email, name: name || '', source: `contact-${formType}`,
-            subscribedAt: new Date().toISOString(), status: 'active' as const
-          };
-          subscribers.push(newSub);
+            subscribedAt: new Date().toISOString(), status: 'active'
+          });
           await writeNewsletterSubscribers(subscribers);
-          log(requestId, 'Newsletter subscription saved', { newId: newSub.id, newCount: subscribers.length });
+          log(requestId, 'Newsletter subscription saved');
         } else if (existing.status === 'unsubscribed') {
           existing.status = 'active';
           existing.subscribedAt = new Date().toISOString();
           await writeNewsletterSubscribers(subscribers);
           log(requestId, 'Newsletter re-subscription saved');
-        } else {
-          log(requestId, 'Newsletter subscriber already exists', { existingId: existing.id, status: existing.status });
         }
-      } catch (e) { log(requestId, 'Newsletter subscription error', { error: (e as Error).message, stack: (e as Error).stack }); }
-    } else {
-      log(requestId, 'Newsletter subscription skipped', { newsletterOptIn, hasEmail: !!email });
+      } catch (e) { log(requestId, 'Newsletter subscription error', { error: (e as Error).message }); }
     }
 
     // Send emails
