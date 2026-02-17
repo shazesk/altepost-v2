@@ -61,6 +61,7 @@ export interface Event {
   description: string;
   image: string | null;
   is_archived: boolean;
+  photos?: string[];
 }
 
 export interface Reservation {

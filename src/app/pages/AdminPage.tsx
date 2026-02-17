@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download } from 'lucide-react';
+import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -15,6 +15,7 @@ interface Event {
   description: string;
   image: string | null;
   is_archived: boolean;
+  photos?: string[];
 }
 
 interface Reservation {
@@ -200,6 +201,11 @@ export function AdminPage() {
 
   // Newsletter state
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
+
+  // Event photos state
+  const [managingPhotosEvent, setManagingPhotosEvent] = useState<Event | null>(null);
+  const [eventPhotos, setEventPhotos] = useState<string[]>([]);
+  const [savingPhotos, setSavingPhotos] = useState(false);
 
   // Check stored session on mount
   useEffect(() => {
@@ -795,6 +801,69 @@ export function AdminPage() {
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  function openPhotoManager(event: Event) {
+    setManagingPhotosEvent(event);
+    setEventPhotos(event.photos || []);
+  }
+
+  async function handleAddPhotos(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newPhotos: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > 2 * 1024 * 1024) {
+        setMessage({ text: `${file.name} ist zu groß (max. 2 MB)`, type: 'error' });
+        continue;
+      }
+      if (eventPhotos.length + newPhotos.length >= 5) {
+        setMessage({ text: 'Maximum 5 Fotos pro Veranstaltung', type: 'error' });
+        break;
+      }
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      newPhotos.push(base64);
+    }
+
+    setEventPhotos(prev => [...prev, ...newPhotos]);
+    e.target.value = '';
+  }
+
+  function handleRemovePhoto(index: number) {
+    setEventPhotos(prev => prev.filter((_, i) => i !== index));
+  }
+
+  async function handleSavePhotos() {
+    if (!managingPhotosEvent) return;
+    setSavingPhotos(true);
+    try {
+      const res = await fetch(`${API_BASE}/events?action=update-photos`, {
+        method: 'POST',
+        headers: {
+          'x-session-id': sessionId!,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id: managingPhotosEvent.id, photos: eventPhotos })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Fotos gespeichert', type: 'success' });
+        setManagingPhotosEvent(null);
+        loadEvents();
+      } else {
+        setMessage({ text: data.error || 'Speichern fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    } finally {
+      setSavingPhotos(false);
     }
   }
 
@@ -1869,6 +1938,11 @@ export function AdminPage() {
                       <td className="p-4">
                         <div className="flex justify-end gap-2">
                           <button onClick={() => { setEditingEvent(event); setImagePreview(event.image); setSelectedImageFile(null); }} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Bearbeiten"><Edit2 className="w-4 h-4" /></button>
+                          {event.is_archived && (
+                            <button onClick={() => openPhotoManager(event)} className="p-2 text-[#d4a574] hover:bg-[#d4a574]/10 rounded-lg" title="Fotos verwalten">
+                              <Camera className="w-4 h-4" />
+                            </button>
+                          )}
                           <button onClick={() => handleToggleArchive(event.id)} className="p-2 text-[#666666] hover:bg-[#666666]/10 rounded-lg" title={event.is_archived ? 'Wiederherstellen' : 'Archivieren'}>
                             {event.is_archived ? <RotateCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                           </button>
@@ -1881,6 +1955,77 @@ export function AdminPage() {
               </table>
               {events.length === 0 && <div className="p-8 text-center text-[#666666]">Keine Veranstaltungen vorhanden.</div>}
             </div>
+
+            {/* Photo Management Panel */}
+            {managingPhotosEvent && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">Fotos verwalten</h3>
+                      <p className="text-sm text-[#666666] mt-1">{managingPhotosEvent.title} – {managingPhotosEvent.artist}</p>
+                    </div>
+                    <button onClick={() => setManagingPhotosEvent(null)} className="p-2 text-[#666666] hover:text-[#2d2d2d]">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Photo Grid */}
+                  {eventPhotos.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                      {eventPhotos.map((photo, index) => (
+                        <div key={index} className="relative group">
+                          <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-32 object-cover rounded-lg border border-[rgba(107,142,111,0.2)]" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(index)}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Foto entfernen"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {eventPhotos.length === 0 && (
+                    <div className="text-center py-8 bg-[#faf9f7] rounded-lg border border-dashed border-[rgba(107,142,111,0.3)] mb-6">
+                      <Camera className="w-8 h-8 text-[#666666] mx-auto mb-2" />
+                      <p className="text-[#666666] text-sm">Noch keine Fotos hochgeladen</p>
+                    </div>
+                  )}
+
+                  {/* Upload */}
+                  {eventPhotos.length < 5 && (
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Fotos hinzufügen ({eventPhotos.length}/5)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleAddPhotos}
+                        className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                      />
+                      <p className="text-xs text-[#666666] mt-1">Max. 2 MB pro Bild. Bis zu {5 - eventPhotos.length} weitere möglich.</p>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setManagingPhotosEvent(null)} className="px-4 py-2 text-[#666666] hover:text-[#2d2d2d] rounded-lg">Abbrechen</button>
+                    <button
+                      onClick={handleSavePhotos}
+                      disabled={savingPhotos}
+                      className="flex items-center gap-2 bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4" />
+                      {savingPhotos ? 'Speichern...' : 'Fotos speichern'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 

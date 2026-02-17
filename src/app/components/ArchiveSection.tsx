@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Search, Calendar } from 'lucide-react';
+import { ChevronDown, ChevronRight, Search, Calendar, Camera, X } from 'lucide-react';
 
 interface ArchiveEvent {
   id: string;
@@ -8,6 +8,7 @@ interface ArchiveEvent {
   artist: string;
   date: string;
   genre: string;
+  photos?: string[];
 }
 
 export function ArchiveSection() {
@@ -15,6 +16,7 @@ export function ArchiveSection() {
   const [loading, setLoading] = useState(true);
   const [expandedYears, setExpandedYears] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchArchive() {
@@ -147,12 +149,36 @@ export function ArchiveSection() {
                             <p className="text-sm text-[#666666]">{event.artist}</p>
                           </div>
                           <div className="flex items-center gap-3 text-sm">
+                            {event.photos && event.photos.length > 0 && (
+                              <span className="inline-flex items-center gap-1 text-[#6b8e6f]">
+                                <Camera className="h-3.5 w-3.5" />
+                                <span className="text-xs">{event.photos.length}</span>
+                              </span>
+                            )}
                             <span className="text-[#666666]">{event.date}</span>
                             <span className="px-2 py-0.5 bg-[#e8e4df] rounded-full text-[#666666] text-xs">
                               {event.genre}
                             </span>
                           </div>
                         </div>
+                        {/* Photo Gallery */}
+                        {event.photos && event.photos.length > 0 && (
+                          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                            {event.photos.map((photo, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => setLightboxPhoto(photo)}
+                                className="flex-shrink-0 rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-colors"
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`${event.title} Foto ${idx + 1}`}
+                                  className="h-20 w-28 object-cover"
+                                />
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -169,6 +195,27 @@ export function ArchiveSection() {
           </p>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {lightboxPhoto && (
+        <div
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <button
+            onClick={() => setLightboxPhoto(null)}
+            className="absolute top-4 right-4 text-white hover:text-gray-300"
+          >
+            <X className="w-8 h-8" />
+          </button>
+          <img
+            src={lightboxPhoto}
+            alt="Veranstaltungsfoto"
+            className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </section>
   );
 }

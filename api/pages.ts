@@ -54,7 +54,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           title: e.title,
           artist: e.artist,
           date: formatDate(e.date),
-          genre: e.genre
+          genre: e.genre,
+          photos: e.photos || []
         }));
 
       // Group by year

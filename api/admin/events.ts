@@ -141,6 +141,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: events[eventIndex], requestId });
     }
 
+    // Handle update-photos action
+    if (action === 'update-photos') {
+      const id = body.id;
+      log(requestId, 'Update photos action', { id, photoCount: body.photos?.length });
+
+      if (!id) {
+        return res.status(400).json({ success: false, error: 'Missing event ID', requestId });
+      }
+
+      const eventId = parseInt(String(id));
+      if (isNaN(eventId)) {
+        return res.status(400).json({ success: false, error: 'Invalid event ID', requestId });
+      }
+
+      const events = await readEvents();
+      const eventIndex = events.findIndex(e => e.id === eventId);
+
+      if (eventIndex === -1) {
+        return res.status(404).json({ success: false, error: 'Event not found', requestId });
+      }
+
+      events[eventIndex].photos = Array.isArray(body.photos) ? body.photos : [];
+      await writeEvents(events);
+
+      log(requestId, 'Update photos success', { eventId, photoCount: events[eventIndex].photos?.length });
+      return res.status(200).json({ success: true, data: events[eventIndex], requestId });
+    }
+
     // Create new event (no action specified)
     log(requestId, 'Create event', { title: body.title });
 
@@ -201,7 +229,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       availability: body.availability ?? events[eventIndex].availability,
       description: body.description ?? events[eventIndex].description,
       image: body.image !== undefined ? body.image : events[eventIndex].image,
-      is_archived: body.is_archived !== undefined ? (body.is_archived === 'true' || body.is_archived === true) : events[eventIndex].is_archived
+      is_archived: body.is_archived !== undefined ? (body.is_archived === 'true' || body.is_archived === true) : events[eventIndex].is_archived,
+      photos: events[eventIndex].photos || []
     };
 
     if (body.date) {
