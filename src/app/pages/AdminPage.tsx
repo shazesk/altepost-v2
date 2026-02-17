@@ -809,6 +809,31 @@ export function AdminPage() {
     setEventPhotos(event.photos || []);
   }
 
+  function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let w = img.width;
+          let h = img.height;
+          if (w > maxWidth) {
+            h = Math.round((h * maxWidth) / w);
+            w = maxWidth;
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d')!;
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = ev.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function handleAddPhotos(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
@@ -816,20 +841,12 @@ export function AdminPage() {
     const newPhotos: string[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.size > 2 * 1024 * 1024) {
-        setMessage({ text: `${file.name} ist zu groß (max. 2 MB)`, type: 'error' });
-        continue;
-      }
       if (eventPhotos.length + newPhotos.length >= 5) {
         setMessage({ text: 'Maximum 5 Fotos pro Veranstaltung', type: 'error' });
         break;
       }
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-      newPhotos.push(base64);
+      const compressed = await compressImage(file);
+      newPhotos.push(compressed);
     }
 
     setEventPhotos(prev => [...prev, ...newPhotos]);
