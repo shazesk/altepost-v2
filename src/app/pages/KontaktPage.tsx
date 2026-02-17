@@ -1,5 +1,6 @@
 import React from "react";
 import { ContactForm } from '../components/ContactForm';
+import { ParkingSection } from '../components/ParkingSection';
 import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -170,6 +171,9 @@ export function KontaktPage() {
           </div>
         </div>
       </section>
+
+      {/* Parking Section */}
+      <ParkingSection />
     </div>
   );
 }

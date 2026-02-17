@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Hero } from '../components/Hero';
 import { SponsorsCarousel } from '../components/SponsorsCarousel';
+import { ParkingSection } from '../components/ParkingSection';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
@@ -487,6 +488,9 @@ export function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Parking Section */}
+      <ParkingSection />
 
       {/* Final CTA Section */}
       <section className="py-16 lg:py-20 bg-white">
