@@ -181,6 +181,7 @@ export interface NewsletterSubscriber {
   source: string;
   subscribedAt: string;
   status: 'active' | 'unsubscribed';
+  unsubscribeToken?: string;
 }
 
 export interface NewsletterIssue {
@@ -189,8 +190,10 @@ export interface NewsletterIssue {
   title: string;
   introText: string;
   selectedEventIds: number[];
+  audience: 'newsletter' | 'members' | 'both';
   status: 'draft' | 'sent';
   sentAt?: string;
+  recipientCount?: number;
 }
 
 // Default settings

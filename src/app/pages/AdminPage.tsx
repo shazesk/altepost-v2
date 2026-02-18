@@ -212,17 +212,24 @@ export function AdminPage() {
     title: string;
     introText: string;
     selectedEventIds: number[];
+    audience: 'newsletter' | 'members' | 'both';
     status: 'draft' | 'sent';
     sentAt?: string;
+    recipientCount?: number;
   }
   const [newsletterIssues, setNewsletterIssues] = useState<NewsletterIssue[]>([]);
   const [isCreatingIssue, setIsCreatingIssue] = useState(false);
+  const [editingIssueId, setEditingIssueId] = useState<number | null>(null);
   const [issueTitle, setIssueTitle] = useState('');
   const [issueIntro, setIssueIntro] = useState('');
   const [issueSelectedEvents, setIssueSelectedEvents] = useState<number[]>([]);
+  const [issueAudience, setIssueAudience] = useState<'newsletter' | 'members' | 'both'>('newsletter');
   const [issueSending, setIssueSending] = useState(false);
   const [issueTestEmail, setIssueTestEmail] = useState('');
   const [previewIssueHtml, setPreviewIssueHtml] = useState<string | null>(null);
+  const [sendConfirmIssueId, setSendConfirmIssueId] = useState<number | null>(null);
+  const [sendConfirmText, setSendConfirmText] = useState('');
+  const [sendConfirmCount, setSendConfirmCount] = useState<number | null>(null);
 
   // Event photos state
   const [managingPhotosEvent, setManagingPhotosEvent] = useState<Event | null>(null);
@@ -498,25 +505,68 @@ export function AdminPage() {
     }
   }
 
-  async function handleCreateIssue() {
+  function resetIssueForm() {
+    setIsCreatingIssue(false);
+    setEditingIssueId(null);
+    setIssueTitle('');
+    setIssueIntro('');
+    setIssueSelectedEvents([]);
+    setIssueAudience('newsletter');
+    setPreviewIssueHtml(null);
+  }
+
+  function handleEditIssue(issue: NewsletterIssue) {
+    setEditingIssueId(issue.id);
+    setIsCreatingIssue(true);
+    setIssueTitle(issue.title);
+    setIssueIntro(issue.introText);
+    setIssueSelectedEvents([...issue.selectedEventIds]);
+    setIssueAudience(issue.audience || 'newsletter');
+    setPreviewIssueHtml(null);
+  }
+
+  function handleDuplicateIssue(issue: NewsletterIssue) {
+    setEditingIssueId(null);
+    setIsCreatingIssue(true);
+    setIssueTitle(issue.title + ' (Kopie)');
+    setIssueIntro(issue.introText);
+    setIssueSelectedEvents([...issue.selectedEventIds]);
+    setIssueAudience(issue.audience || 'newsletter');
+    setPreviewIssueHtml(null);
+  }
+
+  async function handleSaveIssue() {
     if (!issueTitle || !issueIntro) return;
     try {
-      const res = await fetch(`${API_BASE}/data?type=newsletter-issues`, {
-        method: 'POST',
-        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: issueTitle, introText: issueIntro, selectedEventIds: issueSelectedEvents })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessage({ text: 'Info-Post erstellt', type: 'success' });
-        setIsCreatingIssue(false);
-        setIssueTitle('');
-        setIssueIntro('');
-        setIssueSelectedEvents([]);
-        loadNewsletterIssues();
+      if (editingIssueId) {
+        // Update existing draft
+        const res = await fetch(`${API_BASE}/data?type=newsletter-issues&id=${editingIssueId}`, {
+          method: 'PUT',
+          headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: issueTitle, introText: issueIntro, selectedEventIds: issueSelectedEvents, audience: issueAudience })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessage({ text: 'Info-Post aktualisiert', type: 'success' });
+          resetIssueForm();
+          loadNewsletterIssues();
+        }
+      } else {
+        // Create new
+        const res = await fetch(`${API_BASE}/data?type=newsletter-issues`, {
+          method: 'POST',
+          headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: issueTitle, introText: issueIntro, selectedEventIds: issueSelectedEvents, audience: issueAudience })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMessage({ text: 'Info-Post erstellt', type: 'success' });
+          resetIssueForm();
+          loadNewsletterIssues();
+        }
       }
     } catch {
-      setMessage({ text: 'Fehler beim Erstellen', type: 'error' });
+      setMessage({ text: 'Fehler beim Speichern', type: 'error' });
     }
   }
 
@@ -532,6 +582,9 @@ export function AdminPage() {
       if (data.success) {
         setMessage({ text: data.message || 'Gesendet', type: 'success' });
         loadNewsletterIssues();
+        setSendConfirmIssueId(null);
+        setSendConfirmText('');
+        setSendConfirmCount(null);
       } else {
         setMessage({ text: data.error || 'Fehler beim Senden', type: 'error' });
       }
@@ -539,6 +592,23 @@ export function AdminPage() {
       setMessage({ text: 'Fehler beim Senden', type: 'error' });
     } finally {
       setIssueSending(false);
+    }
+  }
+
+  async function handleStartSendAll(issueId: number) {
+    // Fetch recipient count first
+    try {
+      const res = await fetch('/api/send/newsletter-issue', {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issueId, action: 'count' })
+      });
+      const data = await res.json();
+      setSendConfirmIssueId(issueId);
+      setSendConfirmCount(data.count || 0);
+      setSendConfirmText('');
+    } catch {
+      setMessage({ text: 'Fehler beim Laden der Empfängeranzahl', type: 'error' });
     }
   }
 
@@ -3124,9 +3194,9 @@ export function AdminPage() {
           <>
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Info-Post</h2>
-              {!isCreatingIssue && !previewIssueHtml && (
+              {!isCreatingIssue && !previewIssueHtml && !sendConfirmIssueId && (
                 <button
-                  onClick={() => setIsCreatingIssue(true)}
+                  onClick={() => { resetIssueForm(); setIsCreatingIssue(true); }}
                   className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors"
                 >
                   <Plus className="w-5 h-5" />
@@ -3135,8 +3205,41 @@ export function AdminPage() {
               )}
             </div>
 
+            {/* Send confirmation dialog */}
+            {sendConfirmIssueId && (
+              <div className="bg-white rounded-xl border-2 border-[#8b4454] p-6 mb-8">
+                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-4">Versand bestätigen</h3>
+                <p className="text-[#666666] mb-4">
+                  Diese Info-Post wird an <strong className="text-[#2d2d2d]">{sendConfirmCount ?? '...'}</strong> Empfänger gesendet.
+                  Geben Sie <strong>SEND</strong> ein, um den Versand zu bestätigen.
+                </p>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={sendConfirmText}
+                    onChange={e => setSendConfirmText(e.target.value)}
+                    placeholder="SEND"
+                    className="w-32 rounded-md border border-[rgba(107,142,111,0.3)] px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#8b4454] font-['Inter',sans-serif]"
+                  />
+                  <button
+                    onClick={() => handleSendIssue(sendConfirmIssueId)}
+                    disabled={sendConfirmText !== 'SEND' || issueSending}
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-[#8b4454] text-white hover:bg-[#7a3343] transition-colors disabled:opacity-50"
+                  >
+                    {issueSending ? 'Wird gesendet...' : 'Jetzt senden'}
+                  </button>
+                  <button
+                    onClick={() => { setSendConfirmIssueId(null); setSendConfirmText(''); setSendConfirmCount(null); }}
+                    className="px-4 py-2 rounded-lg text-sm font-medium text-[#666666] hover:bg-[#e8e4df] transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Preview modal */}
-            {previewIssueHtml && (
+            {previewIssueHtml && !sendConfirmIssueId && (
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">Vorschau</h3>
@@ -3150,10 +3253,12 @@ export function AdminPage() {
               </div>
             )}
 
-            {/* Create form */}
-            {isCreatingIssue && (
+            {/* Create/Edit form */}
+            {isCreatingIssue && !sendConfirmIssueId && (
               <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] p-6 mb-8">
-                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-4">Neue Ausgabe erstellen</h3>
+                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-4">
+                  {editingIssueId ? 'Entwurf bearbeiten' : 'Neue Ausgabe erstellen'}
+                </h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-[#666666] mb-1 font-['Inter',sans-serif]">Titel *</label>
@@ -3174,6 +3279,23 @@ export function AdminPage() {
                       placeholder="Liebe Freunde der Alten Post..."
                       className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
                     />
+                  </div>
+                  {/* Audience selector */}
+                  <div>
+                    <label className="block text-sm text-[#666666] mb-2 font-['Inter',sans-serif]">Empfänger</label>
+                    <div className="flex gap-2">
+                      {([['newsletter', 'Newsletter-Abonnenten'], ['members', 'Mitglieder'], ['both', 'Beide']] as const).map(([val, label]) => (
+                        <button
+                          key={val}
+                          onClick={() => setIssueAudience(val)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            issueAudience === val ? 'bg-[#6b8e6f] text-white' : 'bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf]'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {/* Event selection */}
                   <div>
@@ -3218,14 +3340,14 @@ export function AdminPage() {
                       Vorschau
                     </button>
                     <button
-                      onClick={handleCreateIssue}
+                      onClick={handleSaveIssue}
                       disabled={!issueTitle || !issueIntro}
                       className="px-4 py-2 rounded-lg text-sm font-medium bg-[#6b8e6f] text-white hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
                     >
-                      Erstellen
+                      {editingIssueId ? 'Entwurf speichern' : 'Erstellen'}
                     </button>
                     <button
-                      onClick={() => { setIsCreatingIssue(false); setIssueTitle(''); setIssueIntro(''); setIssueSelectedEvents([]); setPreviewIssueHtml(null); }}
+                      onClick={resetIssueForm}
                       className="px-4 py-2 rounded-lg text-sm font-medium text-[#666666] hover:bg-[#e8e4df] transition-colors"
                     >
                       Abbrechen
@@ -3243,6 +3365,7 @@ export function AdminPage() {
                     <tr className="bg-[#faf9f7] border-b border-[rgba(107,142,111,0.1)]">
                       <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Datum</th>
                       <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Titel</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Empfänger</th>
                       <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Events</th>
                       <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Status</th>
                       <th className="text-right px-4 py-3 text-sm font-medium text-[#666666]">Aktionen</th>
@@ -3253,6 +3376,9 @@ export function AdminPage() {
                       <tr key={issue.id} className="hover:bg-[#faf9f7] transition-colors">
                         <td className="px-4 py-3 text-[#666666] text-sm">{new Date(issue.createdAt).toLocaleDateString('de-DE')}</td>
                         <td className="px-4 py-3 text-[#2d2d2d] font-medium">{issue.title}</td>
+                        <td className="px-4 py-3 text-[#666666] text-sm">
+                          {{ newsletter: 'Newsletter', members: 'Mitglieder', both: 'Beide' }[issue.audience || 'newsletter']}
+                        </td>
                         <td className="px-4 py-3 text-[#666666] text-sm">{issue.selectedEventIds.length}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${
@@ -3261,9 +3387,10 @@ export function AdminPage() {
                             {issue.status === 'sent' ? 'Gesendet' : 'Entwurf'}
                           </span>
                           {issue.sentAt && <span className="text-xs text-[#999] ml-2">{new Date(issue.sentAt).toLocaleDateString('de-DE')}</span>}
+                          {issue.recipientCount && issue.status === 'sent' && <span className="text-xs text-[#999] ml-1">({issue.recipientCount})</span>}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex justify-end gap-1 items-center">
+                          <div className="flex justify-end gap-1 items-center flex-wrap">
                             <button
                               onClick={() => setPreviewIssueHtml(generatePreviewHtml(issue.title, issue.introText, issue.selectedEventIds))}
                               className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg"
@@ -3271,8 +3398,22 @@ export function AdminPage() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
+                            <button
+                              onClick={() => handleDuplicateIssue(issue)}
+                              className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg"
+                              title="Duplizieren"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
                             {issue.status === 'draft' && (
                               <>
+                                <button
+                                  onClick={() => handleEditIssue(issue)}
+                                  className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg"
+                                  title="Bearbeiten"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
                                 <div className="flex items-center gap-1">
                                   <input
                                     type="email"
@@ -3291,25 +3432,21 @@ export function AdminPage() {
                                   </button>
                                 </div>
                                 <button
-                                  onClick={() => {
-                                    if (confirm(`Info-Post "${issue.title}" an alle Newsletter-Abonnenten senden?`)) {
-                                      handleSendIssue(issue.id);
-                                    }
-                                  }}
+                                  onClick={() => handleStartSendAll(issue.id)}
                                   disabled={issueSending}
                                   className="text-xs px-3 py-1 rounded bg-[#6b8e6f] text-white hover:bg-[#5a7a5e] disabled:opacity-50"
                                 >
-                                  {issueSending ? '...' : 'An alle senden'}
+                                  An alle senden
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteIssue(issue.id)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                                  title="Löschen"
+                                >
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </>
                             )}
-                            <button
-                              onClick={() => handleDeleteIssue(issue.id)}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                              title="Löschen"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
                           </div>
                         </td>
                       </tr>

@@ -239,7 +239,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (type === 'newsletter-issues') {
-      const { title, introText, selectedEventIds } = req.body;
+      const { title, introText, selectedEventIds, audience } = req.body;
       if (!title || !introText) {
         return res.status(400).json({ success: false, error: 'Titel und Intro-Text sind erforderlich' });
       }
@@ -250,6 +250,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title,
         introText,
         selectedEventIds: selectedEventIds || [],
+        audience: audience || 'newsletter',
         status: 'draft'
       };
       issues.push(newIssue);

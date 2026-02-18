@@ -177,7 +177,7 @@ interface InfoPostEvent {
   image: string | null;
 }
 
-export function infoPostEmail(data: { title: string; introText: string; events: InfoPostEvent[] }) {
+export function infoPostEmail(data: { title: string; introText: string; events: InfoPostEvent[]; unsubscribeUrl?: string }) {
   const eventsHtml = data.events.length > 0
     ? `<h3 style="margin:24px 0 12px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Kommende Veranstaltungen</h3>` +
       data.events.map(ev => `
@@ -211,7 +211,9 @@ export function infoPostEmail(data: { title: string; introText: string; events: 
 <tr><td style="background:#faf9f7;padding:20px 32px;text-align:center;font-size:12px;color:#999">
   KleinKunstKneipe Alte Post Brensbach e.V.<br>
   Darmstädter Str. 42, 64395 Brensbach<br><br>
-  <span style="color:#aaa">Wenn Sie zukünftig keine Info-Post-Mail mehr erhalten wollen, antworten Sie bitte auf diese E-Mail mit dem Betreff „Abmelden".</span>
+  <span style="color:#aaa">${data.unsubscribeUrl
+    ? `<a href="${data.unsubscribeUrl}" style="color:#aaa;text-decoration:underline">Vom Newsletter abmelden</a>`
+    : 'Wenn Sie zukünftig keine Info-Post-Mail mehr erhalten wollen, antworten Sie bitte auf diese E-Mail mit dem Betreff „Abmelden".'}</span>
 </td></tr>
 </table>
 </td></tr>
