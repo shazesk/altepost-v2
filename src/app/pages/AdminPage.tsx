@@ -2316,6 +2316,38 @@ export function AdminPage() {
                   </button>
                 </div>
               </div>
+              <button
+                onClick={() => {
+                  const filtered = memberships.filter(m => m.status === membershipFilter);
+                  const headers = ['Datum', 'Name', 'E-Mail', 'Telefon', 'Geburtsdatum', 'Adresse', 'PLZ', 'Ort', 'Mitgliedschaft', 'Mitglied seit', 'IBAN', 'Status', 'Nachricht'];
+                  const csvRows = [headers.join(';')];
+                  filtered.forEach(m => {
+                    const typeLabel = m.membershipType === 'foerdermitglied' ? 'Fördermitglied' : m.membershipType === 'mitglied' ? 'Mitgliedschaft' : m.membershipType;
+                    const maskedIban = (m.ibanLast4 || m.iban) ? '****' + (m.ibanLast4 || m.iban.replace(/\s/g, '').slice(-4)) : '';
+                    const row = [
+                      m.createdAt ? new Date(m.createdAt).toLocaleDateString('de-DE') : '',
+                      m.name, m.email, m.phone || '', m.birthdate || '',
+                      m.address, m.postalCode, m.city,
+                      typeLabel, m.memberSince || '', maskedIban,
+                      m.status === 'archived' ? 'Archiviert' : 'Aktiv',
+                      (m.message || '').replace(/[\n\r;]/g, ' ')
+                    ].map(v => `"${v}"`);
+                    csvRows.push(row.join(';'));
+                  });
+                  const bom = '\uFEFF';
+                  const blob = new Blob([bom + csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `mitglieder-${membershipFilter}-${new Date().toISOString().slice(0, 10)}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf] transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                CSV
+              </button>
             </div>
 
             {/* Memberships table */}
