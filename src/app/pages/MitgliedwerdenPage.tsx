@@ -20,6 +20,7 @@ export function MitgliedwerdenPage() {
     iban: '',
     message: '',
     newsletterOptIn: false,
+    privacyConsent: false,
   });
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -282,6 +283,22 @@ export function MitgliedwerdenPage() {
               className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
               placeholder="Haben Sie Fragen oder möchten Sie uns etwas mitteilen?"
             />
+          </div>
+
+          {/* Privacy Consent (mandatory) */}
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="privacyConsent"
+              name="privacyConsent"
+              required
+              checked={formData.privacyConsent}
+              onChange={(e) => setFormData({ ...formData, privacyConsent: e.target.checked })}
+              className="mt-1 h-4 w-4 rounded border-[rgba(107,142,111,0.3)] text-[#6b8e6f] focus:ring-[#6b8e6f]"
+            />
+            <label htmlFor="privacyConsent" className="text-sm text-[#666666] font-['Inter',sans-serif]">
+              Ich habe die Datenschutzerklärung zur Kenntnis genommen. Ich stimme zu, dass meine Angaben zur Kontaktaufnahme und für Rückfragen dauerhaft gespeichert werden. *
+            </label>
           </div>
 
           {/* Newsletter Opt-in */}
