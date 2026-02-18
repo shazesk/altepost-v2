@@ -11,3 +11,4 @@ api/uploads/*.webp
 *.log
 .vercel
 .env*.local
+.next/
