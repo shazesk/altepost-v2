@@ -151,7 +151,7 @@ export function MembershipSection() {
                 </li>
               </ul>
               <Link
-                to="/mitglied-werden?type=Mitgliedschaft"
+                to="/mitglied-werden?type=mitglied"
                 className="block w-full text-center rounded-lg bg-[#444444] px-4 py-3 text-white hover:bg-[#6b8e6f] transition-all font-['Inter',sans-serif]"
               >
                 Mitglied werden
@@ -184,7 +184,7 @@ export function MembershipSection() {
                 </li>
               </ul>
               <Link
-                to="/mitglied-werden?type=Fördermitglied"
+                to="/mitglied-werden?type=foerdermitglied"
                 className="block w-full text-center rounded-lg bg-[#444444] px-4 py-3 text-white hover:bg-[#d4a574] transition-all font-['Inter',sans-serif]"
               >
                 Mitglied werden

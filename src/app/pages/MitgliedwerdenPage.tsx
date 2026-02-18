@@ -6,7 +6,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 export function MitgliedwerdenPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const membershipType = searchParams.get('type') || 'Mitgliedschaft';
+  const membershipType = searchParams.get('type') || 'mitglied';
+  const membershipLabel = membershipType === 'foerdermitglied' ? 'Fördermitglied' : 'Mitgliedschaft';
 
   const [formData, setFormData] = useState({
     name: '',
@@ -101,7 +102,7 @@ export function MitgliedwerdenPage() {
           </div>
           <div className="bg-[#6b8e6f]/10 rounded-lg p-4 border-l-4 border-[#6b8e6f]">
             <p className="text-[#2d2d2d] font-['Inter',sans-serif]">
-              <strong>Gewählte Mitgliedschaft:</strong> {membershipType}
+              <strong>Gewählte Mitgliedschaft:</strong> {membershipLabel}
             </p>
           </div>
         </div>

@@ -46,6 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       birthdate,
       memberSince: memberSince || '',
       iban: iban || '',
+      ibanLast4: iban ? iban.replace(/\s/g, '').slice(-4) : '',
       message: message || '',
       status: 'active',
       createdAt: new Date().toISOString(),

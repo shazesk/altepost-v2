@@ -142,6 +142,7 @@ export interface MembershipApplication {
   birthdate: string;
   memberSince: string;
   iban: string;
+  ibanLast4: string;
   message: string;
   status: 'active' | 'archived';
   createdAt: string;

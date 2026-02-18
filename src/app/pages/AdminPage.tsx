@@ -92,6 +92,7 @@ interface MembershipApplication {
   birthdate: string;
   memberSince: string;
   iban: string;
+  ibanLast4: string;
   message: string;
   status: 'active' | 'archived';
   createdAt: string;
@@ -2343,9 +2344,9 @@ export function AdminPage() {
                         {m.address}<br />{m.postalCode} {m.city}
                       </td>
                       <td className="p-4">
-                        <div className="font-medium text-[#2d2d2d]">{m.membershipType}</div>
+                        <div className="font-medium text-[#2d2d2d]">{m.membershipType === 'foerdermitglied' ? 'Fördermitglied' : m.membershipType === 'mitglied' ? 'Mitgliedschaft' : m.membershipType}</div>
                         {m.memberSince && <div className="text-sm text-[#666666]">seit {m.memberSince}</div>}
-                        {m.iban && <div className="text-sm text-[#666666]">IBAN: {m.iban}</div>}
+                        {(m.ibanLast4 || m.iban) && <div className="text-sm text-[#666666]">IBAN: ****{m.ibanLast4 || m.iban.replace(/\s/g, '').slice(-4)}</div>}
                       </td>
                       <td className="p-4 text-[#666666] text-sm">{m.birthdate}</td>
                       <td className="p-4">
