@@ -156,7 +156,7 @@ export function AdminPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
-  const [activeView, setActiveView] = useState<'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms' | 'gallery' | 'sponsors' | 'newsletter'>('events');
+  const [activeView, setActiveView] = useState<'events' | 'archive' | 'reservations' | 'contacts' | 'vouchers' | 'memberships' | 'settings' | 'cms' | 'gallery' | 'sponsors' | 'newsletter' | 'info-post'>('events');
   const [reservationFilter, setReservationFilter] = useState<'active' | 'archived'>('active');
   const [selectedEventFilter, setSelectedEventFilter] = useState<number | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
@@ -204,6 +204,25 @@ export function AdminPage() {
 
   // Newsletter state
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
+
+  // Info-Post state
+  interface NewsletterIssue {
+    id: number;
+    createdAt: string;
+    title: string;
+    introText: string;
+    selectedEventIds: number[];
+    status: 'draft' | 'sent';
+    sentAt?: string;
+  }
+  const [newsletterIssues, setNewsletterIssues] = useState<NewsletterIssue[]>([]);
+  const [isCreatingIssue, setIsCreatingIssue] = useState(false);
+  const [issueTitle, setIssueTitle] = useState('');
+  const [issueIntro, setIssueIntro] = useState('');
+  const [issueSelectedEvents, setIssueSelectedEvents] = useState<number[]>([]);
+  const [issueSending, setIssueSending] = useState(false);
+  const [issueTestEmail, setIssueTestEmail] = useState('');
+  const [previewIssueHtml, setPreviewIssueHtml] = useState<string | null>(null);
 
   // Event photos state
   const [managingPhotosEvent, setManagingPhotosEvent] = useState<Event | null>(null);
@@ -466,6 +485,109 @@ export function AdminPage() {
     }
   }
 
+  // Info-Post functions
+  async function loadNewsletterIssues() {
+    try {
+      const res = await fetch(`${API_BASE}/data?type=newsletter-issues`, {
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) setNewsletterIssues(data.data);
+    } catch (e) {
+      console.error('Failed to load newsletter issues');
+    }
+  }
+
+  async function handleCreateIssue() {
+    if (!issueTitle || !issueIntro) return;
+    try {
+      const res = await fetch(`${API_BASE}/data?type=newsletter-issues`, {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: issueTitle, introText: issueIntro, selectedEventIds: issueSelectedEvents })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Info-Post erstellt', type: 'success' });
+        setIsCreatingIssue(false);
+        setIssueTitle('');
+        setIssueIntro('');
+        setIssueSelectedEvents([]);
+        loadNewsletterIssues();
+      }
+    } catch {
+      setMessage({ text: 'Fehler beim Erstellen', type: 'error' });
+    }
+  }
+
+  async function handleSendIssue(issueId: number, testEmail?: string) {
+    setIssueSending(true);
+    try {
+      const res = await fetch('/api/send/newsletter-issue', {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issueId, testEmail: testEmail || undefined })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: data.message || 'Gesendet', type: 'success' });
+        loadNewsletterIssues();
+      } else {
+        setMessage({ text: data.error || 'Fehler beim Senden', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Fehler beim Senden', type: 'error' });
+    } finally {
+      setIssueSending(false);
+    }
+  }
+
+  async function handleDeleteIssue(id: number) {
+    if (!confirm('Info-Post wirklich löschen?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/data?type=newsletter-issues&id=${id}`, {
+        method: 'DELETE',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Info-Post gelöscht', type: 'success' });
+        loadNewsletterIssues();
+      }
+    } catch {
+      setMessage({ text: 'Fehler beim Löschen', type: 'error' });
+    }
+  }
+
+  function generatePreviewHtml(title: string, introText: string, selectedIds: number[]) {
+    const selectedEvts = events.filter(e => selectedIds.includes(e.id));
+    const eventsHtml = selectedEvts.length > 0
+      ? `<h3 style="margin:24px 0 12px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Kommende Veranstaltungen</h3>` +
+        selectedEvts.map(ev => `
+          <div style="background:#faf9f7;border-radius:6px;padding:16px;margin-bottom:12px;border-left:4px solid #6b8e6f">
+            ${ev.image ? `<img src="${ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
+            <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px"><strong>${ev.title}</strong></div>
+            <div style="color:#666;font-size:14px;margin-bottom:4px">${ev.artist}</div>
+            <div style="color:#6b8e6f;font-size:14px;font-weight:600">${ev.date}, ${ev.time}</div>
+          </div>
+        `).join('')
+      : '';
+    return `<div style="font-family:'Inter',Arial,sans-serif;color:#2d2d2d;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid rgba(107,142,111,0.2)">
+      <div style="background:#6b8e6f;padding:24px 32px;text-align:center">
+        <h1 style="margin:0;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px">Info-Post</h1>
+        <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px">KleinKunstKneipe Alte Post e.V.</p>
+      </div>
+      <div style="padding:32px">
+        <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">${title}</h2>
+        <div style="color:#444;line-height:1.6;white-space:pre-wrap;margin-bottom:16px">${introText}</div>
+        ${eventsHtml}
+      </div>
+      <div style="background:#faf9f7;padding:20px 32px;text-align:center;font-size:12px;color:#999">
+        KleinKunstKneipe Alte Post Brensbach e.V.<br>Darmstädter Str. 42, 64395 Brensbach
+      </div>
+    </div>`;
+  }
+
   // Newsletter functions
   async function loadNewsletter() {
     try {
@@ -596,6 +718,13 @@ export function AdminPage() {
   useEffect(() => {
     if (isAuthenticated && sessionId && activeView === 'newsletter') {
       loadNewsletter();
+    }
+  }, [activeView, isAuthenticated, sessionId]);
+
+  // Load info-post issues when entering info-post view
+  useEffect(() => {
+    if (isAuthenticated && sessionId && activeView === 'info-post') {
+      loadNewsletterIssues();
     }
   }, [activeView, isAuthenticated, sessionId]);
 
@@ -1753,6 +1882,13 @@ export function AdminPage() {
             {stats?.newsletter?.active ? (
               <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.newsletter.active}</span>
             ) : null}
+          </button>
+          <button
+            onClick={() => { setActiveView('info-post'); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'info-post' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+          >
+            <Mail className="w-5 h-5" />
+            Info-Post
           </button>
           <button
             onClick={() => { setActiveView('settings'); }}
@@ -2980,6 +3116,214 @@ export function AdminPage() {
                 <p className="text-[#666666]">Newsletter-Anmeldungen erscheinen hier, sobald Besucher sich anmelden.</p>
               </div>
             )}
+          </>
+        )}
+
+        {/* Info-Post View */}
+        {activeView === 'info-post' && (
+          <>
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Info-Post</h2>
+              {!isCreatingIssue && !previewIssueHtml && (
+                <button
+                  onClick={() => setIsCreatingIssue(true)}
+                  className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  Neue Ausgabe
+                </button>
+              )}
+            </div>
+
+            {/* Preview modal */}
+            {previewIssueHtml && (
+              <div className="mb-8">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">Vorschau</h3>
+                  <button onClick={() => setPreviewIssueHtml(null)} className="text-[#666666] hover:text-[#2d2d2d]">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="border border-[rgba(107,142,111,0.2)] rounded-xl overflow-hidden bg-[#faf9f7] p-6">
+                  <div dangerouslySetInnerHTML={{ __html: previewIssueHtml }} />
+                </div>
+              </div>
+            )}
+
+            {/* Create form */}
+            {isCreatingIssue && (
+              <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] p-6 mb-8">
+                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-4">Neue Ausgabe erstellen</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-[#666666] mb-1 font-['Inter',sans-serif]">Titel *</label>
+                    <input
+                      type="text"
+                      value={issueTitle}
+                      onChange={e => setIssueTitle(e.target.value)}
+                      placeholder="z.B. Frühjahrsprogramm 2026"
+                      className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[#666666] mb-1 font-['Inter',sans-serif]">Intro-Text *</label>
+                    <textarea
+                      value={issueIntro}
+                      onChange={e => setIssueIntro(e.target.value)}
+                      rows={5}
+                      placeholder="Liebe Freunde der Alten Post..."
+                      className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
+                    />
+                  </div>
+                  {/* Event selection */}
+                  <div>
+                    <label className="block text-sm text-[#666666] mb-2 font-['Inter',sans-serif]">Veranstaltungen auswählen (optional)</label>
+                    <div className="max-h-60 overflow-y-auto border border-[rgba(107,142,111,0.2)] rounded-lg p-3 space-y-2">
+                      {events.filter(e => !e.is_archived).length === 0 && (
+                        <p className="text-sm text-[#666666]">Keine aktiven Veranstaltungen vorhanden.</p>
+                      )}
+                      {events.filter(e => !e.is_archived).map(ev => (
+                        <label key={ev.id} className="flex items-start gap-3 p-2 hover:bg-[#faf9f7] rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={issueSelectedEvents.includes(ev.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setIssueSelectedEvents([...issueSelectedEvents, ev.id]);
+                              } else {
+                                setIssueSelectedEvents(issueSelectedEvents.filter(id => id !== ev.id));
+                              }
+                            }}
+                            className="mt-1 h-4 w-4 rounded border-[rgba(107,142,111,0.3)] text-[#6b8e6f] focus:ring-[#6b8e6f]"
+                          />
+                          <div className="text-sm">
+                            <div className="text-[#2d2d2d] font-medium">{ev.title}</div>
+                            <div className="text-[#666666]">{ev.artist} — {ev.date}, {ev.time}</div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        if (issueTitle && issueIntro) {
+                          setPreviewIssueHtml(generatePreviewHtml(issueTitle, issueIntro, issueSelectedEvents));
+                        }
+                      }}
+                      disabled={!issueTitle || !issueIntro}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf] transition-colors disabled:opacity-50"
+                    >
+                      <Eye className="w-4 h-4 inline mr-1" />
+                      Vorschau
+                    </button>
+                    <button
+                      onClick={handleCreateIssue}
+                      disabled={!issueTitle || !issueIntro}
+                      className="px-4 py-2 rounded-lg text-sm font-medium bg-[#6b8e6f] text-white hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
+                    >
+                      Erstellen
+                    </button>
+                    <button
+                      onClick={() => { setIsCreatingIssue(false); setIssueTitle(''); setIssueIntro(''); setIssueSelectedEvents([]); setPreviewIssueHtml(null); }}
+                      className="px-4 py-2 rounded-lg text-sm font-medium text-[#666666] hover:bg-[#e8e4df] transition-colors"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Issues list */}
+            {newsletterIssues.length > 0 ? (
+              <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-[#faf9f7] border-b border-[rgba(107,142,111,0.1)]">
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Datum</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Titel</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Events</th>
+                      <th className="text-left px-4 py-3 text-sm font-medium text-[#666666]">Status</th>
+                      <th className="text-right px-4 py-3 text-sm font-medium text-[#666666]">Aktionen</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
+                    {newsletterIssues.map(issue => (
+                      <tr key={issue.id} className="hover:bg-[#faf9f7] transition-colors">
+                        <td className="px-4 py-3 text-[#666666] text-sm">{new Date(issue.createdAt).toLocaleDateString('de-DE')}</td>
+                        <td className="px-4 py-3 text-[#2d2d2d] font-medium">{issue.title}</td>
+                        <td className="px-4 py-3 text-[#666666] text-sm">{issue.selectedEventIds.length}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${
+                            issue.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {issue.status === 'sent' ? 'Gesendet' : 'Entwurf'}
+                          </span>
+                          {issue.sentAt && <span className="text-xs text-[#999] ml-2">{new Date(issue.sentAt).toLocaleDateString('de-DE')}</span>}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1 items-center">
+                            <button
+                              onClick={() => setPreviewIssueHtml(generatePreviewHtml(issue.title, issue.introText, issue.selectedEventIds))}
+                              className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg"
+                              title="Vorschau"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {issue.status === 'draft' && (
+                              <>
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="email"
+                                    placeholder="Test-E-Mail"
+                                    value={issueTestEmail}
+                                    onChange={e => setIssueTestEmail(e.target.value)}
+                                    className="w-32 text-xs rounded border border-[rgba(107,142,111,0.3)] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#6b8e6f]"
+                                  />
+                                  <button
+                                    onClick={() => issueTestEmail && handleSendIssue(issue.id, issueTestEmail)}
+                                    disabled={!issueTestEmail || issueSending}
+                                    className="text-xs px-2 py-1 rounded bg-[#e8e4df] text-[#666666] hover:bg-[#d8d4cf] disabled:opacity-50"
+                                    title="Test senden"
+                                  >
+                                    Test
+                                  </button>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Info-Post "${issue.title}" an alle Newsletter-Abonnenten senden?`)) {
+                                      handleSendIssue(issue.id);
+                                    }
+                                  }}
+                                  disabled={issueSending}
+                                  className="text-xs px-3 py-1 rounded bg-[#6b8e6f] text-white hover:bg-[#5a7a5e] disabled:opacity-50"
+                                >
+                                  {issueSending ? '...' : 'An alle senden'}
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => handleDeleteIssue(issue.id)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                              title="Löschen"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : !isCreatingIssue ? (
+              <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] p-12 text-center">
+                <Mail className="w-16 h-16 text-[#e8e4df] mx-auto mb-4" />
+                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">Keine Info-Post Ausgaben</h3>
+                <p className="text-[#666666]">Erstellen Sie Ihre erste Info-Post Ausgabe.</p>
+              </div>
+            ) : null}
           </>
         )}
 

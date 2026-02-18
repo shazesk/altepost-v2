@@ -166,3 +166,56 @@ export function voucherConfirmation(data: { buyerName: string; voucherDetails: s
     <p style="margin-top:24px">Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>
   `);
 }
+
+// --- INFO-POST NEWSLETTER ---
+
+interface InfoPostEvent {
+  title: string;
+  artist: string;
+  date: string;
+  time: string;
+  image: string | null;
+}
+
+export function infoPostEmail(data: { title: string; introText: string; events: InfoPostEvent[] }) {
+  const eventsHtml = data.events.length > 0
+    ? `<h3 style="margin:24px 0 12px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Kommende Veranstaltungen</h3>` +
+      data.events.map(ev => `
+        <div style="background:#faf9f7;border-radius:6px;padding:16px;margin-bottom:12px;border-left:4px solid #6b8e6f">
+          ${ev.image ? `<img src="${ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
+          <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px"><strong>${ev.title}</strong></div>
+          <div style="color:#666;font-size:14px;margin-bottom:4px">${ev.artist}</div>
+          <div style="color:#6b8e6f;font-size:14px;font-weight:600">${ev.date}, ${ev.time}</div>
+          <a href="https://friedrichholdings.de/programm" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
+        </div>
+      `).join('')
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="de">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#faf9f7;font-family:'Inter',Arial,sans-serif;color:#2d2d2d">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#faf9f7;padding:40px 20px">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid rgba(107,142,111,0.2)">
+<tr><td style="background:#6b8e6f;padding:24px 32px;text-align:center">
+  <h1 style="margin:0;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px">Info-Post</h1>
+  <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px">KleinKunstKneipe Alte Post e.V.</p>
+  <a href="https://friedrichholdings.de" style="color:rgba(255,255,255,0.7);font-size:12px;text-decoration:underline">friedrichholdings.de</a>
+</td></tr>
+<tr><td style="padding:32px">
+  <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">${data.title}</h2>
+  <div style="color:#444;line-height:1.6;white-space:pre-wrap;margin-bottom:16px">${data.introText}</div>
+  ${eventsHtml}
+</td></tr>
+<tr><td style="background:#faf9f7;padding:20px 32px;text-align:center;font-size:12px;color:#999">
+  KleinKunstKneipe Alte Post Brensbach e.V.<br>
+  Darmstädter Str. 42, 64395 Brensbach<br><br>
+  <span style="color:#aaa">Wenn Sie zukünftig keine Info-Post-Mail mehr erhalten wollen, antworten Sie bitte auf diese E-Mail mit dem Betreff „Abmelden".</span>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+}

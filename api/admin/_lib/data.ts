@@ -183,6 +183,16 @@ export interface NewsletterSubscriber {
   status: 'active' | 'unsubscribed';
 }
 
+export interface NewsletterIssue {
+  id: number;
+  createdAt: string;
+  title: string;
+  introText: string;
+  selectedEventIds: number[];
+  status: 'draft' | 'sent';
+  sentAt?: string;
+}
+
 // Default settings
 const defaultSettings: SiteSettings = {
   logo: { mainText: 'Alte Post', subtitle: 'BRENSBACH' },
@@ -555,6 +565,31 @@ export async function writeNewsletterSubscribers(subscribers: NewsletterSubscrib
     }
   }
   writeLocalFile('newsletter.json', subscribers);
+}
+
+// ============ NEWSLETTER ISSUES ============
+export async function readNewsletterIssues(): Promise<NewsletterIssue[]> {
+  if (isRedisConfigured()) {
+    try {
+      const data = await getRedis()!.get<NewsletterIssue[]>('newsletter_issues');
+      if (data) return data;
+    } catch (e) {
+      console.error('Redis error reading newsletter issues:', e);
+    }
+  }
+  return readLocalFile<NewsletterIssue[]>('newsletter_issues.json', []);
+}
+
+export async function writeNewsletterIssues(issues: NewsletterIssue[]): Promise<void> {
+  if (isRedisConfigured()) {
+    try {
+      await getRedis()!.set('newsletter_issues', issues);
+      return;
+    } catch (e) {
+      console.error('Redis error writing newsletter issues:', e);
+    }
+  }
+  writeLocalFile('newsletter_issues.json', issues);
 }
 
 // ============ ADMINS ============

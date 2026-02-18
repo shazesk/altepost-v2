@@ -24,11 +24,14 @@ import {
   writeSponsors,
   readNewsletterSubscribers,
   writeNewsletterSubscribers,
+  readNewsletterIssues,
+  writeNewsletterIssues,
   SiteSettings,
   Testimonial,
   GalleryImage,
   Sponsor,
-  NewsletterSubscriber
+  NewsletterSubscriber,
+  NewsletterIssue
 } from './_lib/data.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -203,6 +206,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ success: true, data: subscribers });
       }
 
+      case 'newsletter-issues': {
+        const issues = await readNewsletterIssues();
+        issues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return res.status(200).json({ success: true, data: issues });
+      }
+
       default:
         return res.status(400).json({ success: false, error: 'Invalid type parameter' });
     }
@@ -227,6 +236,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sponsors.push(newSponsor);
       await writeSponsors(sponsors);
       return res.status(200).json({ success: true, data: newSponsor });
+    }
+
+    if (type === 'newsletter-issues') {
+      const { title, introText, selectedEventIds } = req.body;
+      if (!title || !introText) {
+        return res.status(400).json({ success: false, error: 'Titel und Intro-Text sind erforderlich' });
+      }
+      const issues = await readNewsletterIssues();
+      const newIssue: NewsletterIssue = {
+        id: issues.length > 0 ? Math.max(...issues.map(i => i.id)) + 1 : 1,
+        createdAt: new Date().toISOString(),
+        title,
+        introText,
+        selectedEventIds: selectedEventIds || [],
+        status: 'draft'
+      };
+      issues.push(newIssue);
+      await writeNewsletterIssues(issues);
+      return res.status(200).json({ success: true, data: newIssue });
     }
 
     return res.status(400).json({ success: false, error: 'POST not supported for this type' });
@@ -348,6 +376,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: subscribers[index] });
     }
 
+    if (type === 'newsletter-issues') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const issues = await readNewsletterIssues();
+      const index = issues.findIndex(i => i.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      issues[index] = { ...issues[index], ...req.body };
+      await writeNewsletterIssues(issues);
+      return res.status(200).json({ success: true, data: issues[index] });
+    }
+
     return res.status(400).json({ success: false, error: 'PUT not supported for this type' });
   }
 
@@ -416,6 +455,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
       const deleted = subscribers.splice(index, 1)[0];
       await writeNewsletterSubscribers(subscribers);
+      return res.status(200).json({ success: true, data: deleted });
+    }
+
+    if (type === 'newsletter-issues') {
+      const id = parseInt(req.query.id as string);
+      if (!id) return res.status(400).json({ success: false, error: 'Missing id' });
+      const issues = await readNewsletterIssues();
+      const index = issues.findIndex(i => i.id === id);
+      if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
+      const deleted = issues.splice(index, 1)[0];
+      await writeNewsletterIssues(issues);
       return res.status(200).json({ success: true, data: deleted });
     }
 
