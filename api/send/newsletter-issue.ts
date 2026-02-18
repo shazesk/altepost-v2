@@ -132,7 +132,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         batch.map(email => {
           const token = tokenMap.get(email.toLowerCase());
           const unsubscribeUrl = token
-            ? `${BASE_URL}/api/newsletter/unsubscribe?token=${token}`
+            ? `${BASE_URL}/api/admin/data?type=newsletter-unsubscribe&token=${token}`
             : undefined;
           const html = infoPostEmail({
             title: issue.title,

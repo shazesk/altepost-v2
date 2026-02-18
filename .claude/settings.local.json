@@ -39,7 +39,29 @@
       "Bash(git fetch:*)",
       "Bash(npm uninstall:*)",
       "Bash(git config:*)",
-      "WebFetch(domain:altepost.vercel.app)"
+      "WebFetch(domain:altepost.vercel.app)",
+      "WebFetch(domain:altepost-n3wvj554j-shazesks-projects.vercel.app)",
+      "Bash(gh api:*)",
+      "Bash(vercel ls:*)",
+      "Bash(grep:*)",
+      "Bash(git log:*)",
+      "Bash(npx next build:*)",
+      "Bash(lsof:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:altepost-69bz10z0l-shazesks-projects.vercel.app)",
+      "Bash(ls:*)",
+      "WebFetch(domain:altepost-doyavsgkl-shazesks-projects.vercel.app)",
+      "Bash(vercel:*)",
+      "Bash(npx --yes vercel@50.15.1:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx date-fns:*)",
+      "Bash(npx vercel@50.15.1 logs:*)",
+      "Bash(npx vercel@50.15.1 inspect:*)",
+      "Bash(find:*)",
+      "Bash(npx -y jsonwebtoken:*)",
+      "WebFetch(domain:www.kleinkunstkneipe.de)",
+      "Bash(git -C /Users/shahzadeskandari/Downloads/Altepost log --oneline -40)",
+      "Bash(git -C /Users/shahzadeskandari/Downloads/Altepost log --oneline)"
     ]
   }
 }
