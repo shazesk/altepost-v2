@@ -89,7 +89,9 @@ interface MembershipApplication {
   postalCode: string;
   city: string;
   membershipType: string;
-  membershipPrice: string;
+  birthdate: string;
+  memberSince: string;
+  iban: string;
   message: string;
   status: 'active' | 'archived';
   createdAt: string;
@@ -2324,6 +2326,7 @@ export function AdminPage() {
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Name</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Adresse</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Mitgliedschaft</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Geburtsdatum</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Status</th>
                     <th className="text-right p-4 font-medium text-[#2d2d2d]">Aktionen</th>
                   </tr>
@@ -2341,8 +2344,10 @@ export function AdminPage() {
                       </td>
                       <td className="p-4">
                         <div className="font-medium text-[#2d2d2d]">{m.membershipType}</div>
-                        {m.membershipPrice && <div className="text-sm text-[#666666]">{m.membershipPrice}</div>}
+                        {m.memberSince && <div className="text-sm text-[#666666]">seit {m.memberSince}</div>}
+                        {m.iban && <div className="text-sm text-[#666666]">IBAN: {m.iban}</div>}
                       </td>
+                      <td className="p-4 text-[#666666] text-sm">{m.birthdate}</td>
                       <td className="p-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                           m.status === 'archived' ? 'bg-[#e8e4df] text-[#666666]' : 'bg-green-100 text-green-800'

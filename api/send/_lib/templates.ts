@@ -96,30 +96,33 @@ export function ticketConfirmation(data: { name: string; ticketCount: string; ev
 
 // --- MEMBERSHIP ---
 
-export function membershipNotification(data: { name: string; email: string; phone: string; address: string; postalCode: string; city: string; message: string; membershipType: string; membershipPrice: string }) {
+export function membershipNotification(data: { name: string; email: string; phone: string; birthdate: string; address: string; postalCode: string; city: string; message: string; membershipType: string; memberSince: string; iban: string }) {
   return layout(`
     <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Neuer Mitgliedsantrag</h2>
     <div style="background:#6b8e6f;color:#fff;padding:16px;border-radius:6px;margin-bottom:16px">
-      <strong>${data.membershipType}</strong> – ${data.membershipPrice}
+      <strong>${data.membershipType}</strong>
     </div>
     ${dataTable(
       row('Name', data.name) +
       row('E-Mail', `<a href="mailto:${data.email}">${data.email}</a>`) +
       row('Telefon', data.phone) +
+      row('Geburtsdatum', data.birthdate) +
       row('Adresse', data.address) +
-      row('PLZ / Ort', data.postalCode + ' ' + data.city)
+      row('PLZ / Ort', data.postalCode + ' ' + data.city) +
+      row('Mitglied seit', data.memberSince) +
+      row('IBAN', data.iban)
     )}
     ${data.message ? `<h3 style="margin:20px 0 8px;color:#2d2d2d">Nachricht</h3><div style="background:#faf9f7;padding:16px;border-radius:6px;white-space:pre-wrap">${data.message}</div>` : ''}
   `);
 }
 
-export function membershipConfirmation(data: { name: string; membershipType: string; membershipPrice: string }) {
+export function membershipConfirmation(data: { name: string; membershipType: string }) {
   return layout(`
     <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Ihr Mitgliedsantrag</h2>
     <p>Liebe/r ${data.name},</p>
     <p>vielen Dank für Ihr Interesse an einer Mitgliedschaft bei uns!</p>
     <div style="background:#faf9f7;padding:16px;border-radius:6px;margin:16px 0">
-      <strong>${data.membershipType}</strong> – ${data.membershipPrice}
+      <strong>${data.membershipType}</strong>
     </div>
     <p>Wir senden Ihnen in Kürze die Beitragsordnung und weitere Informationen zu. Nach Bestätigung erhalten Sie Ihre Mitgliedsurkunde.</p>
     <p style="margin-top:24px">Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>

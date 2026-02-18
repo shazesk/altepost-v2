@@ -6,16 +6,18 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 export function MitgliedwerdenPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const membershipType = searchParams.get('type') || 'Einzelmitgliedschaft';
-  const membershipPrice = searchParams.get('price') || '30 €';
+  const membershipType = searchParams.get('type') || 'Mitgliedschaft';
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    birthdate: '',
     address: '',
     city: '',
     postalCode: '',
+    memberSince: '',
+    iban: '',
     message: '',
     newsletterOptIn: false,
   });
@@ -31,7 +33,7 @@ export function MitgliedwerdenPage() {
       const res = await fetch('/api/send/membership', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, membershipType, membershipPrice }),
+        body: JSON.stringify({ ...formData, membershipType }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
@@ -98,7 +100,7 @@ export function MitgliedwerdenPage() {
           </div>
           <div className="bg-[#6b8e6f]/10 rounded-lg p-4 border-l-4 border-[#6b8e6f]">
             <p className="text-[#2d2d2d] font-['Inter',sans-serif]">
-              <strong>Gewählte Mitgliedschaft:</strong> {membershipType} ({membershipPrice})
+              <strong>Gewählte Mitgliedschaft:</strong> {membershipType}
             </p>
           </div>
         </div>
@@ -122,6 +124,20 @@ export function MitgliedwerdenPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="z.B. Maria Schmidt"
+                  className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="birthdate" className="block text-sm text-[#666666] mb-2 font-['Inter',sans-serif]">
+                  Geburtsdatum *
+                </label>
+                <input
+                  type="date"
+                  id="birthdate"
+                  required
+                  value={formData.birthdate}
+                  onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
                   className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
                 />
               </div>
@@ -209,6 +225,47 @@ export function MitgliedwerdenPage() {
                   />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Membership Info */}
+          <div className="border-t border-[rgba(107,142,111,0.2)] pt-6">
+            <h3 className="text-xl text-[#2d2d2d] mb-4 font-['Playfair_Display',serif]">
+              Mitgliedschaft
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="memberSince" className="block text-sm text-[#666666] mb-2 font-['Inter',sans-serif]">
+                  Mitglied seit (optional)
+                </label>
+                <input
+                  type="date"
+                  id="memberSince"
+                  value={formData.memberSince}
+                  onChange={(e) => setFormData({ ...formData, memberSince: e.target.value })}
+                  className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Bank Details */}
+          <div className="border-t border-[rgba(107,142,111,0.2)] pt-6">
+            <h3 className="text-xl text-[#2d2d2d] mb-4 font-['Playfair_Display',serif]">
+              Bankverbindung
+            </h3>
+            <div>
+              <label htmlFor="iban" className="block text-sm text-[#666666] mb-2 font-['Inter',sans-serif]">
+                IBAN (optional)
+              </label>
+              <input
+                type="text"
+                id="iban"
+                value={formData.iban}
+                onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
+                placeholder="DE89 3704 0044 0532 0130 00"
+                className="w-full rounded-md border border-[rgba(107,142,111,0.3)] bg-white px-4 py-2 text-[#2d2d2d] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] font-['Inter',sans-serif]"
+              />
             </div>
           </div>
 

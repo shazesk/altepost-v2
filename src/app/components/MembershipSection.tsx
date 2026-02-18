@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Heart, Star, Ticket, Calendar, Newspaper, Vote, Sparkles, Crown } from 'lucide-react';
+import { Users, Heart, Star, Ticket, Calendar, Newspaper, Vote, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { QuoteCard } from './QuoteCard';
 import { motion } from 'motion/react';
@@ -127,8 +127,8 @@ export function MembershipSection() {
             </p>
           </motion.div>
 
-          <div className="grid gap-8 lg:grid-cols-3 relative z-10">
-            {/* Regular membership */}
+          <div className="grid gap-8 lg:grid-cols-2 max-w-4xl mx-auto relative z-10">
+            {/* Mitgliedschaft */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -137,132 +137,54 @@ export function MembershipSection() {
               whileHover={{ y: -8 }}
               className="bg-[#2d2d2d] rounded-2xl p-8 border border-[#444444] hover:border-[#6b8e6f] transition-all"
             >
-              <h3 className="font-['Playfair_Display',serif] text-2xl text-white mb-2">
-                Einzelmitgliedschaft
+              <h3 className="font-['Playfair_Display',serif] text-2xl text-white mb-6">
+                Mitgliedschaft
               </h3>
-              <div className="mb-6">
-                <span className="text-5xl text-[#6b8e6f] font-['Playfair_Display',serif]">30 €</span>
-                <span className="text-[#999999] ml-2 font-['Inter',sans-serif]">/ Jahr</span>
-              </div>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-start text-[#d9cfc1] font-['Inter',sans-serif]">
                   <span className="text-[#6b8e6f] mr-2 text-xl">✓</span>
-                  <span>Ermäßigte Eintrittspreise</span>
+                  <span>Familiäres Vereinsleben</span>
                 </li>
                 <li className="flex items-start text-[#d9cfc1] font-['Inter',sans-serif]">
                   <span className="text-[#6b8e6f] mr-2 text-xl">✓</span>
-                  <span>Programmheft per Post</span>
-                </li>
-                <li className="flex items-start text-[#d9cfc1] font-['Inter',sans-serif]">
-                  <span className="text-[#6b8e6f] mr-2 text-xl">✓</span>
-                  <span>Stimmrecht bei Mitgliederversammlung</span>
+                  <span>Jeder ist Willkommen</span>
                 </li>
               </ul>
               <Link
-                to="/mitglied-werden?type=Einzelmitgliedschaft&price=30 €"
+                to="/mitglied-werden?type=Mitgliedschaft"
                 className="block w-full text-center rounded-lg bg-[#444444] px-4 py-3 text-white hover:bg-[#6b8e6f] transition-all font-['Inter',sans-serif]"
               >
                 Mitglied werden
               </Link>
             </motion.div>
 
-            {/* Family membership - FEATURED */}
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              whileHover={{ y: -12, scale: 1.02 }}
-              className="relative bg-gradient-to-br from-[#6b8e6f] to-[#5a7a5e] rounded-2xl p-8 shadow-2xl lg:scale-105 lg:-mt-4 lg:mb-4"
-            >
-              {/* Crown badge */}
-              <motion.div
-                animate={{
-                  rotate: [0, 5, -5, 0],
-                  scale: [1, 1.1, 1]
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatDelay: 3
-                }}
-                className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#d4a574] text-white px-5 py-2 rounded-full text-sm font-['Inter',sans-serif] shadow-lg flex items-center gap-2"
-              >
-                <Crown className="h-4 w-4" />
-                Beliebt
-              </motion.div>
-
-              {/* Glow effect */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#d4a574]/20 to-transparent pointer-events-none"></div>
-
-              <h3 className="font-['Playfair_Display',serif] text-2xl text-white mb-2 relative">
-                Familienmitgliedschaft
-              </h3>
-              <div className="mb-6 relative">
-                <span className="text-5xl text-white font-['Playfair_Display',serif]">50 €</span>
-                <span className="text-white/80 ml-2 font-['Inter',sans-serif]">/ Jahr</span>
-              </div>
-              <ul className="space-y-3 mb-8 relative">
-                <li className="flex items-start text-white font-['Inter',sans-serif]">
-                  <span className="text-[#d4a574] mr-2 text-xl">✓</span>
-                  <span>Gilt für 2 Erwachsene + Kinder</span>
-                </li>
-                <li className="flex items-start text-white font-['Inter',sans-serif]">
-                  <span className="text-[#d4a574] mr-2 text-xl">✓</span>
-                  <span>Ermäßigte Eintrittspreise</span>
-                </li>
-                <li className="flex items-start text-white font-['Inter',sans-serif]">
-                  <span className="text-[#d4a574] mr-2 text-xl">✓</span>
-                  <span>Programmheft per Post</span>
-                </li>
-                <li className="flex items-start text-white font-['Inter',sans-serif]">
-                  <span className="text-[#d4a574] mr-2 text-xl">✓</span>
-                  <span>2 Stimmrechte bei Versammlung</span>
-                </li>
-              </ul>
-              <Link
-                to="/mitglied-werden?type=Familienmitgliedschaft&price=50 €"
-                className="block w-full text-center rounded-lg bg-white px-4 py-3 text-[#6b8e6f] hover:bg-[#d4a574] hover:text-white transition-all font-['Inter',sans-serif] font-semibold shadow-lg relative"
-              >
-                Mitglied werden
-              </Link>
-            </motion.div>
-
-            {/* Sponsor membership */}
+            {/* Fördermitglied */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
               whileHover={{ y: -8 }}
               className="bg-[#2d2d2d] rounded-2xl p-8 border border-[#444444] hover:border-[#d4a574] transition-all"
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-6">
                 <Star className="h-5 w-5 text-[#d4a574]" />
                 <h3 className="font-['Playfair_Display',serif] text-2xl text-white">
-                  Fördermitgliedschaft
+                  Fördermitglied
                 </h3>
-              </div>
-              <div className="mb-6">
-                <span className="text-5xl text-[#d4a574] font-['Playfair_Display',serif]">ab 100 €</span>
-                <span className="text-[#999999] ml-2 font-['Inter',sans-serif]">/ Jahr</span>
               </div>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-start text-[#d9cfc1] font-['Inter',sans-serif]">
                   <span className="text-[#d4a574] mr-2 text-xl">✓</span>
-                  <span>Alle Vorteile der Einzelmitgliedschaft</span>
+                  <span>Nennung auf der Webseite</span>
                 </li>
                 <li className="flex items-start text-[#d9cfc1] font-['Inter',sans-serif]">
                   <span className="text-[#d4a574] mr-2 text-xl">✓</span>
-                  <span>Nennung als Förderer (optional)</span>
-                </li>
-                <li className="flex items-start text-[#d9cfc1] font-['Inter',sans-serif]">
-                  <span className="text-[#d4a574] mr-2 text-xl">✓</span>
-                  <span>Besondere Anerkennung</span>
+                  <span>Ehrung im Jahresprogramm</span>
                 </li>
               </ul>
               <Link
-                to="/mitglied-werden?type=Fördermitgliedschaft&price=ab 100 €"
+                to="/mitglied-werden?type=Fördermitglied"
                 className="block w-full text-center rounded-lg bg-[#444444] px-4 py-3 text-white hover:bg-[#d4a574] transition-all font-['Inter',sans-serif]"
               >
                 Mitglied werden

@@ -22,11 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { name, email, phone, address, postalCode, city, message, membershipType, membershipPrice, newsletterOptIn } = req.body || {};
+    const { name, email, phone, birthdate, address, postalCode, city, membershipType, memberSince, iban, message, newsletterOptIn } = req.body || {};
 
-    log(requestId, 'Validating fields', { name: !!name, email: !!email, address: !!address, postalCode: !!postalCode, city: !!city, membershipType });
+    log(requestId, 'Validating fields', { name: !!name, email: !!email, birthdate: !!birthdate, address: !!address, postalCode: !!postalCode, city: !!city, membershipType });
 
-    if (!name || !email || !address || !postalCode || !city || !membershipType) {
+    if (!name || !email || !birthdate || !address || !postalCode || !city || !membershipType) {
       log(requestId, 'Validation failed - missing fields');
       return res.status(400).json({ error: 'Missing required fields', requestId });
     }
@@ -43,7 +43,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       postalCode,
       city,
       membershipType,
-      membershipPrice: membershipPrice || '',
+      birthdate,
+      memberSince: memberSince || '',
+      iban: iban || '',
       message: message || '',
       status: 'active',
       createdAt: new Date().toISOString(),
@@ -81,14 +83,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sendEmail({
         to: ADMIN_EMAIL,
         subject: `Neuer Mitgliedsantrag: ${membershipType} – ${name}`,
-        html: membershipNotification({ name, email, phone, address, postalCode, city, message, membershipType, membershipPrice }),
+        html: membershipNotification({ name, email, phone, birthdate, address, postalCode, city, message, membershipType, memberSince, iban }),
         replyTo: email,
         requestId,
       }),
       sendEmail({
         to: email,
         subject: 'Ihr Mitgliedsantrag – Alte Post Brensbach',
-        html: membershipConfirmation({ name, membershipType, membershipPrice }),
+        html: membershipConfirmation({ name, membershipType }),
         requestId,
       }),
     ]);

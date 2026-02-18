@@ -139,7 +139,9 @@ export interface MembershipApplication {
   postalCode: string;
   city: string;
   membershipType: string;
-  membershipPrice: string;
+  birthdate: string;
+  memberSince: string;
+  iban: string;
   message: string;
   status: 'active' | 'archived';
   createdAt: string;
