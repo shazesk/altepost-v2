@@ -2323,12 +2323,11 @@ export function AdminPage() {
                   const csvRows = [headers.join(';')];
                   filtered.forEach(m => {
                     const typeLabel = m.membershipType === 'foerdermitglied' ? 'Fördermitglied' : m.membershipType === 'mitglied' ? 'Mitgliedschaft' : m.membershipType;
-                    const maskedIban = (m.ibanLast4 || m.iban) ? '****' + (m.ibanLast4 || m.iban.replace(/\s/g, '').slice(-4)) : '';
                     const row = [
                       m.createdAt ? new Date(m.createdAt).toLocaleDateString('de-DE') : '',
                       m.name, m.email, m.phone || '', m.birthdate || '',
                       m.address, m.postalCode, m.city,
-                      typeLabel, m.memberSince || '', maskedIban,
+                      typeLabel, m.memberSince || '', m.iban || '',
                       m.status === 'archived' ? 'Archiviert' : 'Aktiv',
                       (m.message || '').replace(/[\n\r;]/g, ' ')
                     ].map(v => `"${v}"`);
