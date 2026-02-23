@@ -250,7 +250,7 @@ export function EventsSection() {
         <div className="mt-12 bg-[#faf9f7] rounded-lg p-6 border border-[rgba(107,142,111,0.2)]">
           <p className="text-sm text-[#666666] text-center">
             <strong className="text-[#2d2d2d]">Hinweis:</strong> Bei beliebten Veranstaltungen empfehlen wir eine frühzeitige Reservierung.
-            Die Platzanzahl ist auf ca. 80 Sitzplätze begrenzt.
+            Die Platzanzahl ist auf ca. 30 Sitzplätze begrenzt.
           </p>
         </div>
       </div>

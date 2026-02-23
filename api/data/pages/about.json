@@ -7,7 +7,7 @@
     "title": "Unsere Geschichte",
     "paragraphs": [
       "Was als kleine Initiative kulturbegeisterter Bürger begann, hat sich zu einem der renommiertesten Kleinkunstveranstaltungsorte der Region entwickelt.",
-      "In unserem historischen Gebäude, der ehemaligen Poststelle von Brensbach, finden bis zu 80 Gäste Platz – eine bewusst gewählte Größe, die für die besondere Nähe zwischen Künstlern und Publikum sorgt.",
+      "In unserem historischen Gebäude, der ehemaligen Poststelle von Brensbach, finden bis zu 30 Gäste Platz – eine bewusst gewählte Größe, die für die besondere Nähe zwischen Künstlern und Publikum sorgt.",
       "Über 3.000 Veranstaltungen haben wir in den vergangenen drei Jahrzehnten auf die Beine gestellt. Von Jazz und Blues über Kabarett und Comedy bis hin zu Lesungen und Theateraufführungen.",
       "Heute zählt unser Verein über 150 aktive Mitglieder, die mit ihrem Engagement dafür sorgen, dass die Alte Post auch in Zukunft ein lebendiger Ort der Begegnung und Kultur bleibt."
     ]
@@ -23,12 +23,12 @@
   "stats": [
     { "value": "30+", "label": "Jahre Kulturarbeit" },
     { "value": "3.000+", "label": "Veranstaltungen" },
-    { "value": "80", "label": "Plätze für Intimität" }
+    { "value": "30", "label": "Plätze für Intimität" }
   ],
   "values": [
     { "icon": "heart", "title": "Leidenschaft für Kultur", "description": "Wir leben für die Kleinkunst und bringen sie mit Herzblut auf die Bühne." },
     { "icon": "users", "title": "Gemeinschaft", "description": "Als Verein sind wir eine große Familie – Mitglieder, Künstler und Gäste." },
     { "icon": "music", "title": "Vielfältiges Programm", "description": "Von Jazz bis Kabarett, von Lesung bis Theater – bei uns ist für jeden etwas dabei." },
-    { "icon": "home", "title": "Intimität & Atmosphäre", "description": "80 Plätze schaffen eine einzigartige Nähe zwischen Bühne und Publikum." }
+    { "icon": "home", "title": "Intimität & Atmosphäre", "description": "30 Plätze schaffen eine einzigartige Nähe zwischen Bühne und Publikum." }
   ]
 }

@@ -50,7 +50,7 @@ const defaultContent: HomePageContent = {
     subtitle: 'Was unsere Kleinkunstkneipe seit 1994 zu einem besonderen Ort macht',
   },
   features: [
-    { icon: 'heart', title: 'Intime Atmosphäre', description: 'Mit nur 80 Plätzen erleben Sie Kultur hautnah.' },
+    { icon: 'heart', title: 'Intime Atmosphäre', description: 'Mit nur 30 Plätzen erleben Sie Kultur hautnah.' },
     { icon: 'history', title: '30 Jahre Tradition', description: 'Seit 1994 bringen wir Kleinkunst in den Odenwald.' },
     { icon: 'star', title: 'Qualität & Vielfalt', description: 'Rund 40 handverlesene Veranstaltungen pro Jahr.' },
   ],

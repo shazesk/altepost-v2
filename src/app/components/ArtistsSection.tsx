@@ -45,7 +45,7 @@ const defaultContent: ArtistsContent = {
   techSpecs: {
     title: "Technische Informationen",
     specs: [
-      { label: "Kapazität", value: "ca. 80 Sitzplätze" },
+      { label: "Kapazität", value: "ca. 30 Sitzplätze" },
       { label: "Bühne", value: "Klein & intim (ca. 4m × 3m)" },
       { label: "Technik", value: "PA-Anlage, Beleuchtung vorhanden" },
       { label: "Atmosphäre", value: "Historisches Ambiente, persönliche Nähe" },
@@ -73,7 +73,7 @@ const defaultContent: ArtistsContent = {
     {
       icon: "sun",
       title: "Hofsaal (April–Oktober)",
-      description: 'Der sog. \u201EWintergarten\u201C der Alten Post ist ein saal-\u00E4hnlicher Raum, durch eine Glasfaltwand zum Innenhof abgeschlossen und beheizbar, in dem bis zu 80 G\u00E4sten Platz finden. Eine variable B\u00FChne von 4\u201310 qm wird von einer station\u00E4ren Lichtanlage beleuchtet.',
+      description: 'Der sog. \u201EWintergarten\u201C der Alten Post ist ein saal-\u00E4hnlicher Raum, durch eine Glasfaltwand zum Innenhof abgeschlossen und beheizbar, in dem bis zu 30 G\u00E4sten Platz finden. Eine variable B\u00FChne von 4\u201310 qm wird von einer station\u00E4ren Lichtanlage beleuchtet.',
       images: [
         { src: "/artists/hofsaal-1.jpg", alt: "Im Hofsaal" },
         { src: "/artists/hofsaal-2.jpg", alt: "Auftritt im Hofsaal" },

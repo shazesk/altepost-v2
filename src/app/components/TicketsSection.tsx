@@ -26,7 +26,7 @@ export function TicketsSection() {
             <Info className="h-5 w-5 text-[#6b8e6f] mt-0.5 flex-shrink-0" />
             <p className="text-[#666666] font-['Inter',sans-serif]">
               <strong className="text-[#2d2d2d]">Frühzeitige Reservierung empfohlen:</strong> Bei beliebten 
-              Veranstaltungen sind die ca. 80 Plätze schnell vergeben. Sichern Sie sich rechtzeitig Ihre Tickets.
+              Veranstaltungen sind die ca. 30 Plätze schnell vergeben. Sichern Sie sich rechtzeitig Ihre Tickets.
             </p>
           </div>
         </div>
