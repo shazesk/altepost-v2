@@ -3,15 +3,28 @@
     "title": "Informationen für Künstler",
     "description": "Sie sind Künstler*in und möchten bei uns auftreten? Wir freuen uns auf Ihre Anfrage!"
   },
-  "intro": {
+  "whySection": {
+    "title": "Warum die Alte Post?",
     "paragraphs": [
-      "Die Alte Post ist ein Ort, an dem Künstler*innen und Publikum auf Augenhöhe zusammenkommen. Unsere intime Atmosphäre mit 80 Plätzen bietet einen besonderen Rahmen für unvergessliche Auftritte.",
-      "Wir legen Wert auf faire Konditionen und eine partnerschaftliche Zusammenarbeit. Bei uns stehen die Kunst und das gemeinsame Erlebnis im Mittelpunkt.",
-      "Ob Sie ein etablierter Act sind oder am Anfang Ihrer Karriere stehen – wir sind offen für vielfältige Programmpunkte und freuen uns, von Ihnen zu hören."
+      "Die Alte Post Brensbach ist ein besonderer Ort für besondere Auftritte. Bei uns spielen Sie nicht vor anonymem Publikum, sondern vor kulturinteressierten Menschen, die bewusst in unser Haus kommen.",
+      "Unsere kleine, intime Bühne schafft eine einzigartige Nähe zwischen Künstler und Publikum. Diese Atmosphäre macht jeden Abend zu einem besonderen Erlebnis – für Sie und für unsere Gäste.",
+      "Wir sind ein gemeinnütziger Verein und arbeiten auf Basis gegenseitigen Respekts und fairer Konditionen. Unser Team unterstützt Sie vor, während und nach der Veranstaltung mit viel Engagement."
     ]
   },
-  "venue": {
-    "title": "Unsere Location",
+  "testimonial": {
+    "text": "Die Alte Post ist eine Bühne, auf der man als Künstler wirklich gehört wird. Das Publikum ist aufmerksam, das Team professionell und herzlich. Hier spielt man nicht einfach – hier teilt man Momente.",
+    "author": "Anna L.",
+    "role": "Singer-Songwriterin"
+  },
+  "requirements": {
+    "items": [
+      { "icon": "users", "title": "Solo bis Quartett", "description": "Unsere Bühne eignet sich für kleinere Besetzungen" },
+      { "icon": "volume", "title": "Akustisch orientiert", "description": "Jazz, Folk, Singer-Songwriter, Kabarett, Theater" },
+      { "icon": "map", "title": "Regionale & überregionale Acts", "description": "Etablierte Künstler und vielversprechende Newcomer" }
+    ]
+  },
+  "techSpecs": {
+    "title": "Technische Informationen",
     "specs": [
       { "label": "Kapazität", "value": "ca. 80 Sitzplätze" },
       { "label": "Bühne", "value": "Klein & intim (ca. 4m × 3m)" },
@@ -19,18 +32,55 @@
       { "label": "Atmosphäre", "value": "Historisches Ambiente, persönliche Nähe" }
     ]
   },
-  "requirements": {
-    "title": "Was wir suchen",
-    "items": [
-      { "icon": "users", "title": "Solo bis Quartett", "description": "Unsere Bühne eignet sich ideal für Solokünstler bis hin zu kleinen Ensembles." },
-      { "icon": "music", "title": "Akustisch orientiert", "description": "Jazz, Folk, Singer-Songwriter, Kabarett, Theater – Genres, die von der Intimität profitieren." },
-      { "icon": "map", "title": "Regionale & überregionale Acts", "description": "Wir fördern lokale Talente und laden überregionale Künstler ein." }
-    ]
+  "venuesHeader": {
+    "title": "Auftrittsmöglichkeiten",
+    "description": "Die „KleinKunstKneipe Alte Post in Brensbach" bietet je nach Jahreszeit verschiedene Auftrittsmöglichkeiten:"
+  },
+  "artistContact": {
+    "title": "Kontaktadresse für Künstler",
+    "description": "Wenn Sie als Künstler Interesse an einem Auftritt haben oder weitere Informationen benötigen, wenden Sie sich bitte an unser Programmteam:",
+    "orgName": "KleinKunstKneipe „Alte Post" – Programmteam –",
+    "name": "Marcus Schmidt",
+    "phone": "06162 8098110",
+    "email": "kuenstlerkontakt@kleinkunstkneipe.de"
+  },
+  "venues": [
+    {
+      "icon": "snowflake",
+      "title": "„Kneipe" (im Winter)",
+      "description": "Die Kneipe der Alte Post in Brensbach hat keine Bühne, keinen Vorhang und nur eine kleine Scheinwerferanlage! Unsere Kleinkunstbühne ist eine intime Kneipen-Atmosphäre vor ca. 40 begeisterungsfähigen Gästen! Diese Situation ist von besonderem Reiz für unsere Künstler, aber auch für unsere Gäste! Den Künstlern steht eine max. 4 qm große Fläche neben dem Tresen als „Aktionsraum" zur Verfügung. Darüberhinaus gibt es einen Barhocker und einen Stehtisch, sowie einen 220V-Stromanschluß.",
+      "images": [
+        { "src": "/artists/kneipe.jpg", "alt": "Auftritt in der Kneipe" }
+      ]
+    },
+    {
+      "icon": "sun",
+      "title": "Hofsaal (April–Oktober)",
+      "description": "Der sog. „Wintergarten" der Alten Post ist ein saal-ähnlicher Raum, durch eine Glasfaltwand zum Innenhof abgeschlossen und beheizbar, in dem bis zu 80 Gästen Platz finden. Eine variable Bühne von 4–10 qm wird von einer stationären Lichtanlage beleuchtet.",
+      "images": [
+        { "src": "/artists/hofsaal-1.jpg", "alt": "Im Hofsaal" },
+        { "src": "/artists/hofsaal-2.jpg", "alt": "Auftritt im Hofsaal" }
+      ]
+    },
+    {
+      "icon": "tree",
+      "title": "Innenhof (Sommermonate)",
+      "description": "Der Innenhof und der sog. Wintergarten zusammen bilden eine Fläche von ca. 300 qm für max. 150 Gäste. Der Innenhof kann bei Veranstaltungen mit Zelten gegen Regen geschützt werden, eine Heizung ist jedoch nicht möglich!",
+      "images": [
+        { "src": "/artists/grillstation.jpg", "alt": "Grillstation" },
+        { "src": "/artists/innenhof-1.jpg", "alt": "Bühne im Innenhof" },
+        { "src": "/artists/innenhof-2.jpg", "alt": "Auftritt im Innenhof" }
+      ]
+    }
+  ],
+  "ctaBanner": {
+    "title": "Interesse an einem Auftritt?",
+    "description": "Wir freuen uns auf Ihre Anfrage! Stellen Sie uns Ihr Programm vor und werden Sie Teil unserer einzigartigen Kleinkunstbühne.",
+    "subtitle": "Nutzen Sie das Formular unten oder kontaktieren Sie direkt unser Programmteam"
   },
   "contact": {
     "title": "Ihre Anfrage",
     "description": "Stellen Sie uns Ihr Programm vor. Wir freuen uns darauf, von Ihnen zu hören!",
-    "email": "programm@alte-post-brensbach.de",
-    "buttonText": "Anfrage senden"
+    "email": "programm@alte-post-brensbach.de"
   }
 }

@@ -2,8 +2,118 @@ import React, { useState } from "react";
 import { Mail, Users, Volume2, MapPin, Phone, X, Heart, Snowflake, Sun, TreePalm } from 'lucide-react';
 import { QuoteCard } from './QuoteCard';
 import { ContactForm } from './ContactForm';
+import { useCmsPage } from '../hooks/useCmsPage';
+
+interface ArtistsContent {
+  header: { title: string; description: string };
+  whySection: { title: string; paragraphs: string[] };
+  testimonial: { text: string; author: string; role: string };
+  requirements: { items: { icon: string; title: string; description: string }[] };
+  techSpecs: { title: string; specs: { label: string; value: string }[] };
+  venuesHeader: { title: string; description: string };
+  artistContact: { title: string; description: string; orgName: string; name: string; phone: string; email: string };
+  venues: { icon: string; title: string; description: string; images: { src: string; alt: string }[] }[];
+  ctaBanner: { title: string; description: string; subtitle: string };
+  contact: { title: string; description: string; email: string };
+}
+
+const defaultContent: ArtistsContent = {
+  header: {
+    title: "Informationen für Künstler",
+    description: "Sie sind Künstler*in und möchten bei uns auftreten? Wir freuen uns auf Ihre Anfrage!",
+  },
+  whySection: {
+    title: "Warum die Alte Post?",
+    paragraphs: [
+      "Die Alte Post Brensbach ist ein besonderer Ort für besondere Auftritte. Bei uns spielen Sie nicht vor anonymem Publikum, sondern vor kulturinteressierten Menschen, die bewusst in unser Haus kommen.",
+      "Unsere kleine, intime Bühne schafft eine einzigartige Nähe zwischen Künstler und Publikum. Diese Atmosphäre macht jeden Abend zu einem besonderen Erlebnis – für Sie und für unsere Gäste.",
+      "Wir sind ein gemeinnütziger Verein und arbeiten auf Basis gegenseitigen Respekts und fairer Konditionen. Unser Team unterstützt Sie vor, während und nach der Veranstaltung mit viel Engagement.",
+    ],
+  },
+  testimonial: {
+    text: "Die Alte Post ist eine Bühne, auf der man als Künstler wirklich gehört wird. Das Publikum ist aufmerksam, das Team professionell und herzlich. Hier spielt man nicht einfach – hier teilt man Momente.",
+    author: "Anna L.",
+    role: "Singer-Songwriterin",
+  },
+  requirements: {
+    items: [
+      { icon: "users", title: "Solo bis Quartett", description: "Unsere Bühne eignet sich für kleinere Besetzungen" },
+      { icon: "volume", title: "Akustisch orientiert", description: "Jazz, Folk, Singer-Songwriter, Kabarett, Theater" },
+      { icon: "map", title: "Regionale & überregionale Acts", description: "Etablierte Künstler und vielversprechende Newcomer" },
+    ],
+  },
+  techSpecs: {
+    title: "Technische Informationen",
+    specs: [
+      { label: "Kapazität", value: "ca. 80 Sitzplätze" },
+      { label: "Bühne", value: "Klein & intim (ca. 4m × 3m)" },
+      { label: "Technik", value: "PA-Anlage, Beleuchtung vorhanden" },
+      { label: "Atmosphäre", value: "Historisches Ambiente, persönliche Nähe" },
+    ],
+  },
+  venuesHeader: {
+    title: "Auftrittsmöglichkeiten",
+    description: `Die \u201EKleinKunstKneipe Alte Post in Brensbach\u201C bietet je nach Jahreszeit verschiedene Auftrittsmöglichkeiten:`,
+  },
+  artistContact: {
+    title: "Kontaktadresse für Künstler",
+    description: "Wenn Sie als Künstler Interesse an einem Auftritt haben oder weitere Informationen benötigen, wenden Sie sich bitte an unser Programmteam:",
+    orgName: `KleinKunstKneipe \u201EAlte Post\u201C \u2013 Programmteam \u2013`,
+    name: "Marcus Schmidt",
+    phone: "06162 8098110",
+    email: "kuenstlerkontakt@kleinkunstkneipe.de",
+  },
+  venues: [
+    {
+      icon: "snowflake",
+      title: `\u201EKneipe\u201C (im Winter)`,
+      description: `Die Kneipe der Alte Post in Brensbach hat keine B\u00FChne, keinen Vorhang und nur eine kleine Scheinwerferanlage! Unsere Kleinkunstb\u00FChne ist eine intime Kneipen-Atmosph\u00E4re vor ca. 40 begeisterungsf\u00E4higen G\u00E4sten! Diese Situation ist von besonderem Reiz f\u00FCr unsere K\u00FCnstler, aber auch f\u00FCr unsere G\u00E4ste! Den K\u00FCnstlern steht eine max. 4 qm gro\u00DFe Fl\u00E4che neben dem Tresen als \u201EAktionsraum\u201C zur Verf\u00FCgung. Dar\u00FCberhinaus gibt es einen Barhocker und einen Stehtisch, sowie einen 220V-Stromanschlu\u00DF.`,
+      images: [{ src: "/artists/kneipe.jpg", alt: "Auftritt in der Kneipe" }],
+    },
+    {
+      icon: "sun",
+      title: "Hofsaal (April–Oktober)",
+      description: 'Der sog. \u201EWintergarten\u201C der Alten Post ist ein saal-\u00E4hnlicher Raum, durch eine Glasfaltwand zum Innenhof abgeschlossen und beheizbar, in dem bis zu 80 G\u00E4sten Platz finden. Eine variable B\u00FChne von 4\u201310 qm wird von einer station\u00E4ren Lichtanlage beleuchtet.',
+      images: [
+        { src: "/artists/hofsaal-1.jpg", alt: "Im Hofsaal" },
+        { src: "/artists/hofsaal-2.jpg", alt: "Auftritt im Hofsaal" },
+      ],
+    },
+    {
+      icon: "tree",
+      title: "Innenhof (Sommermonate)",
+      description: "Der Innenhof und der sog. Wintergarten zusammen bilden eine Fläche von ca. 300 qm für max. 150 Gäste. Der Innenhof kann bei Veranstaltungen mit Zelten gegen Regen geschützt werden, eine Heizung ist jedoch nicht möglich!",
+      images: [
+        { src: "/artists/grillstation.jpg", alt: "Grillstation" },
+        { src: "/artists/innenhof-1.jpg", alt: "Bühne im Innenhof" },
+        { src: "/artists/innenhof-2.jpg", alt: "Auftritt im Innenhof" },
+      ],
+    },
+  ],
+  ctaBanner: {
+    title: "Interesse an einem Auftritt?",
+    description: "Wir freuen uns auf Ihre Anfrage! Stellen Sie uns Ihr Programm vor und werden Sie Teil unserer einzigartigen Kleinkunstbühne.",
+    subtitle: "Nutzen Sie das Formular unten oder kontaktieren Sie direkt unser Programmteam",
+  },
+  contact: {
+    title: "Ihre Anfrage",
+    description: "Stellen Sie uns Ihr Programm vor. Wir freuen uns darauf, von Ihnen zu hören!",
+    email: "programm@alte-post-brensbach.de",
+  },
+};
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  users: Users,
+  volume: Volume2,
+  map: MapPin,
+  snowflake: Snowflake,
+  sun: Sun,
+  tree: TreePalm,
+};
 
 export function ArtistsSection() {
+  const { content } = useCmsPage<ArtistsContent>('artists', defaultContent);
+
   return (
     <>
       {/* Section 1: Header + Intro (white bg) */}
@@ -12,10 +122,10 @@ export function ArtistsSection() {
           {/* Section header */}
           <div className="mb-16 text-center">
             <h2 className="font-['Playfair_Display',serif] text-4xl lg:text-5xl text-[#2d2d2d] mb-4">
-              Informationen für Künstler
+              {content.header.title}
             </h2>
             <p className="text-lg text-[#666666] max-w-2xl mx-auto">
-              Sie sind Künstler*in und möchten bei uns auftreten? Wir freuen uns auf Ihre Anfrage!
+              {content.header.description}
             </p>
           </div>
 
@@ -25,24 +135,12 @@ export function ArtistsSection() {
               <Heart className="h-12 w-12 text-[#8b4454] flex-shrink-0 mt-1" />
               <div>
                 <h3 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d] mb-4">
-                  Warum die Alte Post?
+                  {content.whySection.title}
                 </h3>
                 <div className="space-y-4 text-[#666666] leading-relaxed font-['Inter',sans-serif]">
-                  <p>
-                    Die Alte Post Brensbach ist ein besonderer Ort für besondere Auftritte.
-                    Bei uns spielen Sie nicht vor anonymem Publikum, sondern vor kulturinteressierten
-                    Menschen, die bewusst in unser Haus kommen.
-                  </p>
-                  <p>
-                    Unsere kleine, intime Bühne schafft eine einzigartige Nähe zwischen Künstler und
-                    Publikum. Diese Atmosphäre macht jeden Abend zu einem besonderen Erlebnis – für
-                    Sie und für unsere Gäste.
-                  </p>
-                  <p>
-                    Wir sind ein gemeinnütziger Verein und arbeiten auf Basis gegenseitigen Respekts
-                    und fairer Konditionen. Unser Team unterstützt Sie vor, während und nach der
-                    Veranstaltung mit viel Engagement.
-                  </p>
+                  {content.whySection.paragraphs.map((p, i) => (
+                    <p key={i}>{p}</p>
+                  ))}
                 </div>
               </div>
             </div>
@@ -51,63 +149,39 @@ export function ArtistsSection() {
           {/* Artist Testimonial */}
           <div className="mb-12">
             <QuoteCard
-              text="Die Alte Post ist eine Bühne, auf der man als Künstler wirklich gehört wird. Das Publikum ist aufmerksam, das Team professionell und herzlich. Hier spielt man nicht einfach – hier teilt man Momente."
-              author="Anna L."
-              role="Singer-Songwriterin"
+              text={content.testimonial.text}
+              author={content.testimonial.author}
+              role={content.testimonial.role}
             />
           </div>
 
           {/* What we're looking for - icon circle grid matching About/Membership */}
           <div className="grid gap-8 md:grid-cols-3 mb-16">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#6b8e6f] text-white mb-4">
-                <Users className="h-8 w-8" />
-              </div>
-              <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">
-                Solo bis Quartett
-              </h3>
-              <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif]">
-                Unsere Bühne eignet sich für kleinere Besetzungen
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#6b8e6f] text-white mb-4">
-                <Volume2 className="h-8 w-8" />
-              </div>
-              <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">
-                Akustisch orientiert
-              </h3>
-              <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif]">
-                Jazz, Folk, Singer-Songwriter, Kabarett, Theater
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#6b8e6f] text-white mb-4">
-                <MapPin className="h-8 w-8" />
-              </div>
-              <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">
-                Regionale & überregionale Acts
-              </h3>
-              <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif]">
-                Etablierte Künstler und vielversprechende Newcomer
-              </p>
-            </div>
+            {content.requirements.items.map((item) => {
+              const Icon = iconMap[item.icon] || Users;
+              return (
+                <div key={item.title} className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#6b8e6f] text-white mb-4">
+                    <Icon className="h-8 w-8" />
+                  </div>
+                  <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-[#666666] leading-relaxed font-['Inter',sans-serif]">
+                    {item.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
           {/* Technical details card */}
           <div className="bg-[#faf9f7] rounded-lg p-8 lg:p-12 border border-[rgba(107,142,111,0.2)]">
             <h3 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d] mb-6">
-              Technische Informationen
+              {content.techSpecs.title}
             </h3>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {[
-                { label: 'Kapazität', value: 'ca. 80 Sitzplätze' },
-                { label: 'Bühne', value: 'Klein & intim (ca. 4m × 3m)' },
-                { label: 'Technik', value: 'PA-Anlage, Beleuchtung vorhanden' },
-                { label: 'Atmosphäre', value: 'Historisches Ambiente, persönliche Nähe' },
-              ].map((detail) => (
+              {content.techSpecs.specs.map((detail) => (
                 <div key={detail.label} className="bg-white rounded-lg p-4 border border-[rgba(107,142,111,0.15)]">
                   <dt className="text-sm text-[#666666] mb-1 font-['Inter',sans-serif]">
                     {detail.label}
@@ -125,7 +199,11 @@ export function ArtistsSection() {
       {/* Section 2: Venue Stages (alternating bg) */}
       <section className="py-20 lg:py-28 bg-[#faf9f7]">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <VenueInfoSection />
+          <VenueInfoSection
+            venuesHeader={content.venuesHeader}
+            artistContact={content.artistContact}
+            venues={content.venues}
+          />
         </div>
       </section>
 
@@ -133,14 +211,13 @@ export function ArtistsSection() {
       <section className="bg-[#6b8e6f] py-12 lg:py-16">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 text-white text-center">
           <h3 className="font-['Playfair_Display',serif] text-3xl mb-4">
-            Interesse an einem Auftritt?
+            {content.ctaBanner.title}
           </h3>
           <p className="text-lg mb-2 max-w-2xl mx-auto leading-relaxed opacity-95">
-            Wir freuen uns auf Ihre Anfrage! Stellen Sie uns Ihr Programm vor und
-            werden Sie Teil unserer einzigartigen Kleinkunstbühne.
+            {content.ctaBanner.description}
           </p>
           <p className="text-sm opacity-90">
-            Nutzen Sie das Formular unten oder kontaktieren Sie direkt unser Programmteam
+            {content.ctaBanner.subtitle}
           </p>
         </div>
       </section>
@@ -151,13 +228,13 @@ export function ArtistsSection() {
           <div className="max-w-3xl mx-auto">
             <div className="mb-8 text-center">
               <h3 className="font-['Playfair_Display',serif] text-3xl text-[#2d2d2d] mb-4">
-                Ihre Anfrage
+                {content.contact.title}
               </h3>
               <p className="text-[#666666] font-['Inter',sans-serif]">
-                Stellen Sie uns Ihr Programm vor. Wir freuen uns darauf, von Ihnen zu hören!
+                {content.contact.description}
               </p>
             </div>
-            <ContactForm formType="artist" emailTo="programm@alte-post-brensbach.de" />
+            <ContactForm formType="artist" emailTo={content.contact.email} />
           </div>
         </div>
       </section>
@@ -210,49 +287,22 @@ function VenueImageGallery({ images }: { images: { src: string; alt: string }[] 
   );
 }
 
-function VenueInfoSection() {
-  const venues = [
-    {
-      icon: Snowflake,
-      title: '„Kneipe" (im Winter)',
-      description:
-        'Die Kneipe der Alte Post in Brensbach hat keine Bühne, keinen Vorhang und nur eine kleine Scheinwerferanlage! Unsere Kleinkunstbühne ist eine intime Kneipen-Atmosphäre vor ca. 40 begeisterungsfähigen Gästen! Diese Situation ist von besonderem Reiz für unsere Künstler, aber auch für unsere Gäste! Den Künstlern steht eine max. 4 qm große Fläche neben dem Tresen als „Aktionsraum" zur Verfügung. Darüberhinaus gibt es einen Barhocker und einen Stehtisch, sowie einen 220V-Stromanschluß.',
-      images: [
-        { src: '/artists/kneipe.jpg', alt: 'Auftritt in der Kneipe' },
-      ],
-    },
-    {
-      icon: Sun,
-      title: 'Hofsaal (April–Oktober)',
-      description:
-        'Der sog. „Wintergarten" der Alten Post ist ein saal-ähnlicher Raum, durch eine Glasfaltwand zum Innenhof abgeschlossen und beheizbar, in dem bis zu 80 Gästen Platz finden. Eine variable Bühne von 4–10 qm wird von einer stationären Lichtanlage beleuchtet.',
-      images: [
-        { src: '/artists/hofsaal-1.jpg', alt: 'Im Hofsaal' },
-        { src: '/artists/hofsaal-2.jpg', alt: 'Auftritt im Hofsaal' },
-      ],
-    },
-    {
-      icon: TreePalm,
-      title: 'Innenhof (Sommermonate)',
-      description:
-        'Der Innenhof und der sog. Wintergarten zusammen bilden eine Fläche von ca. 300 qm für max. 150 Gäste. Der Innenhof kann bei Veranstaltungen mit Zelten gegen Regen geschützt werden, eine Heizung ist jedoch nicht möglich!',
-      images: [
-        { src: '/artists/grillstation.jpg', alt: 'Grillstation' },
-        { src: '/artists/innenhof-1.jpg', alt: 'Bühne im Innenhof' },
-        { src: '/artists/innenhof-2.jpg', alt: 'Auftritt im Innenhof' },
-      ],
-    },
-  ];
+interface VenueInfoSectionProps {
+  venuesHeader: ArtistsContent['venuesHeader'];
+  artistContact: ArtistsContent['artistContact'];
+  venues: ArtistsContent['venues'];
+}
 
+function VenueInfoSection({ venuesHeader, artistContact, venues }: VenueInfoSectionProps) {
   return (
     <>
       {/* Section header */}
       <div className="mb-16 text-center">
         <h2 className="font-['Playfair_Display',serif] text-4xl lg:text-5xl text-[#2d2d2d] mb-4">
-          Auftrittsmöglichkeiten
+          {venuesHeader.title}
         </h2>
         <p className="text-lg text-[#666666] max-w-3xl mx-auto leading-relaxed">
-          Die „KleinKunstKneipe Alte Post in Brensbach" bietet je nach Jahreszeit verschiedene Auftrittsmöglichkeiten:
+          {venuesHeader.description}
         </p>
       </div>
 
@@ -262,29 +312,29 @@ function VenueInfoSection() {
           <Mail className="h-12 w-12 text-[#6b8e6f] flex-shrink-0" />
           <div>
             <h3 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d] mb-4">
-              Kontaktadresse für Künstler
+              {artistContact.title}
             </h3>
             <p className="text-[#666666] font-['Inter',sans-serif] mb-4 leading-relaxed">
-              Wenn Sie als Künstler Interesse an einem Auftritt haben oder weitere Informationen benötigen, wenden Sie sich bitte an unser Programmteam:
+              {artistContact.description}
             </p>
             <div className="space-y-2 font-['Inter',sans-serif]">
               <p className="text-[#2d2d2d] font-medium">
-                KleinKunstKneipe „Alte Post" – Programmteam –
+                {artistContact.orgName}
               </p>
-              <p className="text-[#2d2d2d]">Marcus Schmidt</p>
+              <p className="text-[#2d2d2d]">{artistContact.name}</p>
               <a
-                href="tel:+4961628098110"
+                href={`tel:${artistContact.phone.replace(/\s/g, '')}`}
                 className="flex items-center text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors"
               >
                 <Phone className="h-4 w-4 mr-2" />
-                06162 8098110
+                {artistContact.phone}
               </a>
               <a
-                href="mailto:kuenstlerkontakt@kleinkunstkneipe.de"
+                href={`mailto:${artistContact.email}`}
                 className="flex items-center text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors"
               >
                 <Mail className="h-4 w-4 mr-2" />
-                kuenstlerkontakt@kleinkunstkneipe.de
+                {artistContact.email}
               </a>
             </div>
           </div>
@@ -294,7 +344,7 @@ function VenueInfoSection() {
       {/* Venue Cards */}
       <div className="space-y-8">
         {venues.map((venue) => {
-          const Icon = venue.icon;
+          const Icon = iconMap[venue.icon] || Snowflake;
           return (
             <div
               key={venue.title}
