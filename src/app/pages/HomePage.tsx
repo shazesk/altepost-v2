@@ -112,7 +112,7 @@ export function HomePage() {
           const data = await res.json();
           if (data.success && Array.isArray(data.data) && data.data.length > 0) {
             const events = data.data;
-            const last = events[events.length - 1];
+            const last = events[0];
             setLatestEvent({
               title: last.title,
               artist: last.artist || '',
