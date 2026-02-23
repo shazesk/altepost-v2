@@ -156,7 +156,6 @@ export function HomePage() {
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto">
             <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
               <Link to={`/veranstaltung/${nextEvent.id}`} className="absolute inset-0 z-10" aria-label={nextEvent.title} />
               <div className="flex flex-col md:flex-row">
@@ -209,7 +208,6 @@ export function HomePage() {
                 </div>
               </div>
             </article>
-          </div>
         </div>
       </section>
       )}
