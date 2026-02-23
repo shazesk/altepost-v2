@@ -3614,6 +3614,124 @@ export function AdminPage() {
       );
     }
     if (Array.isArray(value)) {
+      // Venue array: objects with images[] get a custom card editor
+      const isVenueArray = value.length > 0 && value.every((item: any) => item && typeof item === 'object' && Array.isArray(item.images));
+      if (isVenueArray) {
+        return (
+          <div className="space-y-6">
+            {value.map((venue: any, venueIdx: number) => (
+              <div key={venueIdx} className="border border-[rgba(107,142,111,0.2)] rounded-lg p-4 bg-[#faf9f7]">
+                <div className="space-y-3 mb-4">
+                  <div>
+                    <label className="block text-sm text-[#666666] mb-1">Titel</label>
+                    <input
+                      type="text"
+                      value={venue.title || ''}
+                      onChange={(e) => {
+                        const updated = [...value];
+                        updated[venueIdx] = { ...venue, title: e.target.value };
+                        onChange(updated);
+                      }}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[#666666] mb-1">Icon</label>
+                    <select
+                      value={venue.icon || 'snowflake'}
+                      onChange={(e) => {
+                        const updated = [...value];
+                        updated[venueIdx] = { ...venue, icon: e.target.value };
+                        onChange(updated);
+                      }}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm bg-white"
+                    >
+                      <option value="snowflake">❄️ Snowflake (Winter)</option>
+                      <option value="sun">☀️ Sun (Sommer)</option>
+                      <option value="tree">🌳 Tree (Draußen)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[#666666] mb-1">Beschreibung</label>
+                    <textarea
+                      value={venue.description || ''}
+                      onChange={(e) => {
+                        const updated = [...value];
+                        updated[venueIdx] = { ...venue, description: e.target.value };
+                        onChange(updated);
+                      }}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Image manager */}
+                <div>
+                  <label className="block text-sm text-[#666666] mb-2">Bilder</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                    {(venue.images || []).map((img: any, imgIdx: number) => (
+                      <div key={imgIdx} className="relative group">
+                        <img
+                          src={img.src}
+                          alt={img.alt || ''}
+                          className="w-full aspect-[4/3] object-cover rounded-lg border border-[rgba(107,142,111,0.2)]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...value];
+                            const newImages = [...venue.images];
+                            newImages.splice(imgIdx, 1);
+                            updated[venueIdx] = { ...venue, images: newImages };
+                            onChange(updated);
+                          }}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Bild entfernen"
+                        >
+                          ×
+                        </button>
+                        <input
+                          type="text"
+                          value={img.alt || ''}
+                          onChange={(e) => {
+                            const updated = [...value];
+                            const newImages = [...venue.images];
+                            newImages[imgIdx] = { ...img, alt: e.target.value };
+                            updated[venueIdx] = { ...venue, images: newImages };
+                            onChange(updated);
+                          }}
+                          placeholder="Alt-Text"
+                          className="mt-1 w-full px-2 py-1 border border-[rgba(107,142,111,0.2)] rounded text-xs focus:outline-none focus:border-[#6b8e6f]"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#6b8e6f] text-white rounded-lg text-sm cursor-pointer hover:bg-[#5a7a5e] transition-colors">
+                    <span>+ Bild hinzufügen</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const base64 = await compressImage(file);
+                        const updated = [...value];
+                        const newImages = [...(venue.images || []), { src: base64, alt: '' }];
+                        updated[venueIdx] = { ...venue, images: newImages };
+                        onChange(updated);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      }
+
       return (
         <textarea
           value={JSON.stringify(value, null, 2)}
