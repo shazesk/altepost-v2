@@ -1887,7 +1887,7 @@ export function AdminPage() {
             Veranstaltungen
           </button>
           <button
-            onClick={() => { setActiveView('reservations'); }}
+            onClick={() => { setActiveView('reservations'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'reservations' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Ticket className="w-5 h-5" />
@@ -1907,7 +1907,7 @@ export function AdminPage() {
           <div className="border-t border-white/10 my-4" />
 
           <button
-            onClick={() => { setActiveView('contacts'); }}
+            onClick={() => { setActiveView('contacts'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'contacts' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <MessageSquare className="w-5 h-5" />
@@ -1917,7 +1917,7 @@ export function AdminPage() {
             ) : null}
           </button>
           <button
-            onClick={() => { setActiveView('vouchers'); }}
+            onClick={() => { setActiveView('vouchers'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'vouchers' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Gift className="w-5 h-5" />
@@ -1927,7 +1927,7 @@ export function AdminPage() {
             ) : null}
           </button>
           <button
-            onClick={() => { setActiveView('memberships'); }}
+            onClick={() => { setActiveView('memberships'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'memberships' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Users className="w-5 h-5" />
@@ -1937,14 +1937,14 @@ export function AdminPage() {
             ) : null}
           </button>
           <button
-            onClick={() => { setActiveView('sponsors'); }}
+            onClick={() => { setActiveView('sponsors'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'sponsors' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Handshake className="w-5 h-5" />
             Sponsoren
           </button>
           <button
-            onClick={() => { setActiveView('newsletter'); }}
+            onClick={() => { setActiveView('newsletter'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'newsletter' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Newspaper className="w-5 h-5" />
@@ -1954,14 +1954,14 @@ export function AdminPage() {
             ) : null}
           </button>
           <button
-            onClick={() => { setActiveView('info-post'); }}
+            onClick={() => { setActiveView('info-post'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'info-post' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Mail className="w-5 h-5" />
             Info-Post
           </button>
           <button
-            onClick={() => { setActiveView('settings'); }}
+            onClick={() => { setActiveView('settings'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'settings' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Settings className="w-5 h-5" />
@@ -1972,14 +1972,14 @@ export function AdminPage() {
           <div className="text-xs text-white/40 uppercase tracking-wider px-4 mb-2">CMS</div>
 
           <button
-            onClick={() => { setActiveView('cms'); setSelectedPage(null); setPageContent(null); }}
+            onClick={() => { setActiveView('cms'); setSelectedPage(null); setPageContent(null); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'cms' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <FileText className="w-5 h-5" />
             Seiten bearbeiten
           </button>
           <button
-            onClick={() => { setActiveView('gallery'); }}
+            onClick={() => { setActiveView('gallery'); setShowArchived(false); }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'gallery' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <ImageIcon className="w-5 h-5" />
