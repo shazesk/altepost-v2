@@ -18,6 +18,7 @@ import { GutscheinPage } from './pages/GutscheinPage';
 import { MitgliedwerdenPage } from './pages/MitgliedwerdenPage';
 import { KontaktPage } from './pages/KontaktPage';
 import { AdminPage } from './pages/AdminPage';
+import { EventDetailPage } from './pages/EventDetailPage';
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
           <Route path="mitglied-werden" element={<MitgliedwerdenPage />} />
           <Route path="tickets" element={<TicketsPage />} />
           <Route path="ticket-reservation" element={<TicketReservationPage />} />
+          <Route path="veranstaltung/:id" element={<EventDetailPage />} />
           <Route path="gutschein" element={<GutscheinPage />} />
           <Route path="archiv" element={<ArchivePage />} />
           <Route path="belegungsplan" element={<BelegungsplanPage />} />

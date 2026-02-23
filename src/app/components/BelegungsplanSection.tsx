@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Search, List, Calendar, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 // --- Types ---
 
@@ -92,7 +93,7 @@ function ListView({ events }: { events: CalendarEvent[] }) {
   return (
     <div className="divide-y divide-[rgba(107,142,111,0.15)]">
       {events.map((event) => (
-        <div key={event.id} className="py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+        <Link key={event.id} to={`/veranstaltung/${event.id}`} className="py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 hover:bg-[#faf9f7] transition-colors -mx-3 px-3 rounded-lg block">
           <span className="text-sm text-[#6b8e6f] font-medium whitespace-nowrap min-w-[140px]">
             {event.date}
           </span>
@@ -105,7 +106,7 @@ function ListView({ events }: { events: CalendarEvent[] }) {
           {event.time && (
             <span className="text-sm text-[#666666] whitespace-nowrap">{event.time}</span>
           )}
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -252,21 +253,20 @@ function MonthView({
                 const key = format(day, 'yyyy-MM-dd');
                 const dayEvents = eventsByDay.get(key) || [];
                 return (
-                  <button
+                  <div
                     key={key}
-                    onClick={() => onSelectDate(day)}
-                    className="w-full text-left bg-white rounded-lg p-4 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-colors"
+                    className="bg-white rounded-lg p-4 border border-[rgba(107,142,111,0.2)]"
                   >
                     <div className="text-sm font-medium text-[#6b8e6f] mb-2">
                       {format(day, 'EEEE, d. MMMM', { locale: de })}
                     </div>
                     {dayEvents.map((ev) => (
-                      <div key={ev.id} className="text-[#2d2d2d]">
+                      <Link key={ev.id} to={`/veranstaltung/${ev.id}`} className="block text-[#2d2d2d] hover:text-[#6b8e6f] transition-colors py-1">
                         {ev.title}
                         {ev.artist && <span className="text-[#666666]"> — {ev.artist}</span>}
-                      </div>
+                      </Link>
                     ))}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -335,9 +335,10 @@ function DayView({
       ) : (
         <div className="space-y-4">
           {dayEvents.map((event) => (
-            <div
+            <Link
               key={event.id}
-              className="bg-white rounded-lg p-6 border border-[rgba(107,142,111,0.2)]"
+              to={`/veranstaltung/${event.id}`}
+              className="block bg-white rounded-lg p-6 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-md"
             >
               <h4 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-1">
                 {event.title}
@@ -353,7 +354,7 @@ function DayView({
                   {event.genre}
                 </span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

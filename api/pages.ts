@@ -32,11 +32,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { name, type } = req.query;
+  const { name, type, id } = req.query;
 
   // Public version check - no auth required
   if (type === 'version') {
     return res.status(200).json({ success: true, version: 'v5-logging', build: 'e2e-log', timestamp: new Date().toISOString() });
+  }
+
+  // Get single event by ID
+  if (type === 'event' && id && typeof id === 'string') {
+    const events = await readEvents();
+    const event = events.find(e => String(e.id) === id);
+    if (!event) {
+      return res.status(404).json({ success: false, error: 'Event not found' });
+    }
+    const formatted = {
+      id: String(event.id),
+      title: event.title,
+      artist: event.artist,
+      date: formatDate(event.date),
+      time: formatTime(event.time),
+      price: formatPrice(event.price),
+      genre: event.genre,
+      month: event.month,
+      availability: event.availability,
+      description: event.description,
+      image: event.image,
+      is_archived: event.is_archived,
+    };
+    return res.status(200).json({ success: true, data: formatted });
   }
 
   // Get public events

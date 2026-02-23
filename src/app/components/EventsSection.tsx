@@ -283,7 +283,9 @@ function EventCard({ event }: { event: Event }) {
           <div className="mb-4">
             <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-sm text-[#666666]">{event.genre}</span>
           </div>
-          <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{event.title}</h3>
+          <Link to={`/veranstaltung/${event.id}`} className="hover:text-[#6b8e6f] transition-colors">
+            <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{event.title}</h3>
+          </Link>
           <p className="text-lg text-[#666666] mb-4">{event.artist}</p>
           <p className="text-[#666666] mb-6 leading-relaxed">{event.description}</p>
           <div className="flex flex-wrap gap-4 mb-6">
@@ -348,7 +350,9 @@ function EventListItem({ event }: { event: Event }) {
             <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-xs text-[#666666]">{event.genre}</span>
             <span className={`text-sm ${config.color}`}>{config.text}</span>
           </div>
-          <h3 className="font-['Playfair_Display',serif] text-xl lg:text-2xl text-[#2d2d2d] mb-1">{event.title}</h3>
+          <Link to={`/veranstaltung/${event.id}`} className="hover:text-[#6b8e6f] transition-colors">
+            <h3 className="font-['Playfair_Display',serif] text-xl lg:text-2xl text-[#2d2d2d] mb-1">{event.title}</h3>
+          </Link>
           <p className="text-[#666666] mb-2">{event.artist}</p>
           <div className="flex flex-wrap gap-4 text-sm text-[#666666]">
             <div className="flex items-center">
