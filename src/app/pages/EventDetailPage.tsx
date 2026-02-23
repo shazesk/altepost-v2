@@ -16,6 +16,7 @@ interface EventData {
   availability: 'available' | 'few-left' | 'sold-out';
   description: string;
   image?: string | null;
+  photos?: string[];
   is_archived?: boolean;
   remainingTickets?: number;
 }
@@ -123,6 +124,23 @@ export function EventDetailPage() {
               alt={event.title}
               className="w-full h-64 md:h-96 object-cover"
             />
+          </div>
+        )}
+
+        {/* Photo gallery */}
+        {event.photos && event.photos.length > 0 && (
+          <div className="mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {event.photos.map((photo, index) => (
+                <div key={index} className="rounded-lg overflow-hidden">
+                  <ImageWithFallback
+                    src={photo}
+                    alt={`${event.title} – Foto ${index + 1}`}
+                    className="w-full h-40 md:h-48 object-cover"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

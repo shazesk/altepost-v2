@@ -68,6 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       availability,
       description: event.description,
       image: event.image,
+      photos: event.photos || [],
       is_archived: event.is_archived,
     };
     if (remainingTickets != null) formatted.remainingTickets = remainingTickets;
@@ -132,7 +133,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           month: e.month,
           availability,
           description: e.description,
-          image: e.image
+          image: e.image,
+          photos: e.photos || []
         };
         if (remainingTickets != null) result.remainingTickets = remainingTickets;
         return result;

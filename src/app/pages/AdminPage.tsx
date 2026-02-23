@@ -924,7 +924,8 @@ export function AdminPage() {
         availability: formData.get('availability'),
         description: formData.get('description'),
         is_archived: formData.get('is_archived') === 'true',
-        maxTickets: formData.get('maxTickets') ? Number(formData.get('maxTickets')) : undefined
+        maxTickets: formData.get('maxTickets') ? Number(formData.get('maxTickets')) : undefined,
+        photos: eventPhotos
       };
 
       // Handle image - convert to base64 if new file selected
@@ -960,6 +961,7 @@ export function AdminPage() {
         setIsCreating(false);
         setImagePreview(null);
         setSelectedImageFile(null);
+        setEventPhotos([]);
         loadEvents();
         loadStats();
       } else {
@@ -1812,7 +1814,7 @@ export function AdminPage() {
               {event ? 'Veranstaltung bearbeiten' : 'Neue Veranstaltung'}
             </h1>
             <button
-              onClick={() => { setEditingEvent(null); setIsCreating(false); setImagePreview(null); setSelectedImageFile(null); }}
+              onClick={() => { setEditingEvent(null); setIsCreating(false); setImagePreview(null); setSelectedImageFile(null); setEventPhotos([]); }}
               className="text-[#666666] hover:text-[#2d2d2d]"
             >
               Abbrechen
@@ -1895,6 +1897,41 @@ export function AdminPage() {
                 </div>
               </div>
             </div>
+
+            {/* Weitere Fotos */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Weitere Fotos ({eventPhotos.length}/5)</label>
+              {eventPhotos.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
+                  {eventPhotos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-28 object-cover rounded-lg border border-[rgba(107,142,111,0.2)]" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePhoto(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Foto entfernen"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {eventPhotos.length < 5 && (
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleAddPhotos}
+                    className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                  />
+                  <p className="text-xs text-[#666666] mt-1">Max. 2 MB pro Bild. Bis zu {5 - eventPhotos.length} weitere möglich.</p>
+                </div>
+              )}
+            </div>
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Beschreibung</label>
               <textarea name="description" defaultValue={event?.description || ''} rows={3} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
@@ -1907,7 +1944,7 @@ export function AdminPage() {
             </div>
             <div className="flex gap-4">
               <button type="submit" className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">{event ? 'Speichern' : 'Erstellen'}</button>
-              <button type="button" onClick={() => { setEditingEvent(null); setIsCreating(false); setImagePreview(null); setSelectedImageFile(null); }} className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors">Abbrechen</button>
+              <button type="button" onClick={() => { setEditingEvent(null); setIsCreating(false); setImagePreview(null); setSelectedImageFile(null); setEventPhotos([]); }} className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors">Abbrechen</button>
             </div>
           </form>
         </div>
@@ -2210,7 +2247,7 @@ export function AdminPage() {
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => { setEditingEvent(event); setImagePreview(event.image); setSelectedImageFile(null); }} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Bearbeiten"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => { setEditingEvent(event); setImagePreview(event.image); setSelectedImageFile(null); setEventPhotos(event.photos || []); }} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Bearbeiten"><Edit2 className="w-4 h-4" /></button>
                           {event.is_archived && (
                             <button onClick={() => openPhotoManager(event)} className="p-2 text-[#d4a574] hover:bg-[#d4a574]/10 rounded-lg" title="Fotos verwalten">
                               <Camera className="w-4 h-4" />

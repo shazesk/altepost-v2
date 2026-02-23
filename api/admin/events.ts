@@ -185,7 +185,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       availability: body.availability || 'available',
       description: body.description || '',
       image: body.image || null,
-      is_archived: body.is_archived === 'true' || body.is_archived === true
+      is_archived: body.is_archived === 'true' || body.is_archived === true,
+      photos: Array.isArray(body.photos) ? body.photos : []
     };
 
     events.push(newEvent);
@@ -230,7 +231,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       description: body.description ?? events[eventIndex].description,
       image: body.image !== undefined ? body.image : events[eventIndex].image,
       is_archived: body.is_archived !== undefined ? (body.is_archived === 'true' || body.is_archived === true) : events[eventIndex].is_archived,
-      photos: events[eventIndex].photos || []
+      photos: Array.isArray(body.photos) ? body.photos : events[eventIndex].photos || []
     };
 
     if (body.date) {

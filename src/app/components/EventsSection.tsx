@@ -18,6 +18,7 @@ interface Event {
   availability: 'available' | 'few-left' | 'sold-out';
   description: string;
   image?: string | null;
+  photos?: string[];
   remainingTickets?: number;
 }
 
