@@ -85,7 +85,7 @@ const defaultGallery: GalleryImage[] = [
 export function HomePage() {
   const { content } = useCmsPage<HomePageContent>('home', defaultContent);
   const [gallery, setGallery] = useState<GalleryImage[]>(defaultGallery);
-  const [latestEvent, setLatestEvent] = useState<{ title: string; artist: string; date: string; time: string; price: string; genre: string; description: string } | null>(null);
+  const [latestEvent, setLatestEvent] = useState<{ id: string; title: string; artist: string; date: string; time: string; price: string; genre: string; description: string; image?: string | null } | null>(null);
 
   useEffect(() => {
     async function fetchGallery() {
@@ -114,6 +114,7 @@ export function HomePage() {
             const events = data.data;
             const last = events[0];
             setLatestEvent({
+              id: last.id,
               title: last.title,
               artist: last.artist || '',
               date: last.date,
@@ -121,6 +122,7 @@ export function HomePage() {
               price: last.price?.replace(/[^\d,\.]/g, '') || '',
               genre: last.genre,
               description: last.description,
+              image: last.image || null,
             });
           }
         }
@@ -162,7 +164,17 @@ export function HomePage() {
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl p-8 lg:p-12 shadow-xl border border-[rgba(107,142,111,0.1)]">
+            <div className="bg-white rounded-2xl shadow-xl border border-[rgba(107,142,111,0.1)] overflow-hidden">
+              {nextEvent.image && (
+                <Link to={`/veranstaltung/${nextEvent.id}`}>
+                  <ImageWithFallback
+                    src={nextEvent.image}
+                    alt={nextEvent.title}
+                    className="w-full h-64 md:h-80 object-cover hover:scale-105 transition-transform duration-300"
+                  />
+                </Link>
+              )}
+            <div className="p-8 lg:p-12">
               <div className="flex items-center justify-center gap-3 mb-6">
                 <span className="inline-block rounded-full bg-[#6b8e6f]/10 px-4 py-2 text-sm text-[#6b8e6f] font-['Inter',sans-serif]">
                   {nextEvent.genre}
@@ -198,7 +210,7 @@ export function HomePage() {
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  to="/tickets"
+                  to={`/veranstaltung/${nextEvent.id}`}
                   className="group inline-flex items-center justify-center gap-2 rounded-lg bg-[#6b8e6f] px-8 py-4 text-white hover:bg-[#5a7a5e] transition-all shadow-lg hover:shadow-xl font-['Inter',sans-serif]"
                 >
                   <Ticket className="h-5 w-5" />
@@ -213,6 +225,7 @@ export function HomePage() {
                   Alle Veranstaltungen
                 </Link>
               </div>
+            </div>
             </div>
           </div>
         </div>
