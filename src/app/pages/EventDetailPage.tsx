@@ -1,7 +1,7 @@
 import React from "react";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, Clock, Euro, Ticket, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, Euro, Ticket, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
 interface EventData {
@@ -26,6 +26,32 @@ export function EventDetailPage() {
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const allPhotos = event ? [...(event.image ? [event.image] : []), ...(event.photos || [])] : [];
+
+  const closeLightbox = useCallback(() => setLightboxIndex(null), []);
+  const prevPhoto = useCallback(() => {
+    setLightboxIndex(i => i !== null ? (i - 1 + allPhotos.length) % allPhotos.length : null);
+  }, [allPhotos.length]);
+  const nextPhoto = useCallback(() => {
+    setLightboxIndex(i => i !== null ? (i + 1) % allPhotos.length : null);
+  }, [allPhotos.length]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') prevPhoto();
+      if (e.key === 'ArrowRight') nextPhoto();
+    }
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [lightboxIndex, closeLightbox, prevPhoto, nextPhoto]);
 
   useEffect(() => {
     async function fetchEvent() {
@@ -118,11 +144,11 @@ export function EventDetailPage() {
 
         {/* Event image */}
         {event.image && (
-          <div className="rounded-lg overflow-hidden mb-8">
+          <div className="rounded-lg overflow-hidden mb-8 cursor-pointer" onClick={() => setLightboxIndex(0)}>
             <ImageWithFallback
               src={event.image}
               alt={event.title}
-              className="w-full h-64 md:h-96 object-cover"
+              className="w-full h-64 md:h-96 object-cover hover:scale-105 transition-transform duration-300"
             />
           </div>
         )}
@@ -132,11 +158,15 @@ export function EventDetailPage() {
           <div className="mb-8">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {event.photos.map((photo, index) => (
-                <div key={index} className="rounded-lg overflow-hidden">
+                <div
+                  key={index}
+                  className="rounded-lg overflow-hidden cursor-pointer"
+                  onClick={() => setLightboxIndex((event.image ? 1 : 0) + index)}
+                >
                   <ImageWithFallback
                     src={photo}
                     alt={`${event.title} – Foto ${index + 1}`}
-                    className="w-full h-40 md:h-48 object-cover"
+                    className="w-full h-40 md:h-48 object-cover hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               ))}
@@ -202,6 +232,55 @@ export function EventDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && allPhotos[lightboxIndex] && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          onClick={closeLightbox}
+        >
+          {/* Close button */}
+          <button
+            onClick={closeLightbox}
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-2 z-10"
+          >
+            <X className="h-7 w-7" />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-4 left-4 text-white/60 text-sm">
+            {lightboxIndex + 1} / {allPhotos.length}
+          </div>
+
+          {/* Previous */}
+          {allPhotos.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+              className="absolute left-2 md:left-6 text-white/70 hover:text-white p-2 z-10"
+            >
+              <ChevronLeft className="h-10 w-10" />
+            </button>
+          )}
+
+          {/* Image */}
+          <img
+            src={allPhotos[lightboxIndex]}
+            alt={`Foto ${lightboxIndex + 1}`}
+            className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Next */}
+          {allPhotos.length > 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+              className="absolute right-2 md:right-6 text-white/70 hover:text-white p-2 z-10"
+            >
+              <ChevronRight className="h-10 w-10" />
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
