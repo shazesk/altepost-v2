@@ -27,6 +27,7 @@ export function EventDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [recommendations, setRecommendations] = useState<EventData[]>([]);
 
   const allPhotos = event ? [...(event.image ? [event.image] : []), ...(event.photos || [])] : [];
 
@@ -74,6 +75,22 @@ export function EventDetailPage() {
       }
     }
     fetchEvent();
+  }, [id]);
+
+  useEffect(() => {
+    async function fetchRecommendations() {
+      try {
+        const response = await fetch('/api/pages?type=events');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.data)) {
+            const others = data.data.filter((e: EventData) => e.id !== id && e.availability !== 'sold-out');
+            setRecommendations(others.slice(0, 3));
+          }
+        }
+      } catch { /* ignore */ }
+    }
+    if (id) fetchRecommendations();
   }, [id]);
 
   if (loading) {
@@ -232,6 +249,65 @@ export function EventDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Recommendations */}
+      {recommendations.length > 0 && (
+        <div className="mx-auto max-w-4xl px-6 lg:px-8 mt-16">
+          <div className="border-t border-[rgba(107,142,111,0.2)] pt-12">
+            <h2 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">
+              {event.availability === 'sold-out' ? 'Diese Veranstaltungen haben noch Tickets' : 'Weitere Veranstaltungen'}
+            </h2>
+            <p className="text-[#666666] mb-8">
+              {event.availability === 'sold-out'
+                ? 'Diese Veranstaltung ist ausverkauft – aber hier gibt es noch Plätze!'
+                : 'Entdecken Sie weitere Highlights in der Alten Post'}
+            </p>
+            <div className="grid gap-4">
+              {recommendations.map((rec) => (
+                <Link
+                  key={rec.id}
+                  to={`/veranstaltung/${rec.id}`}
+                  className="group flex flex-col sm:flex-row bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] hover:shadow-md transition-all"
+                >
+                  {rec.image && (
+                    <div className="sm:w-48 flex-shrink-0 overflow-hidden">
+                      <ImageWithFallback
+                        src={rec.image}
+                        alt={rec.title}
+                        className="w-full h-36 sm:h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="inline-block rounded-full bg-[#e8e4df] px-2.5 py-0.5 text-xs text-[#666666]">{rec.genre}</span>
+                      {rec.availability === 'few-left' && (
+                        <span className="text-xs text-[#8b4454] font-medium">Nur noch wenige!</span>
+                      )}
+                    </div>
+                    <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-1 group-hover:text-[#6b8e6f] transition-colors">{rec.title}</h3>
+                    <p className="text-sm text-[#666666] mb-3">{rec.artist}</p>
+                    <div className="flex flex-wrap gap-4 text-sm text-[#666666]">
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-3.5 w-3.5 text-[#6b8e6f]" />
+                        {rec.date}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5 text-[#6b8e6f]" />
+                        {rec.time}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <Euro className="h-3.5 w-3.5 text-[#6b8e6f]" />
+                        {rec.price}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox */}
       {lightboxIndex !== null && allPhotos[lightboxIndex] && (
