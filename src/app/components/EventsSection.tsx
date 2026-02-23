@@ -269,6 +269,7 @@ function EventCard({ event }: { event: Event }) {
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
+      <Link to={`/veranstaltung/${event.id}`} className="absolute inset-0 z-10" aria-label={event.title} />
       <div className="flex flex-col md:flex-row">
         {event.image && (
           <div className="md:w-72 lg:w-80 flex-shrink-0 overflow-hidden">
@@ -283,9 +284,7 @@ function EventCard({ event }: { event: Event }) {
           <div className="mb-4">
             <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-sm text-[#666666]">{event.genre}</span>
           </div>
-          <Link to={`/veranstaltung/${event.id}`} className="hover:text-[#6b8e6f] transition-colors">
-            <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{event.title}</h3>
-          </Link>
+          <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{event.title}</h3>
           <p className="text-lg text-[#666666] mb-4">{event.artist}</p>
           <p className="text-[#666666] mb-6 leading-relaxed">{event.description}</p>
           <div className="flex flex-wrap gap-4 mb-6">
@@ -302,7 +301,7 @@ function EventCard({ event }: { event: Event }) {
               <span>{event.price}</span>
             </div>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between relative z-20">
             <span className={`text-sm ${config.color}`}>{config.text}</span>
             <Link
               to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
@@ -334,7 +333,8 @@ function EventListItem({ event }: { event: Event }) {
   const config = availabilityConfig[event.availability];
 
   return (
-    <article className="group bg-[#faf9f7] rounded-lg p-6 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all">
+    <article className="group relative bg-[#faf9f7] rounded-lg p-6 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all">
+      <Link to={`/veranstaltung/${event.id}`} className="absolute inset-0 z-10" aria-label={event.title} />
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {event.image && (
           <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden">
@@ -350,9 +350,7 @@ function EventListItem({ event }: { event: Event }) {
             <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-xs text-[#666666]">{event.genre}</span>
             <span className={`text-sm ${config.color}`}>{config.text}</span>
           </div>
-          <Link to={`/veranstaltung/${event.id}`} className="hover:text-[#6b8e6f] transition-colors">
-            <h3 className="font-['Playfair_Display',serif] text-xl lg:text-2xl text-[#2d2d2d] mb-1">{event.title}</h3>
-          </Link>
+          <h3 className="font-['Playfair_Display',serif] text-xl lg:text-2xl text-[#2d2d2d] mb-1">{event.title}</h3>
           <p className="text-[#666666] mb-2">{event.artist}</p>
           <div className="flex flex-wrap gap-4 text-sm text-[#666666]">
             <div className="flex items-center">
@@ -369,7 +367,7 @@ function EventListItem({ event }: { event: Event }) {
             </div>
           </div>
         </div>
-        <div className="lg:flex-shrink-0">
+        <div className="lg:flex-shrink-0 relative z-20">
           <Link
             to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
             state={event.availability === 'sold-out' ? undefined : { event }}

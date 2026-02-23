@@ -1,6 +1,7 @@
 import React from "react";
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Search, Calendar, Camera, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface ArchiveEvent {
   id: string;
@@ -142,10 +143,12 @@ export function ArchiveSection() {
                 {expandedYears.has(year) && (
                   <div className="divide-y divide-[rgba(107,142,111,0.1)]">
                     {filteredData[year].map((event) => (
-                      <div key={event.id} className="p-4 hover:bg-[#faf9f7] transition-colors">
+                      <div key={event.id} className="p-4 hover:bg-[#faf9f7] transition-colors relative">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div>
-                            <h4 className="font-medium text-[#2d2d2d]">{event.title}</h4>
+                            <Link to={`/veranstaltung/${event.id}`} className="hover:text-[#6b8e6f] transition-colors">
+                              <h4 className="font-medium text-[#2d2d2d]">{event.title}</h4>
+                            </Link>
                             <p className="text-sm text-[#666666]">{event.artist}</p>
                           </div>
                           <div className="flex items-center gap-3 text-sm">
