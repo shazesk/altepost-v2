@@ -199,7 +199,7 @@ export function infoPostEmail(data: { title: string; introText: string; events: 
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid rgba(107,142,111,0.2)">
 <tr><td style="background:#6b8e6f;padding:24px 32px;text-align:center">
-  <h1 style="margin:0;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px">Info-Post</h1>
+  <h1 style="margin:0;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px">Newsletter</h1>
   <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px">KleinKunstKneipe Alte Post e.V.</p>
   <a href="https://friedrichholdings.de" style="color:rgba(255,255,255,0.7);font-size:12px;text-decoration:underline">friedrichholdings.de</a>
 </td></tr>
@@ -213,7 +213,7 @@ export function infoPostEmail(data: { title: string; introText: string; events: 
   Darmstädter Str. 42, 64395 Brensbach<br><br>
   <span style="color:#aaa">${data.unsubscribeUrl
     ? `<a href="${data.unsubscribeUrl}" style="color:#aaa;text-decoration:underline">Vom Newsletter abmelden</a>`
-    : 'Wenn Sie zukünftig keine Info-Post-Mail mehr erhalten wollen, antworten Sie bitte auf diese E-Mail mit dem Betreff „Abmelden".'}</span>
+    : 'Wenn Sie zukünftig keinen Newsletter mehr erhalten wollen, antworten Sie bitte auf diese E-Mail mit dem Betreff „Abmelden".'}</span>
 </td></tr>
 </table>
 </td></tr>

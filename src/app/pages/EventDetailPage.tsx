@@ -17,6 +17,7 @@ interface EventData {
   description: string;
   image?: string | null;
   is_archived?: boolean;
+  remainingTickets?: number;
 }
 
 export function EventDetailPage() {
@@ -87,13 +88,20 @@ export function EventDetailPage() {
     );
   }
 
-  const availabilityConfig = {
-    'available': { text: 'Tickets verfügbar', color: 'text-[#6b8e6f]' },
-    'few-left': { text: 'Nur noch wenige Tickets', color: 'text-[#8b4454]' },
-    'sold-out': { text: 'Ausverkauft', color: 'text-[#666666]' },
-  };
-
-  const config = event.availability ? availabilityConfig[event.availability] : null;
+  const config = (() => {
+    if (event.remainingTickets != null) {
+      if (event.remainingTickets <= 0) return { text: 'Ausverkauft', color: 'text-[#666666]' };
+      if (event.remainingTickets <= 5) return { text: `Nur noch ${event.remainingTickets} Tickets!`, color: 'text-[#8b4454]' };
+      return { text: `${event.remainingTickets} Tickets verfügbar`, color: 'text-[#6b8e6f]' };
+    }
+    if (!event.availability) return null;
+    const fallback = {
+      'available': { text: 'Tickets verfügbar', color: 'text-[#6b8e6f]' },
+      'few-left': { text: 'Nur noch wenige Tickets', color: 'text-[#8b4454]' },
+      'sold-out': { text: 'Ausverkauft', color: 'text-[#666666]' },
+    };
+    return fallback[event.availability];
+  })();
 
   return (
     <section className="py-20 lg:py-28 bg-white">

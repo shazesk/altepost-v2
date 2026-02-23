@@ -62,6 +62,7 @@ export interface Event {
   image: string | null;
   is_archived: boolean;
   photos?: string[];
+  maxTickets?: number;
 }
 
 export interface Reservation {

@@ -16,6 +16,7 @@ interface Event {
   image: string | null;
   is_archived: boolean;
   photos?: string[];
+  maxTickets?: number;
 }
 
 interface Reservation {
@@ -205,7 +206,7 @@ export function AdminPage() {
   // Newsletter state
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
 
-  // Info-Post state
+  // Newsletter issue state
   interface NewsletterIssue {
     id: number;
     createdAt: string;
@@ -492,7 +493,7 @@ export function AdminPage() {
     }
   }
 
-  // Info-Post functions
+  // Newsletter issue functions
   async function loadNewsletterIssues() {
     try {
       const res = await fetch(`${API_BASE}/data?type=newsletter-issues`, {
@@ -547,7 +548,7 @@ export function AdminPage() {
         });
         const data = await res.json();
         if (data.success) {
-          setMessage({ text: 'Info-Post aktualisiert', type: 'success' });
+          setMessage({ text: 'Newsletter aktualisiert', type: 'success' });
           resetIssueForm();
           loadNewsletterIssues();
         }
@@ -560,7 +561,7 @@ export function AdminPage() {
         });
         const data = await res.json();
         if (data.success) {
-          setMessage({ text: 'Info-Post erstellt', type: 'success' });
+          setMessage({ text: 'Newsletter erstellt', type: 'success' });
           resetIssueForm();
           loadNewsletterIssues();
         }
@@ -613,7 +614,7 @@ export function AdminPage() {
   }
 
   async function handleDeleteIssue(id: number) {
-    if (!confirm('Info-Post wirklich löschen?')) return;
+    if (!confirm('Newsletter wirklich löschen?')) return;
     try {
       const res = await fetch(`${API_BASE}/data?type=newsletter-issues&id=${id}`, {
         method: 'DELETE',
@@ -621,7 +622,7 @@ export function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ text: 'Info-Post gelöscht', type: 'success' });
+        setMessage({ text: 'Newsletter gelöscht', type: 'success' });
         loadNewsletterIssues();
       }
     } catch {
@@ -644,7 +645,7 @@ export function AdminPage() {
       : '';
     return `<div style="font-family:'Inter',Arial,sans-serif;color:#2d2d2d;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;border:1px solid rgba(107,142,111,0.2)">
       <div style="background:#6b8e6f;padding:24px 32px;text-align:center">
-        <h1 style="margin:0;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px">Info-Post</h1>
+        <h1 style="margin:0;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px">Newsletter</h1>
         <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px">KleinKunstKneipe Alte Post e.V.</p>
       </div>
       <div style="padding:32px">
@@ -708,6 +709,46 @@ export function AdminPage() {
     } catch {
       setMessage({ text: 'Fehler beim Löschen', type: 'error' });
     }
+  }
+
+  // Manual email addition
+  const [manualEmails, setManualEmails] = useState('');
+  const [addingEmails, setAddingEmails] = useState(false);
+
+  async function handleAddManualEmails() {
+    const emails = manualEmails
+      .split(/[\n,;]+/)
+      .map(e => e.trim())
+      .filter(e => e && e.includes('@'));
+    if (emails.length === 0) {
+      setMessage({ text: 'Keine gültigen E-Mail-Adressen gefunden', type: 'error' });
+      return;
+    }
+    setAddingEmails(true);
+    let added = 0;
+    let skipped = 0;
+    for (const email of emails) {
+      try {
+        const res = await fetch(`${API_BASE}/data?type=newsletter-subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, source: 'manual' })
+        });
+        const data = await res.json();
+        if (data.success && data.message !== 'Bereits angemeldet') {
+          added++;
+        } else {
+          skipped++;
+        }
+      } catch {
+        skipped++;
+      }
+    }
+    setAddingEmails(false);
+    setManualEmails('');
+    loadNewsletter();
+    loadStats();
+    setMessage({ text: `${added} E-Mail(s) hinzugefügt${skipped > 0 ? `, ${skipped} übersprungen` : ''}`, type: 'success' });
   }
 
   // CMS functions
@@ -882,7 +923,8 @@ export function AdminPage() {
         genre: formData.get('genre'),
         availability: formData.get('availability'),
         description: formData.get('description'),
-        is_archived: formData.get('is_archived') === 'true'
+        is_archived: formData.get('is_archived') === 'true',
+        maxTickets: formData.get('maxTickets') ? Number(formData.get('maxTickets')) : undefined
       };
 
       // Handle image - convert to base64 if new file selected
@@ -1814,6 +1856,11 @@ export function AdminPage() {
                   <option value="sold-out">Ausverkauft</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Kapazität</label>
+                <input type="number" name="maxTickets" defaultValue={event?.maxTickets ?? 30} min={0} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                <p className="text-xs text-[#666666] mt-1">Tickets werden automatisch gezählt</p>
+              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Bild</label>
                 <div className="space-y-3">
@@ -1958,7 +2005,7 @@ export function AdminPage() {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'info-post' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Mail className="w-5 h-5" />
-            Info-Post
+            Newsletter versenden
           </button>
           <button
             onClick={() => { setActiveView('settings'); setShowArchived(false); }}
@@ -3115,6 +3162,25 @@ export function AdminPage() {
               </div>
             </div>
 
+            {/* Manual Email Addition */}
+            <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] mb-8">
+              <h3 className="font-medium text-[#2d2d2d] mb-3">E-Mail-Adressen manuell hinzufügen</h3>
+              <textarea
+                value={manualEmails}
+                onChange={(e) => setManualEmails(e.target.value)}
+                placeholder="E-Mail-Adressen eingeben (eine pro Zeile, oder durch Komma/Semikolon getrennt)"
+                className="w-full px-4 py-3 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] mb-3 h-24 resize-y text-sm"
+              />
+              <button
+                onClick={handleAddManualEmails}
+                disabled={addingEmails || !manualEmails.trim()}
+                className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-4 h-4" />
+                {addingEmails ? 'Wird hinzugefügt...' : 'E-Mails hinzufügen'}
+              </button>
+            </div>
+
             {/* Subscriber Table */}
             {newsletterSubscribers.length > 0 ? (
               <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] overflow-hidden">
@@ -3143,7 +3209,8 @@ export function AdminPage() {
                             'ticket-reservation': 'Ticketreservierung',
                             'membership': 'Mitgliedschaft',
                             'voucher': 'Gutschein',
-                            'website': 'Website'
+                            'website': 'Website',
+                            'manual': 'Manuell'
                           }[sub.source] || sub.source}
                         </td>
                         <td className="px-4 py-3 text-[#666666] text-sm">
@@ -3189,11 +3256,11 @@ export function AdminPage() {
           </>
         )}
 
-        {/* Info-Post View */}
+        {/* Newsletter versenden View */}
         {activeView === 'info-post' && (
           <>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Info-Post</h2>
+              <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Newsletter versenden</h2>
               {!isCreatingIssue && !previewIssueHtml && !sendConfirmIssueId && (
                 <button
                   onClick={() => { resetIssueForm(); setIsCreatingIssue(true); }}
@@ -3210,7 +3277,7 @@ export function AdminPage() {
               <div className="bg-white rounded-xl border-2 border-[#8b4454] p-6 mb-8">
                 <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-4">Versand bestätigen</h3>
                 <p className="text-[#666666] mb-4">
-                  Diese Info-Post wird an <strong className="text-[#2d2d2d]">{sendConfirmCount ?? '...'}</strong> Empfänger gesendet.
+                  Dieser Newsletter wird an <strong className="text-[#2d2d2d]">{sendConfirmCount ?? '...'}</strong> Empfänger gesendet.
                   Geben Sie <strong>SEND</strong> ein, um den Versand zu bestätigen.
                 </p>
                 <div className="flex items-center gap-3">
@@ -3457,8 +3524,8 @@ export function AdminPage() {
             ) : !isCreatingIssue ? (
               <div className="bg-white rounded-xl border border-[rgba(107,142,111,0.2)] p-12 text-center">
                 <Mail className="w-16 h-16 text-[#e8e4df] mx-auto mb-4" />
-                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">Keine Info-Post Ausgaben</h3>
-                <p className="text-[#666666]">Erstellen Sie Ihre erste Info-Post Ausgabe.</p>
+                <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-2">Keine Newsletter-Ausgaben</h3>
+                <p className="text-[#666666]">Erstellen Sie Ihre erste Newsletter-Ausgabe.</p>
               </div>
             ) : null}
           </>

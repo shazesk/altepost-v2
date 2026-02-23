@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readPageContent, readTestimonials, listPages, readSettings, readEvents, readGallery } from './admin/_lib/data.js';
+import { readPageContent, readTestimonials, listPages, readSettings, readEvents, readReservations, readGallery } from './admin/_lib/data.js';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -46,7 +46,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!event) {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
-    const formatted = {
+    let availability = event.availability;
+    let remainingTickets: number | undefined;
+    if (event.maxTickets != null) {
+      const reservations = await readReservations();
+      const bookedTickets = reservations
+        .filter(r => r.eventId === event.id && r.status === 'active')
+        .reduce((sum, r) => sum + r.tickets, 0);
+      remainingTickets = Math.max(0, event.maxTickets - bookedTickets);
+      availability = remainingTickets > 5 ? 'available' : remainingTickets >= 1 ? 'few-left' : 'sold-out';
+    }
+    const formatted: Record<string, any> = {
       id: String(event.id),
       title: event.title,
       artist: event.artist,
@@ -55,11 +65,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       price: formatPrice(event.price),
       genre: event.genre,
       month: event.month,
-      availability: event.availability,
+      availability,
       description: event.description,
       image: event.image,
       is_archived: event.is_archived,
     };
+    if (remainingTickets != null) formatted.remainingTickets = remainingTickets;
     return res.status(200).json({ success: true, data: formatted });
   }
 
@@ -95,23 +106,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: groupedByYear });
     }
 
-    // Return upcoming (non-archived) events
+    // Return upcoming (non-archived) events with remaining ticket counts
+    const reservations = await readReservations();
     const upcomingEvents = events
       .filter(e => !e.is_archived)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map(e => ({
-        id: String(e.id),
-        title: e.title,
-        artist: e.artist,
-        date: formatDate(e.date),
-        time: formatTime(e.time),
-        price: formatPrice(e.price),
-        genre: e.genre,
-        month: e.month,
-        availability: e.availability,
-        description: e.description,
-        image: e.image
-      }));
+      .map(e => {
+        let availability = e.availability;
+        let remainingTickets: number | undefined;
+        if (e.maxTickets != null) {
+          const bookedTickets = reservations
+            .filter(r => r.eventId === e.id && r.status === 'active')
+            .reduce((sum, r) => sum + r.tickets, 0);
+          remainingTickets = Math.max(0, e.maxTickets - bookedTickets);
+          availability = remainingTickets > 5 ? 'available' : remainingTickets >= 1 ? 'few-left' : 'sold-out';
+        }
+        const result: Record<string, any> = {
+          id: String(e.id),
+          title: e.title,
+          artist: e.artist,
+          date: formatDate(e.date),
+          time: formatTime(e.time),
+          price: formatPrice(e.price),
+          genre: e.genre,
+          month: e.month,
+          availability,
+          description: e.description,
+          image: e.image
+        };
+        if (remainingTickets != null) result.remainingTickets = remainingTickets;
+        return result;
+      });
 
     return res.status(200).json({ success: true, data: upcomingEvents });
   }

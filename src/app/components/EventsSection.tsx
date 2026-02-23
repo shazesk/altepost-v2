@@ -18,6 +18,7 @@ interface Event {
   availability: 'available' | 'few-left' | 'sold-out';
   description: string;
   image?: string | null;
+  remainingTickets?: number;
 }
 
 function generateProgramPDF(events: Event[]) {
@@ -258,14 +259,22 @@ export function EventsSection() {
   );
 }
 
-function EventCard({ event }: { event: Event }) {
-  const availabilityConfig = {
+function getAvailabilityDisplay(event: Event) {
+  if (event.remainingTickets != null) {
+    if (event.remainingTickets <= 0) return { text: 'Ausverkauft', color: 'text-[#666666]' };
+    if (event.remainingTickets <= 5) return { text: `Nur noch ${event.remainingTickets} Tickets!`, color: 'text-[#8b4454]' };
+    return { text: `${event.remainingTickets} Tickets verfügbar`, color: 'text-[#6b8e6f]' };
+  }
+  const fallback = {
     'available': { text: 'Tickets verfügbar', color: 'text-[#6b8e6f]' },
     'few-left': { text: 'Nur noch wenige Tickets', color: 'text-[#8b4454]' },
     'sold-out': { text: 'Ausverkauft', color: 'text-[#666666]' },
   };
+  return fallback[event.availability];
+}
 
-  const config = availabilityConfig[event.availability];
+function EventCard({ event }: { event: Event }) {
+  const config = getAvailabilityDisplay(event);
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
@@ -324,13 +333,7 @@ function EventCard({ event }: { event: Event }) {
 }
 
 function EventListItem({ event }: { event: Event }) {
-  const availabilityConfig = {
-    'available': { text: 'Tickets verfügbar', color: 'text-[#6b8e6f]' },
-    'few-left': { text: 'Nur noch wenige Tickets', color: 'text-[#8b4454]' },
-    'sold-out': { text: 'Ausverkauft', color: 'text-[#666666]' },
-  };
-
-  const config = availabilityConfig[event.availability];
+  const config = getAvailabilityDisplay(event);
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg p-6 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all">
