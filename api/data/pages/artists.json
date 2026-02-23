@@ -34,12 +34,12 @@
   },
   "venuesHeader": {
     "title": "Auftrittsmöglichkeiten",
-    "description": "Die „KleinKunstKneipe Alte Post in Brensbach" bietet je nach Jahreszeit verschiedene Auftrittsmöglichkeiten:"
+    "description": "Die \u201EKleinKunstKneipe Alte Post in Brensbach\u201C bietet je nach Jahreszeit verschiedene Auftrittsmöglichkeiten:"
   },
   "artistContact": {
     "title": "Kontaktadresse für Künstler",
     "description": "Wenn Sie als Künstler Interesse an einem Auftritt haben oder weitere Informationen benötigen, wenden Sie sich bitte an unser Programmteam:",
-    "orgName": "KleinKunstKneipe „Alte Post" – Programmteam –",
+    "orgName": "KleinKunstKneipe \u201EAlte Post\u201C \u2013 Programmteam \u2013",
     "name": "Marcus Schmidt",
     "phone": "06162 8098110",
     "email": "kuenstlerkontakt@kleinkunstkneipe.de"
@@ -47,8 +47,8 @@
   "venues": [
     {
       "icon": "snowflake",
-      "title": "„Kneipe" (im Winter)",
-      "description": "Die Kneipe der Alte Post in Brensbach hat keine Bühne, keinen Vorhang und nur eine kleine Scheinwerferanlage! Unsere Kleinkunstbühne ist eine intime Kneipen-Atmosphäre vor ca. 40 begeisterungsfähigen Gästen! Diese Situation ist von besonderem Reiz für unsere Künstler, aber auch für unsere Gäste! Den Künstlern steht eine max. 4 qm große Fläche neben dem Tresen als „Aktionsraum" zur Verfügung. Darüberhinaus gibt es einen Barhocker und einen Stehtisch, sowie einen 220V-Stromanschluß.",
+      "title": "\u201EKneipe\u201C (im Winter)",
+      "description": "Die Kneipe der Alte Post in Brensbach hat keine Bühne, keinen Vorhang und nur eine kleine Scheinwerferanlage! Unsere Kleinkunstbühne ist eine intime Kneipen-Atmosphäre vor ca. 40 begeisterungsfähigen Gästen! Diese Situation ist von besonderem Reiz für unsere Künstler, aber auch für unsere Gäste! Den Künstlern steht eine max. 4 qm große Fläche neben dem Tresen als \u201EAktionsraum\u201C zur Verfügung. Darüberhinaus gibt es einen Barhocker und einen Stehtisch, sowie einen 220V-Stromanschluß.",
       "images": [
         { "src": "/artists/kneipe.jpg", "alt": "Auftritt in der Kneipe" }
       ]
@@ -56,7 +56,7 @@
     {
       "icon": "sun",
       "title": "Hofsaal (April–Oktober)",
-      "description": "Der sog. „Wintergarten" der Alten Post ist ein saal-ähnlicher Raum, durch eine Glasfaltwand zum Innenhof abgeschlossen und beheizbar, in dem bis zu 80 Gästen Platz finden. Eine variable Bühne von 4–10 qm wird von einer stationären Lichtanlage beleuchtet.",
+      "description": "Der sog. \u201EWintergarten\u201C der Alten Post ist ein saal-ähnlicher Raum, durch eine Glasfaltwand zum Innenhof abgeschlossen und beheizbar, in dem bis zu 80 Gästen Platz finden. Eine variable Bühne von 4\u201310 qm wird von einer stationären Lichtanlage beleuchtet.",
       "images": [
         { "src": "/artists/hofsaal-1.jpg", "alt": "Im Hofsaal" },
         { "src": "/artists/hofsaal-2.jpg", "alt": "Auftritt im Hofsaal" }
