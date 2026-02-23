@@ -8,7 +8,6 @@ import {
   Clock,
   Euro,
   ArrowRight,
-  MapPin,
   Heart,
   Sparkles,
   Gift,
@@ -155,78 +154,61 @@ export function HomePage() {
                 Nächster Höhepunkt
               </span>
             </div>
-            <h2 className="font-['Playfair_Display',serif] text-4xl lg:text-5xl text-[#2d2d2d] mb-3">
-              {nextEvent.title}
-            </h2>
-            <p className="text-xl text-[#666666] font-['Inter',sans-serif]">
-              {nextEvent.artist}
-            </p>
           </div>
 
           <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-xl border border-[rgba(107,142,111,0.1)] overflow-hidden">
-              {nextEvent.image && (
-                <Link to={`/veranstaltung/${nextEvent.id}`}>
-                  <ImageWithFallback
-                    src={nextEvent.image}
-                    alt={nextEvent.title}
-                    className="w-full h-64 md:h-80 object-cover hover:scale-105 transition-transform duration-300"
-                  />
-                </Link>
-              )}
-            <div className="p-8 lg:p-12">
-              <div className="flex items-center justify-center gap-3 mb-6">
-                <span className="inline-block rounded-full bg-[#6b8e6f]/10 px-4 py-2 text-sm text-[#6b8e6f] font-['Inter',sans-serif]">
-                  {nextEvent.genre}
-                </span>
+            <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
+              <Link to={`/veranstaltung/${nextEvent.id}`} className="absolute inset-0 z-10" aria-label={nextEvent.title} />
+              <div className="flex flex-col md:flex-row">
+                {nextEvent.image && (
+                  <div className="md:w-72 lg:w-96 flex-shrink-0 overflow-hidden">
+                    <ImageWithFallback
+                      src={nextEvent.image}
+                      alt={nextEvent.title}
+                      className="w-full h-56 md:h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div className="flex-1 p-6 lg:p-8">
+                  <div className="mb-4">
+                    <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-sm text-[#666666]">{nextEvent.genre}</span>
+                  </div>
+                  <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{nextEvent.title}</h3>
+                  <p className="text-lg text-[#666666] mb-4">{nextEvent.artist}</p>
+                  <p className="text-[#666666] mb-6 leading-relaxed">{nextEvent.description}</p>
+                  <div className="flex flex-wrap gap-4 mb-6">
+                    <div className="flex items-center text-[#666666]">
+                      <Calendar className="h-4 w-4 mr-2 text-[#6b8e6f]" />
+                      <span>{nextEvent.date}</span>
+                    </div>
+                    <div className="flex items-center text-[#666666]">
+                      <Clock className="h-4 w-4 mr-2 text-[#6b8e6f]" />
+                      <span>{nextEvent.time}</span>
+                    </div>
+                    <div className="flex items-center text-[#666666]">
+                      <Euro className="h-4 w-4 mr-2 text-[#6b8e6f]" />
+                      <span>{nextEvent.price} EUR</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between relative z-20">
+                    <Link
+                      to={`/veranstaltung/${nextEvent.id}`}
+                      className="inline-flex items-center gap-2 rounded-md bg-[#6b8e6f] text-white px-5 py-2.5 hover:bg-[#5a7a5e] transition-colors"
+                    >
+                      <Ticket className="h-4 w-4" />
+                      Tickets
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link
+                      to="/tickets"
+                      className="text-sm text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors relative z-20"
+                    >
+                      Alle Veranstaltungen
+                    </Link>
+                  </div>
+                </div>
               </div>
-
-              <p className="text-lg text-[#666666] mb-8 leading-relaxed text-center font-['Inter',sans-serif] max-w-2xl mx-auto">
-                {nextEvent.description}
-              </p>
-
-              <div className="flex flex-wrap justify-center gap-8 mb-10 text-[#666666]">
-                <div className="flex flex-col items-center">
-                  <Calendar className="h-6 w-6 mb-2 text-[#6b8e6f]" />
-                  <span className="text-sm text-[#999999] font-['Inter',sans-serif] mb-1">Datum</span>
-                  <span className="font-['Inter',sans-serif]">{nextEvent.date}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Clock className="h-6 w-6 mb-2 text-[#6b8e6f]" />
-                  <span className="text-sm text-[#999999] font-['Inter',sans-serif] mb-1">Einlass</span>
-                  <span className="font-['Inter',sans-serif]">{nextEvent.time}</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Euro className="h-6 w-6 mb-2 text-[#6b8e6f]" />
-                  <span className="text-sm text-[#999999] font-['Inter',sans-serif] mb-1">Eintritt</span>
-                  <span className="font-['Inter',sans-serif]">{nextEvent.price} EUR</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <MapPin className="h-6 w-6 mb-2 text-[#6b8e6f]" />
-                  <span className="text-sm text-[#999999] font-['Inter',sans-serif] mb-1">Ort</span>
-                  <span className="font-['Inter',sans-serif]">Alte Post</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  to={`/veranstaltung/${nextEvent.id}`}
-                  className="group inline-flex items-center justify-center gap-2 rounded-lg bg-[#6b8e6f] px-8 py-4 text-white hover:bg-[#5a7a5e] transition-all shadow-lg hover:shadow-xl font-['Inter',sans-serif]"
-                >
-                  <Ticket className="h-5 w-5" />
-                  Jetzt Tickets reservieren
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  to="/tickets"
-                  className="group inline-flex items-center justify-center gap-2 rounded-lg border-2 border-[#6b8e6f] bg-transparent px-8 py-4 text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-all font-['Inter',sans-serif]"
-                >
-                  <Calendar className="h-5 w-5" />
-                  Alle Veranstaltungen
-                </Link>
-              </div>
-            </div>
-            </div>
+            </article>
           </div>
         </div>
       </section>
