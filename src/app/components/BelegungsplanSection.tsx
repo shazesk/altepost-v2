@@ -16,6 +16,7 @@ import {
 import { de } from 'date-fns/locale';
 import { Search, List, Calendar, CalendarDays, CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 // --- Types ---
 
@@ -698,6 +699,7 @@ export function BelegungsplanSection() {
           )}
         </div>
       </section>
+      <ScrollToTopButton />
     </>
   );
 }

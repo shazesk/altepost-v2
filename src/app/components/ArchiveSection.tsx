@@ -2,6 +2,7 @@ import React from "react";
 import { useState, useEffect } from 'react';
 import { Search, Calendar, Camera } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ScrollToTopButton } from './ScrollToTopButton';
 
 interface ArchiveEvent {
   id: string;
@@ -198,6 +199,7 @@ export function ArchiveSection() {
           </p>
         </div>
       </div>
+      <ScrollToTopButton />
     </section>
   );
 }
