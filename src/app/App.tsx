@@ -19,6 +19,7 @@ import { MitgliedwerdenPage } from './pages/MitgliedwerdenPage';
 import { KontaktPage } from './pages/KontaktPage';
 import { AdminPage } from './pages/AdminPage';
 import { EventDetailPage } from './pages/EventDetailPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 export default function App() {
   return (
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="kontakt" element={<KontaktPage />} />
           <Route path="impressum" element={<ImpressumPage />} />
           <Route path="datenschutz" element={<DatenschutzPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
