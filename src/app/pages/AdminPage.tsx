@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera } from 'lucide-react';
+import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera, Loader2 } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -184,6 +184,8 @@ export function AdminPage() {
   // Image upload state
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
 
   // Settings image state
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -930,18 +932,10 @@ export function AdminPage() {
         photos: eventPhotos
       };
 
-      // Handle image - convert to base64 if new file selected
-      if (selectedImageFile) {
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(selectedImageFile);
-        });
-        eventData.image = base64;
-      } else if (editingEvent?.image && !imagePreview) {
-        // Keep existing image if not changed and not removed
-        eventData.image = editingEvent.image;
-      } else if (imagePreview === null && editingEvent?.image) {
+      // Handle image - imagePreview is already a Blob URL or existing URL
+      if (imagePreview) {
+        eventData.image = imagePreview;
+      } else if (editingEvent?.image && imagePreview === null) {
         // Image was removed
         eventData.image = null;
       }
@@ -974,18 +968,42 @@ export function AdminPage() {
     }
   }
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function uploadToBlob(base64: string, filename: string): Promise<string> {
+    const res = await fetch(`${API_BASE}/events?action=upload-image`, {
+      method: 'POST',
+      headers: {
+        'x-session-id': sessionId!,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ base64, filename })
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Upload failed');
+    return data.url;
+  }
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
-      // Check file size (max 2MB for base64 storage)
-      if (file.size > 2 * 1024 * 1024) {
-        setMessage({ text: 'Bild zu groß. Maximum: 2MB', type: 'error' });
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({ text: 'Bild zu groß. Maximum: 5MB', type: 'error' });
         return;
       }
-      setSelectedImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      setUploadingImage(true);
+      try {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        const url = await uploadToBlob(base64, file.name);
+        setImagePreview(url);
+        setSelectedImageFile(null);
+      } catch (err: any) {
+        setMessage({ text: 'Bild-Upload fehlgeschlagen: ' + err.message, type: 'error' });
+      } finally {
+        setUploadingImage(false);
+      }
     }
   }
 
@@ -1086,19 +1104,26 @@ export function AdminPage() {
     const files = e.target.files;
     if (!files) return;
 
-    const newPhotos: string[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (eventPhotos.length + newPhotos.length >= 5) {
-        setMessage({ text: 'Maximum 5 Fotos pro Veranstaltung', type: 'error' });
-        break;
+    setUploadingPhotos(true);
+    try {
+      const newPhotos: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (eventPhotos.length + newPhotos.length >= 5) {
+          setMessage({ text: 'Maximum 5 Fotos pro Veranstaltung', type: 'error' });
+          break;
+        }
+        const compressed = await compressImage(file);
+        const url = await uploadToBlob(compressed, file.name);
+        newPhotos.push(url);
       }
-      const compressed = await compressImage(file);
-      newPhotos.push(compressed);
+      setEventPhotos(prev => [...prev, ...newPhotos]);
+    } catch (err: any) {
+      setMessage({ text: 'Foto-Upload fehlgeschlagen: ' + err.message, type: 'error' });
+    } finally {
+      setUploadingPhotos(false);
+      e.target.value = '';
     }
-
-    setEventPhotos(prev => [...prev, ...newPhotos]);
-    e.target.value = '';
   }
 
   function handleRemovePhoto(index: number) {
@@ -1869,7 +1894,12 @@ export function AdminPage() {
                 <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Bild</label>
                 <div className="space-y-3">
                   {/* Current/Preview Image */}
-                  {(imagePreview || event?.image) && (
+                  {uploadingImage ? (
+                    <div className="w-48 h-32 flex items-center justify-center rounded-lg border border-[rgba(107,142,111,0.3)] bg-[#f5f3f0]">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#6b8e6f]" />
+                      <span className="ml-2 text-sm text-[#666666]">Hochladen...</span>
+                    </div>
+                  ) : (imagePreview || event?.image) && (
                     <div className="relative inline-block">
                       <img
                         src={imagePreview || event?.image || ''}
@@ -1892,9 +1922,10 @@ export function AdminPage() {
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                      disabled={uploadingImage}
+                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:opacity-50"
                     />
-                    <p className="text-xs text-[#666666] mt-1">Max. 2 MB. Empfohlen: 800x600px</p>
+                    <p className="text-xs text-[#666666] mt-1">Max. 5 MB. Empfohlen: 800x600px</p>
                   </div>
                 </div>
               </div>
@@ -1920,7 +1951,13 @@ export function AdminPage() {
                   ))}
                 </div>
               )}
-              {eventPhotos.length < 5 && (
+              {uploadingPhotos && (
+                <div className="flex items-center gap-2 py-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#6b8e6f]" />
+                  <span className="text-sm text-[#666666]">Fotos werden hochgeladen...</span>
+                </div>
+              )}
+              {eventPhotos.length < 5 && !uploadingPhotos && (
                 <div>
                   <input
                     type="file"
@@ -1929,7 +1966,7 @@ export function AdminPage() {
                     onChange={handleAddPhotos}
                     className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
                   />
-                  <p className="text-xs text-[#666666] mt-1">Max. 2 MB pro Bild. Bis zu {5 - eventPhotos.length} weitere möglich.</p>
+                  <p className="text-xs text-[#666666] mt-1">Max. 5 MB pro Bild. Bis zu {5 - eventPhotos.length} weitere möglich.</p>
                 </div>
               )}
             </div>

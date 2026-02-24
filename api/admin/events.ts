@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { put } from '@vercel/blob';
 import { cors } from './_lib/cors.js';
 import { validateSession } from './_lib/auth.js';
 import { readEvents, writeEvents, Event } from './_lib/data.js';
@@ -167,6 +168,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       log(requestId, 'Update photos success', { eventId, photoCount: events[eventIndex].photos?.length });
       return res.status(200).json({ success: true, data: events[eventIndex], requestId });
+    }
+
+    // Handle upload-image action (Vercel Blob)
+    if (action === 'upload-image') {
+      const { base64, filename } = body;
+      log(requestId, 'Upload image action', { filename, hasBase64: !!base64 });
+
+      if (!base64 || !filename) {
+        return res.status(400).json({ success: false, error: 'Missing base64 or filename', requestId });
+      }
+
+      try {
+        // Convert base64 data URI to Buffer
+        const matches = base64.match(/^data:(.+);base64,(.+)$/);
+        if (!matches) {
+          return res.status(400).json({ success: false, error: 'Invalid base64 data URI', requestId });
+        }
+
+        const buffer = Buffer.from(matches[2], 'base64');
+        const contentType = matches[1];
+        const ext = contentType.split('/')[1] || 'jpg';
+        const blobFilename = `events/${Date.now()}-${filename.replace(/\.[^.]+$/, '')}.${ext}`;
+
+        const blob = await put(blobFilename, buffer, {
+          access: 'public',
+          contentType,
+        });
+
+        log(requestId, 'Upload image success', { url: blob.url });
+        return res.status(200).json({ success: true, url: blob.url, requestId });
+      } catch (err: any) {
+        log(requestId, 'Upload image failed', { error: err.message });
+        return res.status(500).json({ success: false, error: 'Upload failed: ' + err.message, requestId });
+      }
     }
 
     // Create new event (no action specified)
