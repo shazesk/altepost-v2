@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from './_lib/cors.js';
-import { authenticateAdmin, createSession, validateSession, destroySession, hashPassword } from './_lib/auth.js';
+import { authenticateAdmin, createSession, validateSession, destroySession } from './_lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
@@ -53,22 +53,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(200).json({ success: true, username: session.username });
-  }
-
-  // GET /api/admin/auth?action=seed — TEMPORARY: seed admin credentials into Redis
-  if (action === 'seed' && req.method === 'GET') {
-    try {
-      const { Redis } = await import('@upstash/redis');
-      const redis = new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL!,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-      });
-      const admins = [{ id: 1, username: 'admin', password: hashPassword('Golshahzad89') }];
-      await redis.set('admins', admins);
-      return res.status(200).json({ success: true, message: 'Admin credentials seeded' });
-    } catch (error: any) {
-      return res.status(500).json({ success: false, error: error.message });
-    }
   }
 
   return res.status(400).json({ success: false, error: 'Invalid action. Use: login, logout, check' });

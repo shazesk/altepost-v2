@@ -573,18 +573,11 @@ export function BelegungsplanSection() {
             {upcomingEvents.length > 0 && (
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
-                  onClick={() => openGoogleCalendarForEvent(upcomingEvents[0])}
+                  onClick={() => generateICS(upcomingEvents)}
                   className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 bg-[#6b8e6f] text-white hover:bg-[#5a7a5e] transition-colors text-sm font-medium"
                 >
                   <CalendarPlus className="h-4 w-4" />
-                  Zu Google Kalender hinzufügen
-                </button>
-                <button
-                  onClick={() => generateICS(upcomingEvents)}
-                  className="inline-flex items-center gap-2 text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors text-sm"
-                >
-                  <CalendarPlus className="h-4 w-4" />
-                  Alle als .ics herunterladen
+                  Alle Termine zum Kalender hinzufügen (.ics)
                 </button>
               </div>
             )}
