@@ -2002,108 +2002,108 @@ export function AdminPage() {
         </div>
 
         <nav className="flex-1 p-4">
+          <div className="text-xs text-white/40 uppercase tracking-wider px-4 mb-2 mt-2">Programm</div>
           <button
             onClick={() => { setActiveView('events'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'events' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'events' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Calendar className="w-5 h-5" />
             Veranstaltungen
           </button>
           <button
             onClick={() => { setActiveView('reservations'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'reservations' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'reservations' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Ticket className="w-5 h-5" />
             Reservierungen
             {stats?.reservations?.active ? (
-              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.reservations.active}</span>
+              <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{stats.reservations.active}</span>
             ) : null}
           </button>
           <button
             onClick={() => { setActiveView('archive'); setShowArchived(true); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'archive' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'archive' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <ArchiveIcon className="w-5 h-5" />
             Archiv
           </button>
 
-          <div className="border-t border-white/10 my-4" />
-
+          <div className="text-xs text-white/40 uppercase tracking-wider px-4 mb-2 mt-4">Kommunikation</div>
           <button
             onClick={() => { setActiveView('contacts'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'contacts' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'contacts' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <MessageSquare className="w-5 h-5" />
             Nachrichten
             {stats?.contacts?.active ? (
-              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.contacts.active}</span>
+              <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{stats.contacts.active}</span>
             ) : null}
           </button>
           <button
             onClick={() => { setActiveView('vouchers'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'vouchers' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'vouchers' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Gift className="w-5 h-5" />
             Gutscheine
             {stats?.vouchers?.active ? (
-              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.vouchers.active}</span>
+              <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{stats.vouchers.active}</span>
             ) : null}
           </button>
           <button
             onClick={() => { setActiveView('memberships'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'memberships' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'memberships' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Users className="w-5 h-5" />
             Mitglieder
             {stats?.memberships?.active ? (
-              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.memberships.active}</span>
+              <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{stats.memberships.active}</span>
             ) : null}
           </button>
           <button
             onClick={() => { setActiveView('sponsors'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'sponsors' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'sponsors' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Handshake className="w-5 h-5" />
             Sponsoren
           </button>
+
+          <div className="text-xs text-white/40 uppercase tracking-wider px-4 mb-2 mt-4">Newsletter</div>
           <button
             onClick={() => { setActiveView('newsletter'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'newsletter' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'newsletter' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Newspaper className="w-5 h-5" />
             Newsletter
             {stats?.newsletter?.active ? (
-              <span className="ml-auto bg-[#6b8e6f]/50 text-white text-xs px-2 py-0.5 rounded-full">{stats.newsletter.active}</span>
+              <span className="ml-auto bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{stats.newsletter.active}</span>
             ) : null}
           </button>
           <button
             onClick={() => { setActiveView('info-post'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'info-post' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'info-post' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Mail className="w-5 h-5" />
             Newsletter versenden
           </button>
+
+          <div className="text-xs text-white/40 uppercase tracking-wider px-4 mb-2 mt-4">Verwaltung</div>
           <button
             onClick={() => { setActiveView('settings'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'settings' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'settings' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <Settings className="w-5 h-5" />
             Einstellungen
           </button>
-
-          <div className="border-t border-white/10 my-4" />
-          <div className="text-xs text-white/40 uppercase tracking-wider px-4 mb-2">CMS</div>
-
           <button
             onClick={() => { setActiveView('cms'); setSelectedPage(null); setPageContent(null); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'cms' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'cms' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <FileText className="w-5 h-5" />
             Seiten bearbeiten
           </button>
           <button
             onClick={() => { setActiveView('gallery'); setShowArchived(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${activeView === 'gallery' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg mb-1 transition-colors ${activeView === 'gallery' ? 'bg-[#6b8e6f] text-white' : 'text-white/80 hover:bg-white/10'}`}
           >
             <ImageIcon className="w-5 h-5" />
             Galerie
