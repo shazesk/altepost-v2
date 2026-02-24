@@ -90,6 +90,25 @@ export function ArchiveSection() {
           )}
         </div>
 
+        {!loading && sortedYears.length > 1 && (
+          <div className="mb-10 sticky top-0 z-10 -mx-6 px-6 py-3 bg-white/90 backdrop-blur-sm border-b border-[rgba(107,142,111,0.15)]">
+            <div className="flex flex-wrap justify-center gap-2">
+              {sortedYears.map((year) => (
+                <button
+                  key={year}
+                  onClick={() => {
+                    const el = document.getElementById(`archiv-${year}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className="px-3 py-1.5 text-sm font-medium rounded-full border border-[rgba(107,142,111,0.3)] text-[#2d2d2d] hover:bg-[#6b8e6f] hover:text-white hover:border-[#6b8e6f] transition-colors"
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -113,7 +132,7 @@ export function ArchiveSection() {
         ) : (
           <div className="space-y-16">
             {sortedYears.map((year) => (
-              <div key={year}>
+              <div key={year} id={`archiv-${year}`} className="scroll-mt-16">
                 <div className="flex items-baseline gap-4 mb-6">
                   <h3 className="font-['Playfair_Display',serif] text-3xl lg:text-4xl text-[#2d2d2d]">
                     {year}
