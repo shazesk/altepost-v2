@@ -19,6 +19,7 @@ interface Event {
   description: string;
   image?: string | null;
   photos?: string[];
+  is_past?: boolean;
   remainingTickets?: number;
 }
 
@@ -295,6 +296,7 @@ export function EventsSection() {
 }
 
 function getAvailabilityDisplay(event: Event) {
+  if (event.is_past) return { text: 'Veranstaltung beendet', color: 'text-[#666666]' };
   if (event.remainingTickets != null) {
     if (event.remainingTickets <= 0) return { text: 'Ausverkauft', color: 'text-[#666666]' };
     if (event.remainingTickets <= 5) return { text: `Nur noch ${event.remainingTickets} Tickets!`, color: 'text-[#8b4454]' };
@@ -310,6 +312,7 @@ function getAvailabilityDisplay(event: Event) {
 
 function EventCard({ event }: { event: Event }) {
   const config = getAvailabilityDisplay(event);
+  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
@@ -348,7 +351,7 @@ function EventCard({ event }: { event: Event }) {
           <div className="flex items-center justify-between relative z-20">
             <span className={`text-sm ${config.color}`}>{config.text}</span>
             <div className="flex items-center gap-2">
-              {(() => {
+              {!event.is_past && (() => {
                 const calUrl = buildGoogleCalendarUrl(event);
                 return calUrl ? (
                   <a
@@ -363,17 +366,17 @@ function EventCard({ event }: { event: Event }) {
                 ) : null;
               })()}
               <Link
-                to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
-                state={event.availability === 'sold-out' ? undefined : { event }}
+                to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
+                state={isSoldOutOrPast ? undefined : { event }}
                 className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
-                  event.availability === 'sold-out'
+                  isSoldOutOrPast
                     ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
                     : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
                 }`}
-                onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+                onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
               >
                 <Ticket className="h-4 w-4" />
-                {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
+                {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
               </Link>
             </div>
           </div>
@@ -385,6 +388,7 @@ function EventCard({ event }: { event: Event }) {
 
 function EventListItem({ event }: { event: Event }) {
   const config = getAvailabilityDisplay(event);
+  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg p-6 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all">
@@ -422,7 +426,7 @@ function EventListItem({ event }: { event: Event }) {
           </div>
         </div>
         <div className="lg:flex-shrink-0 relative z-20 flex items-center gap-2">
-          {(() => {
+          {!event.is_past && (() => {
             const calUrl = buildGoogleCalendarUrl(event);
             return calUrl ? (
               <a
@@ -437,17 +441,17 @@ function EventListItem({ event }: { event: Event }) {
             ) : null;
           })()}
           <Link
-            to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
-            state={event.availability === 'sold-out' ? undefined : { event }}
+            to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
+            state={isSoldOutOrPast ? undefined : { event }}
             className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
-              event.availability === 'sold-out'
+              isSoldOutOrPast
                 ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
                 : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
             }`}
-            onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+            onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
           >
             <Ticket className="h-4 w-4" />
-            {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
+            {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
           </Link>
         </div>
       </div>

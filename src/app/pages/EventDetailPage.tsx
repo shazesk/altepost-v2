@@ -18,6 +18,7 @@ interface EventData {
   image?: string | null;
   photos?: string[];
   is_archived?: boolean;
+  is_past?: boolean;
   remainingTickets?: number;
 }
 
@@ -169,7 +170,10 @@ export function EventDetailPage() {
     );
   }
 
+  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
+
   const config = (() => {
+    if (event.is_past) return { text: 'Veranstaltung beendet', color: 'text-[#666666]' };
     if (event.remainingTickets != null) {
       if (event.remainingTickets <= 0) return { text: 'Ausverkauft', color: 'text-[#666666]' };
       if (event.remainingTickets <= 5) return { text: `Nur noch ${event.remainingTickets} Tickets!`, color: 'text-[#8b4454]' };
@@ -271,19 +275,19 @@ export function EventDetailPage() {
               <span className={`text-sm ${config.color}`}>{config.text}</span>
             )}
             <Link
-              to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
-              state={event.availability === 'sold-out' ? undefined : { event }}
+              to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
+              state={isSoldOutOrPast ? undefined : { event }}
               className={`inline-flex items-center gap-2 rounded-md px-6 py-3 text-lg transition-colors ${
-                event.availability === 'sold-out'
+                isSoldOutOrPast
                   ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
                   : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
               }`}
-              onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+              onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
             >
               <Ticket className="h-5 w-5" />
-              {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets reservieren'}
+              {event.is_past ? 'Veranstaltung beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets reservieren'}
             </Link>
-            {(() => {
+            {!event.is_past && (() => {
               const calUrl = buildGoogleCalendarUrl(event);
               return calUrl ? (
                 <a

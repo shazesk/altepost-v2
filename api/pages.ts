@@ -46,9 +46,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!event) {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const eventDate = new Date(event.date);
+    eventDate.setHours(0, 0, 0, 0);
+    const is_past = eventDate.getTime() < now.getTime();
+
     let availability = event.availability;
     let remainingTickets: number | undefined;
-    if (event.maxTickets != null) {
+    if (is_past) {
+      availability = 'sold-out';
+    } else if (event.maxTickets != null) {
       const reservations = await readReservations();
       const bookedTickets = reservations
         .filter(r => r.eventId === event.id && r.status === 'active')
@@ -70,6 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       image: event.image,
       photos: event.photos || [],
       is_archived: event.is_archived,
+      is_past,
     };
     if (remainingTickets != null) formatted.remainingTickets = remainingTickets;
     return res.status(200).json({ success: true, data: formatted });
@@ -109,13 +118,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Return upcoming (non-archived) events with remaining ticket counts
     const reservations = await readReservations();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
     const upcomingEvents = events
       .filter(e => !e.is_archived)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map(e => {
+        const eventDate = new Date(e.date);
+        eventDate.setHours(0, 0, 0, 0);
+        const is_past = eventDate.getTime() < now.getTime();
+
         let availability = e.availability;
         let remainingTickets: number | undefined;
-        if (e.maxTickets != null) {
+        if (is_past) {
+          availability = 'sold-out';
+        } else if (e.maxTickets != null) {
           const bookedTickets = reservations
             .filter(r => r.eventId === e.id && r.status === 'active')
             .reduce((sum, r) => sum + r.tickets, 0);
@@ -134,7 +151,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           availability,
           description: e.description,
           image: e.image,
-          photos: e.photos || []
+          photos: e.photos || [],
+          is_past,
         };
         if (remainingTickets != null) result.remainingTickets = remainingTickets;
         return result;
