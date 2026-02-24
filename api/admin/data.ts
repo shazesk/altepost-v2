@@ -67,7 +67,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Public POST endpoint for newsletter subscription (no auth required)
   if (req.method === 'POST' && type === 'newsletter-subscribe') {
-    const { email, name, source } = req.body;
+    const { email, name, surname, source } = req.body;
     if (!email) {
       return res.status(400).json({ success: false, error: 'E-Mail-Adresse ist erforderlich' });
     }
@@ -86,6 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       id: subscribers.length > 0 ? Math.max(...subscribers.map(s => s.id)) + 1 : 1,
       email,
       name: name || '',
+      surname: surname || '',
       source: source || 'website',
       subscribedAt: new Date().toISOString(),
       status: 'active'

@@ -135,6 +135,7 @@ interface NewsletterSubscriber {
   id: number;
   email: string;
   name: string;
+  surname?: string;
   source: string;
   subscribedAt: string;
   status: 'active' | 'unsubscribed';
@@ -637,9 +638,10 @@ export function AdminPage() {
         selectedEvts.map(ev => `
           <div style="background:#faf9f7;border-radius:6px;padding:16px;margin-bottom:12px;border-left:4px solid #6b8e6f">
             ${ev.image ? `<img src="${ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
-            <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px"><strong>${ev.title}</strong></div>
+            <a href="https://friedrichholdings.de/programm/${ev.id}" style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px;text-decoration:none;display:block"><strong>${ev.title}</strong></a>
             <div style="color:#666;font-size:14px;margin-bottom:4px">${ev.artist}</div>
             <div style="color:#6b8e6f;font-size:14px;font-weight:600">${ev.date}, ${ev.time}</div>
+            <a href="https://friedrichholdings.de/programm/${ev.id}" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
           </div>
         `).join('')
       : '';
@@ -711,44 +713,44 @@ export function AdminPage() {
     }
   }
 
-  // Manual email addition
-  const [manualEmails, setManualEmails] = useState('');
-  const [addingEmails, setAddingEmails] = useState(false);
+  // Manual subscriber addition
+  const [manualName, setManualName] = useState('');
+  const [manualSurname, setManualSurname] = useState('');
+  const [manualEmail, setManualEmail] = useState('');
+  const [addingSubscriber, setAddingSubscriber] = useState(false);
 
-  async function handleAddManualEmails() {
-    const emails = manualEmails
-      .split(/[\n,;]+/)
-      .map(e => e.trim())
-      .filter(e => e && e.includes('@'));
-    if (emails.length === 0) {
-      setMessage({ text: 'Keine gültigen E-Mail-Adressen gefunden', type: 'error' });
+  async function handleAddManualSubscriber() {
+    if (!manualEmail.trim() || !manualEmail.includes('@')) {
+      setMessage({ text: 'Bitte eine gültige E-Mail-Adresse eingeben', type: 'error' });
       return;
     }
-    setAddingEmails(true);
-    let added = 0;
-    let skipped = 0;
-    for (const email of emails) {
-      try {
-        const res = await fetch(`${API_BASE}/data?type=newsletter-subscribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, source: 'manual' })
-        });
-        const data = await res.json();
-        if (data.success && data.message !== 'Bereits angemeldet') {
-          added++;
-        } else {
-          skipped++;
-        }
-      } catch {
-        skipped++;
+    setAddingSubscriber(true);
+    try {
+      const res = await fetch(`${API_BASE}/data?type=newsletter-subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: manualEmail.trim(),
+          name: manualName.trim(),
+          surname: manualSurname.trim(),
+          source: 'manual'
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.message !== 'Bereits angemeldet') {
+        setMessage({ text: 'Abonnent hinzugefügt', type: 'success' });
+      } else if (data.message === 'Bereits angemeldet') {
+        setMessage({ text: 'Diese E-Mail ist bereits angemeldet', type: 'error' });
       }
+    } catch {
+      setMessage({ text: 'Fehler beim Hinzufügen', type: 'error' });
     }
-    setAddingEmails(false);
-    setManualEmails('');
+    setAddingSubscriber(false);
+    setManualName('');
+    setManualSurname('');
+    setManualEmail('');
     loadNewsletter();
     loadStats();
-    setMessage({ text: `${added} E-Mail(s) hinzugefügt${skipped > 0 ? `, ${skipped} übersprungen` : ''}`, type: 'success' });
   }
 
   // CMS functions
@@ -3199,22 +3201,39 @@ export function AdminPage() {
               </div>
             </div>
 
-            {/* Manual Email Addition */}
+            {/* Manual Subscriber Addition */}
             <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] mb-8">
-              <h3 className="font-medium text-[#2d2d2d] mb-3">E-Mail-Adressen manuell hinzufügen</h3>
-              <textarea
-                value={manualEmails}
-                onChange={(e) => setManualEmails(e.target.value)}
-                placeholder="E-Mail-Adressen eingeben (eine pro Zeile, oder durch Komma/Semikolon getrennt)"
-                className="w-full px-4 py-3 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] mb-3 h-24 resize-y text-sm"
-              />
+              <h3 className="font-medium text-[#2d2d2d] mb-3">Abonnent manuell hinzufügen</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                <input
+                  type="text"
+                  value={manualName}
+                  onChange={(e) => setManualName(e.target.value)}
+                  placeholder="Vorname"
+                  className="px-4 py-3 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+                />
+                <input
+                  type="text"
+                  value={manualSurname}
+                  onChange={(e) => setManualSurname(e.target.value)}
+                  placeholder="Nachname"
+                  className="px-4 py-3 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+                />
+                <input
+                  type="email"
+                  value={manualEmail}
+                  onChange={(e) => setManualEmail(e.target.value)}
+                  placeholder="E-Mail-Adresse *"
+                  className="px-4 py-3 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+                />
+              </div>
               <button
-                onClick={handleAddManualEmails}
-                disabled={addingEmails || !manualEmails.trim()}
+                onClick={handleAddManualSubscriber}
+                disabled={addingSubscriber || !manualEmail.trim()}
                 className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" />
-                {addingEmails ? 'Wird hinzugefügt...' : 'E-Mails hinzufügen'}
+                {addingSubscriber ? 'Wird hinzugefügt...' : 'Abonnent hinzufügen'}
               </button>
             </div>
 
@@ -3235,7 +3254,7 @@ export function AdminPage() {
                   <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
                     {newsletterSubscribers.map(sub => (
                       <tr key={sub.id} className="hover:bg-[#faf9f7] transition-colors">
-                        <td className="px-4 py-3 text-[#2d2d2d]">{sub.name || '—'}</td>
+                        <td className="px-4 py-3 text-[#2d2d2d]">{[sub.name, sub.surname].filter(Boolean).join(' ') || '—'}</td>
                         <td className="px-4 py-3 text-[#666666] text-sm">{sub.email}</td>
                         <td className="px-4 py-3 text-[#666666] text-sm">
                           {{

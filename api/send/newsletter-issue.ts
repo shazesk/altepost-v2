@@ -14,9 +14,7 @@ import {
   readEvents,
 } from '../admin/_lib/data.js';
 
-const BASE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : 'https://friedrichholdings.de';
+const BASE_URL = 'https://friedrichholdings.de';
 
 function ensureUnsubscribeToken(subscriber: { unsubscribeToken?: string }): string {
   if (subscriber.unsubscribeToken) return subscriber.unsubscribeToken;

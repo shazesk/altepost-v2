@@ -170,6 +170,7 @@ export function voucherConfirmation(data: { buyerName: string; voucherDetails: s
 // --- INFO-POST NEWSLETTER ---
 
 interface InfoPostEvent {
+  id: number;
   title: string;
   artist: string;
   date: string;
@@ -183,10 +184,10 @@ export function infoPostEmail(data: { title: string; introText: string; events: 
       data.events.map(ev => `
         <div style="background:#faf9f7;border-radius:6px;padding:16px;margin-bottom:12px;border-left:4px solid #6b8e6f">
           ${ev.image ? `<img src="${ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
-          <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px"><strong>${ev.title}</strong></div>
+          <a href="https://friedrichholdings.de/programm/${ev.id}" style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px;text-decoration:none;display:block"><strong>${ev.title}</strong></a>
           <div style="color:#666;font-size:14px;margin-bottom:4px">${ev.artist}</div>
           <div style="color:#6b8e6f;font-size:14px;font-weight:600">${ev.date}, ${ev.time}</div>
-          <a href="https://friedrichholdings.de/programm" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
+          <a href="https://friedrichholdings.de/programm/${ev.id}" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
         </div>
       `).join('')
     : '';

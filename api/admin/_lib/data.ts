@@ -179,6 +179,7 @@ export interface NewsletterSubscriber {
   id: number;
   email: string;
   name: string;
+  surname?: string;
   source: string;
   subscribedAt: string;
   status: 'active' | 'unsubscribed';
