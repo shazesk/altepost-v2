@@ -93,7 +93,7 @@ export function ArchiveSection() {
 
         {!loading && sortedYears.length > 1 && (
           <div className="mb-10 sticky top-0 z-10 -mx-6 px-6 py-3 bg-white/90 backdrop-blur-sm border-b border-[rgba(107,142,111,0.15)]">
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {sortedYears.map((year) => (
                 <button
                   key={year}
@@ -101,7 +101,7 @@ export function ArchiveSection() {
                     const el = document.getElementById(`archiv-${year}`);
                     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }}
-                  className="px-3 py-1.5 text-sm font-medium rounded-full border border-[rgba(107,142,111,0.3)] text-[#2d2d2d] hover:bg-[#6b8e6f] hover:text-white hover:border-[#6b8e6f] transition-colors"
+                  className="shrink-0 px-3 py-1.5 text-sm font-medium rounded-full border border-[rgba(107,142,111,0.3)] text-[#2d2d2d] hover:bg-[#6b8e6f] hover:text-white hover:border-[#6b8e6f] transition-colors"
                 >
                   {year}
                 </button>
