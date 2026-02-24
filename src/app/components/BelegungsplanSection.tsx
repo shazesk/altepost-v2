@@ -14,7 +14,7 @@ import {
   endOfWeek,
 } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Search, List, Calendar, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, List, Calendar, CalendarDays, CalendarPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // --- Types ---
@@ -362,6 +362,51 @@ function DayView({
   );
 }
 
+// --- ICS Export ---
+
+function generateICS(events: CalendarEvent[]) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const formatDT = (d: Date, hour: number, minute: number) =>
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(hour)}${pad(minute)}00`;
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Alte Post//Belegungsplan//DE',
+    'CALSCALE:GREGORIAN',
+  ];
+
+  for (const ev of events) {
+    if (ev.isArchived) continue;
+    const timeMatch = ev.time?.match(/(\d{1,2}):(\d{2})/);
+    const hour = timeMatch ? parseInt(timeMatch[1], 10) : 20;
+    const minute = timeMatch ? parseInt(timeMatch[2], 10) : 0;
+
+    const start = formatDT(ev.parsedDate, hour, minute);
+    const end = formatDT(ev.parsedDate, hour + 2, minute);
+    const summary = ev.artist ? `${ev.title} – ${ev.artist}` : ev.title;
+
+    lines.push(
+      'BEGIN:VEVENT',
+      `DTSTART:${start}`,
+      `DTEND:${end}`,
+      `SUMMARY:${summary}`,
+      'LOCATION:KleinKunstKneipe Alte Post\\, Brensbach',
+      `UID:event-${ev.id}@altepost`,
+      'END:VEVENT',
+    );
+  }
+
+  lines.push('END:VCALENDAR');
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'Alte_Post_Termine.ics';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 // --- Main Component ---
 
 export function BelegungsplanSection() {
@@ -479,9 +524,18 @@ export function BelegungsplanSection() {
             <h2 className="font-['Playfair_Display',serif] text-4xl lg:text-5xl text-[#2d2d2d] mb-4">
               Belegungsplan
             </h2>
-            <p className="text-lg text-[#666666] max-w-2xl mx-auto">
+            <p className="text-lg text-[#666666] max-w-2xl mx-auto mb-6">
               Alle Veranstaltungen der Alten Post auf einen Blick
             </p>
+            {upcomingEvents.length > 0 && (
+              <button
+                onClick={() => generateICS(upcomingEvents)}
+                className="inline-flex items-center gap-2 text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors text-sm"
+              >
+                <CalendarPlus className="h-4 w-4" />
+                Alle Termine zum Kalender hinzufügen
+              </button>
+            )}
           </div>
 
           {/* Search + View toggle */}
