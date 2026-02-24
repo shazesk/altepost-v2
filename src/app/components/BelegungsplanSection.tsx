@@ -106,6 +106,15 @@ function ListView({ events }: { events: CalendarEvent[] }) {
           {event.time && (
             <span className="text-sm text-[#666666] whitespace-nowrap">{event.time}</span>
           )}
+          {!event.isArchived && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openGoogleCalendarForEvent(event); }}
+              className="text-[#6b8e6f]/60 hover:text-[#6b8e6f] transition-colors shrink-0"
+              title="Zu Google Kalender hinzufügen"
+            >
+              <CalendarPlus className="h-4 w-4" />
+            </button>
+          )}
         </Link>
       ))}
     </div>
@@ -407,6 +416,40 @@ function generateICS(events: CalendarEvent[]) {
   URL.revokeObjectURL(url);
 }
 
+// --- Google Calendar URL builder ---
+
+const GCAL_MONTH_MAP: Record<string, string> = {
+  'januar': '01', 'februar': '02', 'märz': '03', 'april': '04',
+  'mai': '05', 'juni': '06', 'juli': '07', 'august': '08',
+  'september': '09', 'oktober': '10', 'november': '11', 'dezember': '12',
+};
+
+function openGoogleCalendarForEvent(ev: CalendarEvent) {
+  const dateMatch = ev.date.match(/(\d{1,2})\.\s*([A-Za-zÄäÖöÜüß]+)\s+(\d{4})/);
+  const timeMatch = ev.time?.match(/(\d{1,2}):(\d{2})/);
+  if (!dateMatch) return;
+
+  const day = dateMatch[1].padStart(2, '0');
+  const month = GCAL_MONTH_MAP[dateMatch[2].toLowerCase()] || '01';
+  const year = dateMatch[3];
+  const hour = timeMatch ? parseInt(timeMatch[1], 10) : 20;
+  const minute = timeMatch ? parseInt(timeMatch[2], 10) : 0;
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  const start = `${year}${month}${day}T${pad(hour)}${pad(minute)}00`;
+  const end = `${year}${month}${day}T${pad(hour + 2)}${pad(minute)}00`;
+  const title = ev.artist ? `${ev.title} – ${ev.artist}` : ev.title;
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${start}/${end}`,
+    location: 'KleinKunstKneipe Alte Post, Brensbach',
+  });
+
+  window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank');
+}
+
 // --- Main Component ---
 
 export function BelegungsplanSection() {
@@ -528,13 +571,22 @@ export function BelegungsplanSection() {
               Alle Veranstaltungen der Alten Post auf einen Blick
             </p>
             {upcomingEvents.length > 0 && (
-              <button
-                onClick={() => generateICS(upcomingEvents)}
-                className="inline-flex items-center gap-2 text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors text-sm"
-              >
-                <CalendarPlus className="h-4 w-4" />
-                Alle Termine zum Kalender hinzufügen
-              </button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <button
+                  onClick={() => openGoogleCalendarForEvent(upcomingEvents[0])}
+                  className="inline-flex items-center gap-2 rounded-md px-5 py-2.5 bg-[#6b8e6f] text-white hover:bg-[#5a7a5e] transition-colors text-sm font-medium"
+                >
+                  <CalendarPlus className="h-4 w-4" />
+                  Zu Google Kalender hinzufügen
+                </button>
+                <button
+                  onClick={() => generateICS(upcomingEvents)}
+                  className="inline-flex items-center gap-2 text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors text-sm"
+                >
+                  <CalendarPlus className="h-4 w-4" />
+                  Alle als .ics herunterladen
+                </button>
+              </div>
             )}
           </div>
 
