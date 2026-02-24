@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Euro, Ticket, Grid, List, Download, Gift } from 'lucide-react';
+import { Calendar, CalendarPlus, Clock, Euro, Ticket, Grid, List, Download, Gift } from 'lucide-react';
 // Build trigger: ticket-reservation-fix-v2
 import { Link } from 'react-router-dom';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -20,6 +20,40 @@ interface Event {
   image?: string | null;
   photos?: string[];
   remainingTickets?: number;
+}
+
+const GERMAN_MONTHS: Record<string, string> = {
+  'Januar': '01', 'Februar': '02', 'März': '03', 'April': '04',
+  'Mai': '05', 'Juni': '06', 'Juli': '07', 'August': '08',
+  'September': '09', 'Oktober': '10', 'November': '11', 'Dezember': '12',
+};
+
+function buildGoogleCalendarUrl(event: { title: string; artist: string; date: string; time: string; description: string }) {
+  const dateMatch = event.date.match(/(\d{1,2})\.\s*(\w+)\s+(\d{4})/);
+  const timeMatch = event.time.match(/(\d{1,2}):(\d{2})/);
+  if (!dateMatch || !timeMatch) return null;
+
+  const day = dateMatch[1].padStart(2, '0');
+  const month = GERMAN_MONTHS[dateMatch[2]] || '01';
+  const year = dateMatch[3];
+  const hour = timeMatch[1].padStart(2, '0');
+  const minute = timeMatch[2];
+
+  const start = `${year}${month}${day}T${hour}${minute}00`;
+  const endHour = String(Number(hour) + 2).padStart(2, '0');
+  const end = `${year}${month}${day}T${endHour}${minute}00`;
+
+  const title = event.artist ? `${event.title} – ${event.artist}` : event.title;
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${start}/${end}`,
+    details: event.description || '',
+    location: 'KleinKunstKneipe Alte Post, Brensbach',
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 function generateProgramPDF(events: Event[]) {
@@ -313,19 +347,35 @@ function EventCard({ event }: { event: Event }) {
           </div>
           <div className="flex items-center justify-between relative z-20">
             <span className={`text-sm ${config.color}`}>{config.text}</span>
-            <Link
-              to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
-              state={event.availability === 'sold-out' ? undefined : { event }}
-              className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
-                event.availability === 'sold-out'
-                  ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
-                  : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
-              }`}
-              onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
-            >
-              <Ticket className="h-4 w-4" />
-              {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
-            </Link>
+            <div className="flex items-center gap-2">
+              {(() => {
+                const calUrl = buildGoogleCalendarUrl(event);
+                return calUrl ? (
+                  <a
+                    href={calUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center rounded-md p-2 border border-[#6b8e6f] text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-colors"
+                    title="Zum Kalender hinzufügen"
+                  >
+                    <CalendarPlus className="h-4 w-4" />
+                  </a>
+                ) : null;
+              })()}
+              <Link
+                to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
+                state={event.availability === 'sold-out' ? undefined : { event }}
+                className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
+                  event.availability === 'sold-out'
+                    ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
+                    : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
+                }`}
+                onClick={event.availability === 'sold-out' ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+              >
+                <Ticket className="h-4 w-4" />
+                {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets'}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -371,7 +421,21 @@ function EventListItem({ event }: { event: Event }) {
             </div>
           </div>
         </div>
-        <div className="lg:flex-shrink-0 relative z-20">
+        <div className="lg:flex-shrink-0 relative z-20 flex items-center gap-2">
+          {(() => {
+            const calUrl = buildGoogleCalendarUrl(event);
+            return calUrl ? (
+              <a
+                href={calUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-md p-2 border border-[#6b8e6f] text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-colors"
+                title="Zum Kalender hinzufügen"
+              >
+                <CalendarPlus className="h-4 w-4" />
+              </a>
+            ) : null;
+          })()}
           <Link
             to={event.availability === 'sold-out' ? '#' : '/ticket-reservation'}
             state={event.availability === 'sold-out' ? undefined : { event }}

@@ -1,7 +1,7 @@
 import React from "react";
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, Clock, Euro, Ticket, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Calendar, CalendarPlus, Clock, Euro, Ticket, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
 interface EventData {
@@ -19,6 +19,43 @@ interface EventData {
   photos?: string[];
   is_archived?: boolean;
   remainingTickets?: number;
+}
+
+const GERMAN_MONTHS: Record<string, string> = {
+  'Januar': '01', 'Februar': '02', 'März': '03', 'April': '04',
+  'Mai': '05', 'Juni': '06', 'Juli': '07', 'August': '08',
+  'September': '09', 'Oktober': '10', 'November': '11', 'Dezember': '12',
+};
+
+function buildGoogleCalendarUrl(event: { title: string; artist: string; date: string; time: string; description: string }) {
+  // Parse date like "15. März 2026"
+  const dateMatch = event.date.match(/(\d{1,2})\.\s*(\w+)\s+(\d{4})/);
+  // Parse time like "20:00 Uhr"
+  const timeMatch = event.time.match(/(\d{1,2}):(\d{2})/);
+  if (!dateMatch || !timeMatch) return null;
+
+  const day = dateMatch[1].padStart(2, '0');
+  const month = GERMAN_MONTHS[dateMatch[2]] || '01';
+  const year = dateMatch[3];
+  const hour = timeMatch[1].padStart(2, '0');
+  const minute = timeMatch[2];
+
+  const start = `${year}${month}${day}T${hour}${minute}00`;
+  // Default 2 hours duration
+  const endHour = String(Number(hour) + 2).padStart(2, '0');
+  const end = `${year}${month}${day}T${endHour}${minute}00`;
+
+  const title = event.artist ? `${event.title} – ${event.artist}` : event.title;
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: title,
+    dates: `${start}/${end}`,
+    details: event.description || '',
+    location: 'KleinKunstKneipe Alte Post, Brensbach',
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 export function EventDetailPage() {
@@ -246,6 +283,20 @@ export function EventDetailPage() {
               <Ticket className="h-5 w-5" />
               {event.availability === 'sold-out' ? 'Ausverkauft' : 'Tickets reservieren'}
             </Link>
+            {(() => {
+              const calUrl = buildGoogleCalendarUrl(event);
+              return calUrl ? (
+                <a
+                  href={calUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-lg border border-[#6b8e6f] text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-colors"
+                >
+                  <CalendarPlus className="h-5 w-5" />
+                  Zum Kalender hinzufügen
+                </a>
+              ) : null;
+            })()}
           </div>
         )}
       </div>
