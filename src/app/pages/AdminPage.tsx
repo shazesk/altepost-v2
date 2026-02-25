@@ -3461,10 +3461,24 @@ export function AdminPage() {
                   <div>
                     <label className="block text-sm text-[#666666] mb-2 font-['Inter',sans-serif]">Veranstaltungen auswählen (optional)</label>
                     <div className="max-h-60 overflow-y-auto border border-[rgba(107,142,111,0.2)] rounded-lg p-3 space-y-2">
-                      {events.filter(e => !e.is_archived).length === 0 && (
+                      {events.filter(e => {
+                        if (e.is_archived) return false;
+                        const eventDate = new Date(e.date);
+                        eventDate.setHours(0, 0, 0, 0);
+                        const now = new Date();
+                        now.setHours(0, 0, 0, 0);
+                        return eventDate.getTime() >= now.getTime();
+                      }).length === 0 && (
                         <p className="text-sm text-[#666666]">Keine aktiven Veranstaltungen vorhanden.</p>
                       )}
-                      {events.filter(e => !e.is_archived).map(ev => (
+                      {events.filter(e => {
+                        if (e.is_archived) return false;
+                        const eventDate = new Date(e.date);
+                        eventDate.setHours(0, 0, 0, 0);
+                        const now = new Date();
+                        now.setHours(0, 0, 0, 0);
+                        return eventDate.getTime() >= now.getTime();
+                      }).map(ev => (
                         <label key={ev.id} className="flex items-start gap-3 p-2 hover:bg-[#faf9f7] rounded cursor-pointer">
                           <input
                             type="checkbox"
