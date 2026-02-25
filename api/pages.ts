@@ -91,8 +91,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (isArchived) {
       // Return archived events grouped by year
+      // Include both manually archived events AND events whose date has passed
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
       const archivedEvents = events
-        .filter(e => e.is_archived)
+        .filter(e => {
+          if (e.is_archived) return true;
+          const eventDate = new Date(e.date);
+          eventDate.setHours(0, 0, 0, 0);
+          return eventDate.getTime() < now.getTime();
+        })
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .map(e => ({
           id: String(e.id),
@@ -116,12 +124,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: groupedByYear });
     }
 
-    // Return upcoming (non-archived) events with remaining ticket counts
+    // Return upcoming (non-archived, non-past) events with remaining ticket counts
     const reservations = await readReservations();
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const upcomingEvents = events
-      .filter(e => !e.is_archived)
+      .filter(e => {
+        if (e.is_archived) return false;
+        const eventDate = new Date(e.date);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() >= now.getTime();
+      })
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map(e => {
         const eventDate = new Date(e.date);
