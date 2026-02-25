@@ -283,39 +283,21 @@ export function HomePage() {
       {/* Quick Action Cards */}
       <section className="py-16 lg:py-20 bg-[#faf9f7]">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <Link 
-              to="/tickets" 
+          <div className="grid gap-6 md:grid-cols-3">
+            <Link
+              to="/tickets"
               className="group relative overflow-hidden bg-gradient-to-br from-[#6b8e6f] to-[#5a7a5e] rounded-xl p-6 text-white hover:shadow-xl transition-all"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
-              <Calendar className="h-10 w-10 mb-4 relative z-10" />
-              <h3 className="font-['Playfair_Display',serif] text-xl mb-2 relative z-10">
-                Veranstaltungen
-              </h3>
-              <p className="text-white/90 text-sm font-['Inter',sans-serif] mb-3 relative z-10">
-                Alle kommenden Veranstaltungen
-              </p>
-              <div className="inline-flex items-center gap-2 text-sm font-['Inter',sans-serif] group-hover:gap-3 transition-all relative z-10">
-                Entdecken
-                <ArrowRight className="h-4 w-4" />
-              </div>
-            </Link>
-
-            <Link 
-              to="/tickets" 
-              className="group relative overflow-hidden bg-gradient-to-br from-[#8b4454] to-[#6d3642] rounded-xl p-6 text-white hover:shadow-xl transition-all"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
               <Ticket className="h-10 w-10 mb-4 relative z-10" />
               <h3 className="font-['Playfair_Display',serif] text-xl mb-2 relative z-10">
-                Tickets
+                Veranstaltungen & Tickets
               </h3>
               <p className="text-white/90 text-sm font-['Inter',sans-serif] mb-3 relative z-10">
-                Jetzt Plätze sichern
+                Alle kommenden Veranstaltungen entdecken & Plätze sichern
               </p>
               <div className="inline-flex items-center gap-2 text-sm font-['Inter',sans-serif] group-hover:gap-3 transition-all relative z-10">
-                Reservieren
+                Jetzt entdecken
                 <ArrowRight className="h-4 w-4" />
               </div>
             </Link>
