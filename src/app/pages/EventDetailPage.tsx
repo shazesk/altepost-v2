@@ -30,7 +30,7 @@ const GERMAN_MONTHS: Record<string, string> = {
 
 function buildGoogleCalendarUrl(event: { title: string; artist: string; date: string; time: string; description: string }) {
   // Parse date like "15. März 2026"
-  const dateMatch = event.date.match(/(\d{1,2})\.\s*(\w+)\s+(\d{4})/);
+  const dateMatch = event.date.match(/(\d{1,2})\.\s*([A-Za-zÄäÖöÜü]+)\s+(\d{4})/);
   // Parse time like "20:00 Uhr"
   const timeMatch = event.time.match(/(\d{1,2}):(\d{2})/);
   if (!dateMatch || !timeMatch) return null;
