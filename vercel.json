@@ -1,15 +1,6 @@
 {
   "framework": "vite",
   "outputDirectory": "dist",
-  "functions": {
-    "api/pages.ts": {},
-    "api/admin/auth.ts": {},
-    "api/admin/data.ts": {},
-    "api/admin/events.ts": {},
-    "api/admin/reservations.ts": {},
-    "api/send/contact.ts": {},
-    "api/send/newsletter-issue.ts": {}
-  },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
