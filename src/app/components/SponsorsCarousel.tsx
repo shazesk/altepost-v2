@@ -34,8 +34,11 @@ export function SponsorsCarousel() {
     fetchSponsors();
   }, []);
 
+  const featuredSponsors = sponsors.filter((s) => s.featured);
+  const carouselSponsors = sponsors.filter((s) => !s.featured);
+
   // Duplicate sponsors for seamless loop
-  const duplicatedSponsors = [...sponsors, ...sponsors];
+  const duplicatedSponsors = [...carouselSponsors, ...carouselSponsors];
 
   return (
     <section className="py-12 lg:py-16 bg-white border-y border-[rgba(107,142,111,0.2)]">
@@ -48,6 +51,28 @@ export function SponsorsCarousel() {
             Unsere Partner & Förderer
           </h2>
         </div>
+
+        {/* Hauptsponsoren — fixed above slider */}
+        {!loading && featuredSponsors.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-8 mb-10">
+            {featuredSponsors.map((sponsor) => {
+              const card = (
+                <div className="flex items-center justify-center bg-[#faf9f7] rounded-xl border border-[rgba(107,142,111,0.2)] px-8 py-5 transition-all hover:border-[#6b8e6f] hover:shadow-lg" style={{ minWidth: '200px', height: '90px' }}>
+                  {sponsor.logo ? (
+                    <img src={sponsor.logo} alt={sponsor.name} className="max-h-14 max-w-[180px] object-contain" />
+                  ) : (
+                    <span className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">{sponsor.name}</span>
+                  )}
+                </div>
+              );
+              return sponsor.url ? (
+                <a key={sponsor.id} href={sponsor.url} target="_blank" rel="noopener noreferrer">{card}</a>
+              ) : (
+                <div key={sponsor.id}>{card}</div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Scrolling Logos Container */}
         <div className="relative overflow-hidden">
@@ -67,7 +92,7 @@ export function SponsorsCarousel() {
                 </div>
               ))}
             </div>
-          ) : sponsors.length > 0 ? (
+          ) : carouselSponsors.length > 0 ? (
             /* Scrolling Animation */
             <div className="flex animate-scroll hover:pause-animation">
               {duplicatedSponsors.map((sponsor, index) => {
