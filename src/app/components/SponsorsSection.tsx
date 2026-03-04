@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Heart, Building2, Users, Handshake, Star } from 'lucide-react';
+import { Heart, Building2, Users, Handshake } from 'lucide-react';
 import { ContactForm } from './ContactForm';
 
 interface Sponsor {
@@ -57,8 +57,6 @@ export function SponsorsSection() {
     fetchSponsors();
   }, []);
 
-  const featuredSponsors = sponsors.filter((s) => s.featured);
-
   const grouped = categoryConfig.map((cat) => ({
     ...cat,
     sponsors: sponsors
@@ -103,51 +101,6 @@ export function SponsorsSection() {
             </div>
           </div>
         </div>
-
-        {/* Hauptsponsoren */}
-        {!loading && featuredSponsors.length > 0 && (
-          <div className="mb-16">
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <Star className="h-6 w-6 text-[#d4a843]" />
-              <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d]">
-                Hauptsponsoren
-              </h3>
-            </div>
-            <div className="grid gap-6 md:grid-cols-3">
-              {featuredSponsors.map((sponsor) => {
-                const cardContent = (
-                  <div className="flex flex-col items-center justify-center h-[200px] bg-[#faf9f7] rounded-xl border border-[rgba(107,142,111,0.2)] px-8 py-6 transition-all hover:border-[#6b8e6f] hover:shadow-lg">
-                    {sponsor.logo ? (
-                      <img
-                        src={sponsor.logo}
-                        alt={sponsor.name}
-                        className="max-h-20 max-w-full object-contain"
-                      />
-                    ) : (
-                      <span className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d] text-center">
-                        {sponsor.name}
-                      </span>
-                    )}
-                  </div>
-                );
-
-                return sponsor.url ? (
-                  <a
-                    key={sponsor.id}
-                    href={sponsor.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    {cardContent}
-                  </a>
-                ) : (
-                  <div key={sponsor.id}>{cardContent}</div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Sponsor categories */}
         <div className="space-y-12 mb-16">

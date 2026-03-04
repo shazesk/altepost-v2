@@ -34,8 +34,8 @@ export function SponsorsCarousel() {
     fetchSponsors();
   }, []);
 
-  const featuredSponsors = sponsors.filter((s) => s.featured);
-  const carouselSponsors = sponsors.filter((s) => !s.featured);
+  const featuredSponsors = sponsors.filter((s) => s.category === 'hauptfoerderer');
+  const carouselSponsors = sponsors.filter((s) => s.category !== 'hauptfoerderer');
 
   // Duplicate sponsors for seamless loop
   const duplicatedSponsors = [...carouselSponsors, ...carouselSponsors];
