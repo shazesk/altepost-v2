@@ -29,7 +29,7 @@ export function GutscheinPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/send/voucher', {
+      const res = await fetch('/api/send/contact?type=voucher', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

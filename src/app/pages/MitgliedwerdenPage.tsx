@@ -32,7 +32,7 @@ export function MitgliedwerdenPage() {
     setIsLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/send/membership', {
+      const res = await fetch('/api/send/contact?type=membership', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, membershipType }),

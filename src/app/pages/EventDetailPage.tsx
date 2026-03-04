@@ -20,6 +20,10 @@ interface EventData {
   is_archived?: boolean;
   is_past?: boolean;
   remainingTickets?: number;
+  extraSection1Title?: string;
+  extraSection1Content?: string;
+  extraSection2Title?: string;
+  extraSection2Content?: string;
 }
 
 const GERMAN_MONTHS: Record<string, string> = {
@@ -265,6 +269,26 @@ export function EventDetailPage() {
         {event.description && (
           <div className="mb-8">
             <p className="text-[#666666] leading-relaxed text-lg">{event.description}</p>
+          </div>
+        )}
+
+        {/* Extra Section 1 */}
+        {event.extraSection1Content && (
+          <div className="mb-8 p-6 bg-[#faf9f7] rounded-lg border border-[rgba(107,142,111,0.2)]">
+            {event.extraSection1Title && (
+              <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-3">{event.extraSection1Title}</h3>
+            )}
+            <p className="text-[#666666] leading-relaxed whitespace-pre-line">{event.extraSection1Content}</p>
+          </div>
+        )}
+
+        {/* Extra Section 2 */}
+        {event.extraSection2Content && (
+          <div className="mb-8 p-6 bg-[#faf9f7] rounded-lg border border-[rgba(107,142,111,0.2)]">
+            {event.extraSection2Title && (
+              <h3 className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d] mb-3">{event.extraSection2Title}</h3>
+            )}
+            <p className="text-[#666666] leading-relaxed whitespace-pre-line">{event.extraSection2Content}</p>
           </div>
         )}
 

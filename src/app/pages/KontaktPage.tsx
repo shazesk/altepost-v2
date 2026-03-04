@@ -149,25 +149,18 @@ export function KontaktPage() {
             </div>
           </div>
 
-          {/* Map placeholder */}
-          <div className="bg-[#e8e4df] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)]">
-            <div className="aspect-[16/9] lg:aspect-[21/9] flex items-center justify-center">
-              <div className="text-center p-8">
-                <MapPin className="h-12 w-12 text-[#6b8e6f] mx-auto mb-4" />
-                <p className="text-[#666666] font-['Inter',sans-serif]">
-                  <strong className="text-[#2d2d2d]">{settings.organization.name}</strong><br />
-                  {settings.address.street}, {settings.address.postalCode} {settings.address.city}<br />
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${settings.address.street} ${settings.address.postalCode} ${settings.address.city}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors inline-flex items-center mt-2"
-                  >
-                    In Google Maps öffnen →
-                  </a>
-                </p>
-              </div>
-            </div>
+          {/* Google Map */}
+          <div className="rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)]">
+            <iframe
+              title="Alte Post Brensbach Standort"
+              src={`https://maps.google.com/maps?q=${encodeURIComponent(`${settings.organization.name}, ${settings.address.street}, ${settings.address.postalCode} ${settings.address.city}`)}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+              width="100%"
+              height="0"
+              style={{ border: 0, aspectRatio: '21/9', minHeight: '300px' }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
           </div>
         </div>
       </section>

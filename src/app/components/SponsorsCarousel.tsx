@@ -57,9 +57,9 @@ export function SponsorsCarousel() {
           <div className="flex flex-wrap items-center justify-center gap-8 mb-10">
             {featuredSponsors.map((sponsor) => {
               const card = (
-                <div className="flex items-center justify-center bg-[#faf9f7] rounded-xl border border-[rgba(107,142,111,0.2)] px-10 py-8 transition-all hover:border-[#6b8e6f] hover:shadow-lg" style={{ minWidth: '260px', height: '130px' }}>
+                <div className="flex items-center justify-center bg-[#faf9f7] rounded-xl border border-[rgba(107,142,111,0.2)] px-12 py-10 transition-all hover:border-[#6b8e6f] hover:shadow-lg" style={{ minWidth: '280px', height: '150px' }}>
                   {sponsor.logo ? (
-                    <img src={sponsor.logo} alt={sponsor.name} className="max-h-20 max-w-[220px] object-contain" />
+                    <img src={sponsor.logo} alt={sponsor.name} className="max-h-24 max-w-[240px] object-contain" />
                   ) : (
                     <span className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">{sponsor.name}</span>
                   )}
@@ -102,7 +102,7 @@ export function SponsorsCarousel() {
                       <img
                         src={sponsor.logo}
                         alt={sponsor.name}
-                        className="max-h-12 max-w-full object-contain"
+                        className="max-h-16 max-w-full object-contain"
                       />
                     ) : (
                       <div className="text-center">
@@ -118,7 +118,7 @@ export function SponsorsCarousel() {
                   <div
                     key={index}
                     className="flex-shrink-0 mx-8 flex items-center justify-center"
-                    style={{ width: '180px', height: '80px' }}
+                    style={{ width: '220px', height: '100px' }}
                   >
                     {sponsor.url ? (
                       <a

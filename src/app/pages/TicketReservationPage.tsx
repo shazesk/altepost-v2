@@ -57,7 +57,7 @@ export function TicketReservationPage() {
     const computedTotalPrice = (parseFloat(event.price.replace(',', '.')) * parseInt(formData.ticketCount)).toFixed(2).replace('.', ',');
 
     try {
-      const res = await fetch('/api/send/reserve-tickets', {
+      const res = await fetch('/api/send/contact?type=reserve-tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

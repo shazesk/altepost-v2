@@ -17,7 +17,10 @@ import {
   History,
   Award,
   Instagram,
-  Facebook
+  Facebook,
+  Mail,
+  Send,
+  CheckCircle
 } from 'lucide-react';
 import { QuoteCard } from '../components/QuoteCard';
 import { useCmsPage } from '../hooks/useCmsPage';
@@ -81,10 +84,102 @@ const defaultGallery: GalleryImage[] = [
   { id: 7, position: 6, image: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=400&h=400&fit=crop', alt: 'Stage', label: 'Klein unten rechts' },
 ];
 
+function NewsletterSignup() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email) return;
+    setSubmitting(true);
+    setResult(null);
+    try {
+      const res = await fetch('/api/admin/data?type=newsletter-subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name, source: 'homepage' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResult({ success: true, message: data.message || 'Erfolgreich angemeldet!' });
+        setName('');
+        setEmail('');
+      } else {
+        setResult({ success: false, message: data.error || 'Ein Fehler ist aufgetreten.' });
+      }
+    } catch {
+      setResult({ success: false, message: 'Verbindungsfehler. Bitte versuchen Sie es später erneut.' });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="py-16 lg:py-20 bg-gradient-to-b from-[#faf9f7] to-white">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="bg-white rounded-2xl p-8 lg:p-12 shadow-xl border border-[rgba(107,142,111,0.15)] text-center max-w-4xl mx-auto">
+          <div className="w-14 h-14 rounded-full bg-[#6b8e6f]/10 flex items-center justify-center mx-auto mb-6">
+            <Mail className="h-7 w-7 text-[#6b8e6f]" />
+          </div>
+          <h2 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-3">
+            Bleiben Sie informiert
+          </h2>
+          <p className="text-[#666666] font-['Inter',sans-serif] mb-8 max-w-lg mx-auto">
+            Erhalten Sie unseren Info-Post mit aktuellen Veranstaltungen, Neuigkeiten und exklusiven Einblicken direkt in Ihr Postfach.
+          </p>
+
+          {result?.success ? (
+            <div className="flex items-center justify-center gap-3 text-[#6b8e6f] bg-[#6b8e6f]/10 rounded-lg p-4">
+              <CheckCircle className="h-5 w-5 flex-shrink-0" />
+              <span className="font-['Inter',sans-serif]">{result.message}</span>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  placeholder="Ihr Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="flex-1 px-4 py-3 rounded-lg border border-[rgba(107,142,111,0.3)] bg-[#faf9f7] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] focus:bg-white font-['Inter',sans-serif]"
+                />
+                <input
+                  type="email"
+                  placeholder="Ihre E-Mail-Adresse *"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="flex-1 px-4 py-3 rounded-lg border border-[rgba(107,142,111,0.3)] bg-[#faf9f7] focus:outline-none focus:ring-2 focus:ring-[#6b8e6f] focus:bg-white font-['Inter',sans-serif]"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#6b8e6f] px-8 py-3 text-white hover:bg-[#5a7a5e] transition-all shadow-lg font-['Inter',sans-serif] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Send className="h-4 w-4" />
+                {submitting ? 'Wird angemeldet...' : 'Anmelden'}
+              </button>
+              {result && !result.success && (
+                <p className="text-sm text-[#8b4454]">{result.message}</p>
+              )}
+              <p className="text-xs text-[#999] font-['Inter',sans-serif]">
+                Sie können sich jederzeit wieder abmelden.
+              </p>
+            </form>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function HomePage() {
   const { content } = useCmsPage<HomePageContent>('home', defaultContent);
   const [gallery, setGallery] = useState<GalleryImage[]>(defaultGallery);
-  const [latestEvent, setLatestEvent] = useState<{ id: string; title: string; artist: string; date: string; time: string; price: string; genre: string; description: string; image?: string | null } | null>(null);
+  const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; artist: string; date: string; time: string; price: string; genre: string; description: string; image?: string | null }[]>([]);
 
   useEffect(() => {
     async function fetchGallery() {
@@ -104,110 +199,111 @@ export function HomePage() {
   }, []);
 
   useEffect(() => {
-    async function fetchLatestEvent() {
+    async function fetchEvents() {
       try {
         const res = await fetch('/api/pages?type=events');
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.data) && data.data.length > 0) {
-            const events = data.data;
-            const last = events[0];
-            setLatestEvent({
-              id: last.id,
-              title: last.title,
-              artist: last.artist || '',
-              date: last.date,
-              time: last.time,
-              price: last.price?.replace(/[^\d,\.]/g, '') || '',
-              genre: last.genre,
-              description: last.description,
-              image: last.image || null,
-            });
+            setUpcomingEvents(data.data.map((ev: any) => ({
+              id: ev.id,
+              title: ev.title,
+              artist: ev.artist || '',
+              date: ev.date,
+              time: ev.time,
+              price: ev.price?.replace(/[^\d,\.]/g, '') || '',
+              genre: ev.genre,
+              description: ev.description,
+              image: ev.image || null,
+            })));
           }
         }
       } catch {
         // Use CMS defaults on error
       }
     }
-    fetchLatestEvent();
+    fetchEvents();
   }, []);
 
   function getGalleryImage(position: number): GalleryImage {
     return gallery.find(g => g.position === position) || defaultGallery[position];
   }
 
-  // Use latest event from API
-  const nextEvent = latestEvent;
-
   return (
     <>
       <Hero />
-      
-      {/* Featured Event Highlight - only shown when events exist */}
-      {nextEvent && (
+
+      {/* Upcoming Events Slider */}
+      {upcomingEvents.length > 0 && (
       <section className="py-20 lg:py-28 bg-gradient-to-b from-white to-[#faf9f7]">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#6b8e6f] px-4 py-2 mb-4">
-              <Sparkles className="h-4 w-4 text-white" />
-              <span className="text-sm text-white font-['Inter',sans-serif] tracking-wider uppercase">
-                Nächster Höhepunkt
-              </span>
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-[#6b8e6f] px-4 py-2 mb-4">
+                <Sparkles className="h-4 w-4 text-white" />
+                <span className="text-sm text-white font-['Inter',sans-serif] tracking-wider uppercase">
+                  Kommende Höhepunkte
+                </span>
+              </div>
+              <h2 className="font-['Playfair_Display',serif] text-3xl lg:text-4xl text-[#2d2d2d]">
+                Unsere nächsten Veranstaltungen
+              </h2>
             </div>
+            <Link
+              to="/tickets"
+              className="hidden sm:inline-flex items-center gap-2 text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
+            >
+              Alle Veranstaltungen
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
 
-            <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
-              <Link to={`/veranstaltung/${nextEvent.id}`} className="absolute inset-0 z-10" aria-label={nextEvent.title} />
-              <div className="flex flex-col md:flex-row">
-                {nextEvent.image && (
-                  <div className="md:w-72 lg:w-96 flex-shrink-0 overflow-hidden">
+          <div className="flex gap-6 overflow-x-auto pb-4 no-scrollbar snap-x snap-mandatory">
+            {upcomingEvents.map((ev, index) => (
+              <Link
+                key={ev.id}
+                to={`/veranstaltung/${ev.id}`}
+                className={`group flex-shrink-0 snap-start bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg ${
+                  index === 0 ? 'w-[340px] sm:w-[400px]' : 'w-[300px] sm:w-[340px]'
+                }`}
+              >
+                {ev.image && (
+                  <div className="overflow-hidden">
                     <ImageWithFallback
-                      src={nextEvent.image}
-                      alt={nextEvent.title}
-                      className="w-full h-56 md:h-full object-cover"
+                      src={ev.image}
+                      alt={ev.title}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 )}
-                <div className="flex-1 p-6 lg:p-8">
-                  <div className="mb-4">
-                    <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-sm text-[#666666]">{nextEvent.genre}</span>
-                  </div>
-                  <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-[#2d2d2d] mb-2">{nextEvent.title}</h3>
-                  <p className="text-lg text-[#666666] mb-4">{nextEvent.artist}</p>
-                  <p className="text-[#666666] mb-6 leading-relaxed">{nextEvent.description}</p>
-                  <div className="flex flex-wrap gap-4 mb-6">
-                    <div className="flex items-center text-[#666666]">
-                      <Calendar className="h-4 w-4 mr-2 text-[#6b8e6f]" />
-                      <span>{nextEvent.date}</span>
-                    </div>
-                    <div className="flex items-center text-[#666666]">
-                      <Clock className="h-4 w-4 mr-2 text-[#6b8e6f]" />
-                      <span>{nextEvent.time}</span>
-                    </div>
-                    <div className="flex items-center text-[#666666]">
-                      <Euro className="h-4 w-4 mr-2 text-[#6b8e6f]" />
-                      <span>{nextEvent.price} EUR</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between relative z-20">
-                    <Link
-                      to={`/veranstaltung/${nextEvent.id}`}
-                      className="inline-flex items-center gap-2 rounded-md bg-[#6b8e6f] text-white px-5 py-2.5 hover:bg-[#5a7a5e] transition-colors"
-                    >
-                      <Ticket className="h-4 w-4" />
-                      Tickets
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
-                    <Link
-                      to="/tickets"
-                      className="text-sm text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors relative z-20"
-                    >
-                      Alle Veranstaltungen
-                    </Link>
+                <div className="p-5">
+                  <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-xs text-[#666666] mb-3">{ev.genre}</span>
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-1 group-hover:text-[#6b8e6f] transition-colors line-clamp-2">{ev.title}</h3>
+                  {ev.artist && <p className="text-sm text-[#666666] mb-3">{ev.artist}</p>}
+                  <div className="flex flex-wrap gap-3 text-sm text-[#666666]">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5 text-[#6b8e6f]" />
+                      {ev.date}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3.5 w-3.5 text-[#6b8e6f]" />
+                      {ev.time}
+                    </span>
                   </div>
                 </div>
-              </div>
-            </article>
+              </Link>
+            ))}
+          </div>
+
+          <div className="text-center mt-6 sm:hidden">
+            <Link
+              to="/tickets"
+              className="inline-flex items-center gap-2 text-[#6b8e6f] hover:text-[#5a7a5e] transition-colors font-['Inter',sans-serif]"
+            >
+              Alle Veranstaltungen
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       </section>
       )}
@@ -373,12 +469,15 @@ export function HomePage() {
         </div>
       </section>
 
+      {/* Newsletter Section */}
+      <NewsletterSignup />
+
       {/* Sponsors Carousel */}
       <SponsorsCarousel />
 
       {/* Instagram Section */}
       <section className="py-12 lg:py-16 bg-white">
-        <div className="mx-auto max-w-5xl px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="text-center mb-8">
             {/* Profile Picture */}
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-[#e8e4df]">
@@ -469,7 +568,7 @@ export function HomePage() {
 
       {/* Final CTA Section */}
       <section className="py-16 lg:py-20 bg-white">
-        <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 text-center">
           <h2 className="font-['Playfair_Display',serif] text-3xl lg:text-4xl text-[#2d2d2d] mb-4">
             {content.cta.title}
           </h2>

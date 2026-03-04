@@ -40,7 +40,7 @@ export function ParkingSection() {
         </div>
 
         {/* Access Information Card */}
-        <div className="max-w-4xl mx-auto">
+        <div>
           <div className="bg-white rounded-2xl p-8 lg:p-12 shadow-xl border border-[rgba(107,142,111,0.1)]">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-full bg-[#d4a574]/20 flex items-center justify-center">
@@ -63,6 +63,9 @@ export function ParkingSection() {
               </p>
               <p>
                 Wir bitten um euer Verständnis für diese saisonale Einschränkung und freuen uns darauf, euch bei uns begrüßen zu dürfen – ob im warmen Innenbereich während des Winters oder im grünen Garten an den sonnigeren Tagen.
+              </p>
+              <p className="text-[#8b4454] font-medium bg-[#8b4454]/5 rounded-lg p-4 border border-[#8b4454]/20">
+                Bitte beachten Sie: In unserer Einrichtung stehen leider keine behindertengerechten Sanitäranlagen zur Verfügung.
               </p>
               <div className="pt-4 border-t border-[#e8e4df]">
                 <p className="text-[#2d2d2d] font-medium">

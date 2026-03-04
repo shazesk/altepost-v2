@@ -63,6 +63,12 @@ export interface Event {
   is_archived: boolean;
   photos?: string[];
   maxTickets?: number;
+  active?: boolean;
+  eventType?: 'program' | 'private';
+  extraSection1Title?: string;
+  extraSection1Content?: string;
+  extraSection2Title?: string;
+  extraSection2Content?: string;
 }
 
 export interface Reservation {

@@ -32,6 +32,7 @@ interface UpcomingEvent {
   availability: string;
   description: string;
   image: string | null;
+  eventType?: 'program' | 'private';
 }
 
 interface ArchiveEvent {
@@ -51,6 +52,7 @@ interface CalendarEvent {
   genre: string;
   parsedDate: Date;
   isArchived: boolean;
+  eventType?: 'program' | 'private';
 }
 
 type ViewMode = 'list' | 'month' | 'day';
@@ -93,31 +95,38 @@ function ListView({ events }: { events: CalendarEvent[] }) {
 
   return (
     <div className="divide-y divide-[rgba(107,142,111,0.15)]">
-      {events.map((event) => (
-        <Link key={event.id} to={`/veranstaltung/${event.id}`} className="py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 hover:bg-[#faf9f7] transition-colors -mx-3 px-3 rounded-lg block">
-          <span className="text-sm text-[#6b8e6f] font-medium whitespace-nowrap min-w-[140px]">
-            {event.date}
-          </span>
-          <div className="flex-1 min-w-0">
-            <span className="font-medium text-[#2d2d2d]">{event.title}</span>
-            {event.artist && (
-              <span className="text-[#666666]"> — {event.artist}</span>
+      {events.map((event) => {
+        const isPrivate = event.eventType === 'private';
+        const Wrapper = isPrivate ? 'div' : Link;
+        const wrapperProps = isPrivate
+          ? { className: "py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 -mx-3 px-3 rounded-lg bg-[#faf9f7]/50" }
+          : { to: `/veranstaltung/${event.id}`, className: "py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6 hover:bg-[#faf9f7] transition-colors -mx-3 px-3 rounded-lg block" };
+        return (
+          <Wrapper key={event.id} {...(wrapperProps as any)}>
+            <span className="text-sm text-[#6b8e6f] font-medium whitespace-nowrap min-w-[140px]">
+              {event.date}
+            </span>
+            <div className="flex-1 min-w-0">
+              <span className={`font-medium ${isPrivate ? 'text-[#999] italic' : 'text-[#2d2d2d]'}`}>{event.title}</span>
+              {event.artist && !isPrivate && (
+                <span className="text-[#666666]"> — {event.artist}</span>
+              )}
+            </div>
+            {event.time && (
+              <span className="text-sm text-[#666666] whitespace-nowrap">{event.time}</span>
             )}
-          </div>
-          {event.time && (
-            <span className="text-sm text-[#666666] whitespace-nowrap">{event.time}</span>
-          )}
-          {!event.isArchived && (
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openGoogleCalendarForEvent(event); }}
-              className="text-[#6b8e6f]/60 hover:text-[#6b8e6f] transition-colors shrink-0"
-              title="Zu Google Kalender hinzufügen"
-            >
-              <CalendarPlus className="h-4 w-4" />
-            </button>
-          )}
-        </Link>
-      ))}
+            {!event.isArchived && !isPrivate && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); openGoogleCalendarForEvent(event); }}
+                className="text-[#6b8e6f]/60 hover:text-[#6b8e6f] transition-colors shrink-0"
+                title="Zu Google Kalender hinzufügen"
+              >
+                <CalendarPlus className="h-4 w-4" />
+              </button>
+            )}
+          </Wrapper>
+        );
+      })}
     </div>
   );
 }
@@ -466,7 +475,7 @@ export function BelegungsplanSection() {
     async function fetchData() {
       try {
         const [upcomingRes, archivedRes] = await Promise.all([
-          fetch('/api/pages?type=events'),
+          fetch('/api/pages?type=belegungsplan'),
           fetch('/api/pages?type=events&archived=1'),
         ]);
 
@@ -474,7 +483,7 @@ export function BelegungsplanSection() {
           const data = await upcomingRes.json();
           if (data.success && Array.isArray(data.data)) {
             const parsed: CalendarEvent[] = data.data
-              .map((ev: UpcomingEvent) => {
+              .map((ev: any) => {
                 const parsedDate = parseGermanDate(ev.date);
                 if (!parsedDate) return null;
                 return {
@@ -486,6 +495,7 @@ export function BelegungsplanSection() {
                   genre: ev.genre,
                   parsedDate,
                   isArchived: false,
+                  eventType: ev.eventType || 'program',
                 };
               })
               .filter(Boolean) as CalendarEvent[];

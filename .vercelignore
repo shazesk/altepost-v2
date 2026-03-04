@@ -1,0 +1,8 @@
+api/data/
+api/uploads/
+api/admin/assets/
+*.php
+*.php.bak
+*.sql
+*.cjs
+.htaccess

@@ -9,9 +9,13 @@
     "genre": "Theater",
     "month": "März 2026",
     "availability": "available",
-    "description": "Eine humorvolle Endzeitgeschichte: Eine künstliche Intelligenz erwacht, entwickelt sich weiter und stellt sich existenzielle Fragen. Gespielt im beheizten Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 9,00 €.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2025/11/02_Bild1-2.jpg",
-    "is_archived": false
+    "description": "Das 12-Stufentheater präsentiert eine humorvolle Endzeitgeschichte: Eine junge künstliche Intelligenz erwacht, entwickelt sich von ihrem ersten Code bis zur persönlichen Sinnsuche und hinterfragt dabei unsere Denkmuster und gesellschaftlichen Verhaltensweisen – ein Aufruf zur Zusammenarbeit. Gespielt von Agnieszka Kleemann im beheizten Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 9,00 €.",
+    "image": "/events/12-Stufentheater.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Speisekarte",
+    "extraSection1Content": "Heißer Käsebrezel\nGemischter Salatteller mit Baguette\nGemischter Salatteller mit gebackenem Schafskäse\nSchweinemedaillons in Champignon-Rahmsauce mit hausgemachten Spätzle\nHausgemachte Tortelli mit Spinat-Ricotta-Füllung in Sahnesauce (vegetarisch)\nVanille-Espresso-Eis\nSchokoladeneis mit Eierlikör"
   },
   {
     "id": 2,
@@ -23,9 +27,13 @@
     "genre": "Comedy",
     "month": "April 2026",
     "availability": "sold-out",
-    "description": "Odenwälder Mundart-Comedy über menschliche Zufriedenheit und gesellschaftliche Beobachtungen mit humorvollem Blick. Im ggfs. beheizten Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 9,00 €.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2025/11/20250823_150510.jpg",
-    "is_archived": false
+    "description": "Odenwälder Mundart-Comedy: \u201eDe Mensch will immer hou un werd doch nit frouh\u201c \u2013 Herta Wacker (gespielt von Marlene Schwarz) beleuchtet mit humorvollem Blick, wie das ständige Verlangen nach \u201eHou\u201c (Haben) uns auf persönlicher, familiärer und globaler Ebene Probleme bereitet. Mit köstlichen Lösungsvorschlägen. Im ggfs. beheizten Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 9,00 \u20ac.",
+    "image": "/events/Herta-Wacker.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
   },
   {
     "id": 3,
@@ -37,9 +45,13 @@
     "genre": "Neo Folk Pop",
     "month": "Mai 2026",
     "availability": "available",
-    "description": "Kraftvolle Harmonien und eine faszinierende Stilmischung aus Covers und eigenen Songs. Enge Harmonien mit modernem Twist. Um 10:00 Uhr findet ein evangelischer Gottesdienst statt. In Hof und Hofsaal. Eintritt frei.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2025/11/02_Bild1.jpg",
-    "is_archived": false
+    "description": "Kraftvolle Harmonien und eine faszinierende Stilmischung aus Covers und eigenen Songs. Geschrieben von Kate Dowl (Gitarre, Akkordeon) und Andreas Kischa (Gitarren, Mandoline, Ukulele), mit Backing-Vocals von Ina Powis, Barbara Galata und Ilze Gauja. Enge Harmonien mit einem englischen Kammerchor-Gefühl und 1960er Girl-Band-Ästhetik mit modernem Twist. Um 10:00 Uhr findet ein evangelischer Gottesdienst statt. In Hof und Hofsaal. Eintritt frei.",
+    "image": "/events/Britgirl-Abroad.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Kühle Getränke und Spezialitäten vom Grill vom Team der KleinKunstKneipe."
   },
   {
     "id": 4,
@@ -51,9 +63,13 @@
     "genre": "Open Stage",
     "month": "Mai 2026",
     "availability": "available",
-    "description": "Offene Bühne für Künstler – je 30 Minuten Auftrittzeit. Bewerbungen an KKKAltePost@gmx.de. Mit den legendären Zwiwwelkreppel à la Post-Luise. In Hofsaal und Hof. Eintritt frei.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2024/11/offene-Buehne.jpg",
-    "is_archived": false
+    "description": "Offene Bühne zum Brensbacher Hof- & Kellerfest! Die Alte Post bietet lokalen Künstlern eine Plattform – jeder Auftritt dauert 30 Minuten. Bewerbungen an KKKAltePost@gmx.de. In Hofsaal und Hof. Eintritt frei.",
+    "image": "/events/Offene-Buehne.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Spezialitäten aus der Postküche, darunter die legendären Zwiwwelkreppel à la Post-Luise."
   },
   {
     "id": 5,
@@ -65,9 +81,13 @@
     "genre": "Jazz",
     "month": "Mai 2026",
     "availability": "available",
-    "description": "Seit 51 Jahren begeistert das Ensemble mit einem erweiterten Repertoire aus klassischen Standards und modernen Stücken. Mit Sängerin Maike Heisel. In Hof und Hofsaal. Eintritt frei.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2023/11/En-Haufe-Leit.jpg",
-    "is_archived": false
+    "description": "Seit 51 Jahren begeistert das Ensemble \u201eEn Haufe Leit\u201c mit einem erweiterten Repertoire \u2013 von klassischen Standards wie Basin Street Blues bis zu zeitgen\u00f6ssischen St\u00fccken. Mit S\u00e4ngerin Maike Heisel, die Oldies und Neues f\u00fcr ein Publikum jeden Alters verbindet. In Hof und Hofsaal. Eintritt frei.",
+    "image": "/events/En-Haufe-Leit.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Spezialitäten vom Grill\nFrisch gezapftes Bier\nLeckerer Äppelwoi\nSpezialitäten aus der Küche"
   },
   {
     "id": 6,
@@ -79,9 +99,13 @@
     "genre": "Rock & Roll",
     "month": "Juni 2026",
     "availability": "available",
-    "description": "Leidenschaftliches Elvis-Tribute mit dem typischen Hüftschwung, Jumpsuit und einer vergleichbaren Stimme – pure Passion für den King of Rock'n'Roll. In Hof und Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 10,00 €.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2025/11/01_duke-elvis.jpg",
-    "is_archived": false
+    "description": "\u201eNo one is closer to the King than the Duke\u201c \u2013 Duke Elvis liefert leidenschaftliche Tribute-Performances mit Elvis Presleys gr\u00f6\u00dften Hits. Der typische H\u00fcftschwung, der glitzernde Ganzk\u00f6rper-Jumpsuit und eine Stimme, die dem King ebenb\u00fcrtig ist \u2013 pure Passion f\u00fcr den King of Rock\u2019n\u2019Roll. In Hof und Hofsaal. Einlass ab 18:30 Uhr. Erm\u00e4\u00dfigt 10,00 \u20ac.",
+    "image": "/events/Duke-Elvis.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
   },
   {
     "id": 7,
@@ -93,9 +117,13 @@
     "genre": "Soul & R&B",
     "month": "Juli 2026",
     "availability": "available",
-    "description": "Soul- und R&B-Repertoire auf Englisch, Deutsch und Italienisch. Interpretationen von Lionel Richie, Eros Ramazotti, Al Jarreau, Gregory Porter und vielen mehr. In Hof und Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 9,00 €.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2025/11/01_ANDRE-COLUCCELLI-MIT-MIROFON.jpeg",
-    "is_archived": false
+    "description": "Andre Coluccelli ist ein erfahrener Bühnenunterhalter und charmanter Sänger mit einer unverwechselbaren Soul- und R&B-Stimme. Sein Repertoire umfasst Songs auf Englisch, Deutsch und Italienisch – von Lionel Richie über Eros Ramazotti, Al Jarreau, Kool and the Gang, Simply Red, Paul Carrack, Gregory Porter bis Chris Rea. Eine Stimme von EDEL bis FETZIG. In Hof und Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 9,00 €.",
+    "image": "/events/Andre-Coluccelli.jpeg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
   },
   {
     "id": 8,
@@ -107,9 +135,13 @@
     "genre": "Latin Rock",
     "month": "August 2026",
     "availability": "available",
-    "description": "Achtköpfiges Ensemble, das ausschließlich Santana-Songs spielt – mit akribischer Treue zum Originalsound. In Hof und Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 9,00 €.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2026/08/Frenesi.jpg",
-    "is_archived": false
+    "description": "\u201eEine der besten Santana-Coverbands zwischen Rhein, Neckar und Main\u201c \u2013 Frenesi besteht aus acht erfahrenen Musikern aus dem Raum Ludwigshafen und Mainz, die ausschlie\u00dflich Santana-Songs mit akribischer Treue zum Originalsound spielen. In Hof und Hofsaal. Einlass ab 18:30 Uhr. Erm\u00e4\u00dfigt 9,00 \u20ac.",
+    "image": "/events/Frenesi.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
   },
   {
     "id": 9,
@@ -121,9 +153,13 @@
     "genre": "Pop/Rock/Soul",
     "month": "September 2026",
     "availability": "available",
-    "description": "Fünfköpfiges Ensemble interpretiert Genesis, The Police, Elton John, Sting, Billy Joel, Van Morrison und Simple Minds mit frischem, zeitgenössischem Sound neu. Entstanden aus einem Corona-Kulturprojekt. In Hof und Hofsaal. Eintritt frei.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2026/09/01_Bild1-2.jpg",
-    "is_archived": false
+    "description": "Fünf professionelle Musiker aus New York liefern eine energiegeladene Reise durch die Welt von Pop, Rock und Soul. Frische Interpretationen von Genesis, The Police, Elton John, Sting, Billy Joel, Van Morrison und Simple Minds. Entstanden aus einem Corona-Kulturprojekt, mittlerweile auf großen deutschen Bühnen wie der Berlinale und Rheingauer Jazzwoche zu Hause. In Hof und Hofsaal. Eintritt frei.",
+    "image": "/events/Game-of-Jones.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program",
+    "extraSection1Title": "Essen & Trinken",
+    "extraSection1Content": "Spezialitäten vom Grill\nFrisch gezapftes Bier\nLeckerer Äppelwoi"
   },
   {
     "id": 10,
@@ -135,8 +171,10 @@
     "genre": "Fotovortrag",
     "month": "September 2026",
     "availability": "available",
-    "description": "Multivisions-Vortrag über Südmexikos Archäologie, Kultur, Día de los Muertos, Märkte und traditionelle Tracht – dokumentiert in großformatiger Fotografie. Im Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 4,00 €.",
-    "image": "https://www.kleinkunstkneipe.de/wp-content/uploads/2025/11/02_Mexiko_AAA.2024_AZ-780.jpg",
-    "is_archived": false
+    "description": "Ein Multivisions-Vortrag – eine Reise durch Geschichte, Landschaft und Alltag im südlichen Mexiko. Inge und Arnold Zörgiebel präsentieren großformatige Fotografie, Filmsequenzen und persönliche Eindrücke: antike Maya-, Zapoteken- und Olmeken-Stätten, indigene Märkte, Día de los Muertos, kulturelle Traditionen und atemberaubende Landschaften. Im Hofsaal. Einlass ab 18:30 Uhr. Ermäßigt 4,00 €.",
+    "image": "/events/Mexico.jpg",
+    "is_archived": false,
+    "active": true,
+    "eventType": "program"
   }
 ]

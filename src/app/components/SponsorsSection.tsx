@@ -135,36 +135,44 @@ export function SponsorsSection() {
                     <p className="text-[#666666] mb-6 font-['Inter',sans-serif]">
                       {category.description}
                     </p>
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className={`grid gap-6 ${category.key === 'hauptfoerderer' ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
                       {category.sponsors.map((sponsor) => {
-                        const content = sponsor.logo ? (
-                          <img
-                            src={sponsor.logo}
-                            alt={sponsor.name}
-                            className="max-h-12 max-w-full object-contain"
-                          />
-                        ) : (
-                          <span className="text-[#2d2d2d] text-center font-['Inter',sans-serif]">
-                            {sponsor.name}
-                          </span>
+                        const isHaupt = category.key === 'hauptfoerderer';
+                        const card = (
+                          <div
+                            className={`flex flex-col items-center justify-center bg-white rounded-xl border border-[rgba(107,142,111,0.2)] shadow-sm hover:shadow-lg hover:border-[#6b8e6f] transition-all ${isHaupt ? 'p-8 lg:p-10' : 'p-6 lg:p-8'}`}
+                            style={{ minHeight: isHaupt ? '200px' : '160px' }}
+                          >
+                            {sponsor.logo ? (
+                              <img
+                                src={sponsor.logo}
+                                alt={sponsor.name}
+                                className={`object-contain w-full ${isHaupt ? 'max-h-24 lg:max-h-28' : 'max-h-20 lg:max-h-24'}`}
+                              />
+                            ) : (
+                              <span className={`text-[#2d2d2d] text-center font-['Playfair_Display',serif] ${isHaupt ? 'text-xl' : 'text-lg'}`}>
+                                {sponsor.name}
+                              </span>
+                            )}
+                            <p className={`mt-3 text-center text-[#666666] font-['Inter',sans-serif] ${isHaupt ? 'text-sm font-medium' : 'text-xs'}`}>
+                              {sponsor.name}
+                            </p>
+                          </div>
                         );
 
                         return (
-                          <div
-                            key={sponsor.id}
-                            className="flex items-center justify-center p-4 bg-[#faf9f7] rounded-lg border border-[rgba(107,142,111,0.15)]"
-                          >
+                          <div key={sponsor.id}>
                             {sponsor.url ? (
                               <a
                                 href={sponsor.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center justify-center hover:opacity-80 transition-opacity"
+                                className="block hover:no-underline"
                               >
-                                {content}
+                                {card}
                               </a>
                             ) : (
-                              content
+                              card
                             )}
                           </div>
                         );

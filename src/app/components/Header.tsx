@@ -60,16 +60,23 @@ export function Header() {
 
           {/* Desktop navigation */}
           <div className="hidden lg:flex lg:gap-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                onClick={() => handleNavClick(item.href)}
-                className="text-[15px] leading-6 text-[#2d2d2d] hover:text-[#6b8e6f] transition-colors font-['Inter',sans-serif]"
-              >
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map((item) => {
+              const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => handleNavClick(item.href)}
+                  className={`text-[15px] leading-6 transition-colors font-['Inter',sans-serif] relative pb-1 ${
+                    isActive
+                      ? 'text-[#6b8e6f] font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#6b8e6f] after:rounded-full'
+                      : 'text-[#2d2d2d] hover:text-[#6b8e6f]'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Desktop CTA */}
@@ -88,16 +95,23 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-[rgba(107,142,111,0.2)] py-4">
             <div className="space-y-2">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="block rounded-lg px-3 py-2 text-[15px] leading-7 text-[#2d2d2d] hover:bg-[#e8e4df] font-['Inter',sans-serif]"
-                  onClick={() => { handleNavClick(item.href); setMobileMenuOpen(false); }}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigation.map((item) => {
+                const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`block rounded-lg px-3 py-2 text-[15px] leading-7 font-['Inter',sans-serif] ${
+                      isActive
+                        ? 'text-[#6b8e6f] font-semibold bg-[#6b8e6f]/10'
+                        : 'text-[#2d2d2d] hover:bg-[#e8e4df]'
+                    }`}
+                    onClick={() => { handleNavClick(item.href); setMobileMenuOpen(false); }}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
               <Link
                 to="/tickets"
                 className="block rounded-lg bg-[#6b8e6f] px-3 py-2 text-[15px] leading-7 text-white hover:bg-[#5a7a5e] font-['Inter',sans-serif]"

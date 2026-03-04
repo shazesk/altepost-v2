@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Heart, Star, Ticket, Calendar, Newspaper, Vote, Sparkles } from 'lucide-react';
+import { Users, Heart, Star, Ticket, Calendar, Newspaper, Vote, Sparkles, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { QuoteCard } from './QuoteCard';
 import { motion } from 'motion/react';
@@ -95,6 +95,49 @@ export function MembershipSection() {
               </div>
             );
           })}
+        </div>
+
+        {/* Pricing Table */}
+        <div className="bg-white rounded-lg p-8 lg:p-12 border border-[rgba(107,142,111,0.2)] mb-12">
+          <h3 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d] mb-6 text-center">
+            Mitgliedsbeiträge
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full max-w-2xl mx-auto">
+              <thead>
+                <tr className="border-b-2 border-[#6b8e6f]">
+                  <th className="text-left py-3 px-4 font-['Inter',sans-serif] font-medium text-[#2d2d2d]">Kategorie</th>
+                  <th className="text-right py-3 px-4 font-['Inter',sans-serif] font-medium text-[#2d2d2d]">Monatsbeitrag</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[rgba(107,142,111,0.15)]">
+                {[
+                  { label: 'Einzelperson (nicht verdienend)', price: '2,50' },
+                  { label: 'Einzelperson (verdienend)', price: '5,00' },
+                  { label: 'Partner', price: '6,00' },
+                  { label: 'Familie (3+ Personen)', price: '7,50' },
+                  { label: 'Fördermitglied', price: '10,00' },
+                  { label: 'Sponsor', price: '25,00' },
+                ].map((tier) => (
+                  <tr key={tier.label} className="hover:bg-[#faf9f7] transition-colors">
+                    <td className="py-3 px-4 text-[#666666] font-['Inter',sans-serif]">{tier.label}</td>
+                    <td className="py-3 px-4 text-right text-[#2d2d2d] font-medium font-['Inter',sans-serif]">{tier.price} EUR</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="text-center mt-8">
+            <a
+              href="http://www.kleinkunstkneipe.de/wp-content/uploads/2016/10/KKK_Aufnahmeantrag_150614.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-[#6b8e6f] px-6 py-3 text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-all font-['Inter',sans-serif]"
+            >
+              <Download className="h-4 w-4" />
+              Aufnahmeantrag herunterladen (PDF)
+            </a>
+          </div>
         </div>
 
         {/* Membership cards */}

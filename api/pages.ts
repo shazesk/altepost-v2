@@ -43,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (type === 'event' && id && typeof id === 'string') {
     const events = await readEvents();
     const event = events.find(e => String(e.id) === id);
-    if (!event) {
+    if (!event || event.active === false || event.eventType === 'private') {
       return res.status(404).json({ success: false, error: 'Event not found' });
     }
     const now = new Date();
@@ -79,6 +79,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       photos: event.photos || [],
       is_archived: event.is_archived,
       is_past,
+      extraSection1Title: event.extraSection1Title || '',
+      extraSection1Content: event.extraSection1Content || '',
+      extraSection2Title: event.extraSection2Title || '',
+      extraSection2Content: event.extraSection2Content || '',
     };
     if (remainingTickets != null) formatted.remainingTickets = remainingTickets;
     return res.status(200).json({ success: true, data: formatted });
@@ -124,13 +128,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ success: true, data: groupedByYear });
     }
 
-    // Return upcoming (non-archived, non-past) events with remaining ticket counts
+    // Return upcoming (non-archived, non-past, active, program) events with remaining ticket counts
     const reservations = await readReservations();
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const upcomingEvents = events
       .filter(e => {
         if (e.is_archived) return false;
+        if (e.active === false) return false;
+        if (e.eventType === 'private') return false;
         const eventDate = new Date(e.date);
         eventDate.setHours(0, 0, 0, 0);
         return eventDate.getTime() >= now.getTime();
@@ -172,6 +178,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
 
     return res.status(200).json({ success: true, data: upcomingEvents });
+  }
+
+  // Get all upcoming events for Belegungsplan (includes private events, excludes inactive)
+  if (type === 'belegungsplan') {
+    const events = await readEvents();
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const allUpcoming = events
+      .filter(e => {
+        if (e.is_archived) return false;
+        if (e.active === false) return false;
+        const eventDate = new Date(e.date);
+        eventDate.setHours(0, 0, 0, 0);
+        return eventDate.getTime() >= now.getTime();
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(e => ({
+        id: String(e.id),
+        title: e.eventType === 'private' ? 'Privatveranstaltung' : e.title,
+        artist: e.eventType === 'private' ? '' : e.artist,
+        date: formatDate(e.date),
+        time: formatTime(e.time),
+        genre: e.eventType === 'private' ? 'Privat' : e.genre,
+        eventType: e.eventType || 'program',
+      }));
+    return res.status(200).json({ success: true, data: allUpcoming });
   }
 
   // Get gallery images

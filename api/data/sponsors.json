@@ -1,12 +1,162 @@
 [
-  { "id": 1, "name": "Sparkasse Odenwaldkreis", "logo": null, "url": null, "category": "hauptfoerderer", "position": 1 },
-  { "id": 2, "name": "Gemeinde Brensbach", "logo": null, "url": null, "category": "hauptfoerderer", "position": 2 },
-  { "id": 3, "name": "Hessisches Ministerium für Wissenschaft und Kunst", "logo": null, "url": null, "category": "hauptfoerderer", "position": 3 },
-  { "id": 4, "name": "VR Bank Dreieich-Offenbach", "logo": null, "url": null, "category": "foerderer", "position": 1 },
-  { "id": 5, "name": "Druckerei Schmidt, Brensbach", "logo": null, "url": null, "category": "foerderer", "position": 2 },
-  { "id": 6, "name": "Volksbank Odenwald", "logo": null, "url": null, "category": "foerderer", "position": 3 },
-  { "id": 7, "name": "Odenwald Tourismus", "logo": null, "url": null, "category": "foerderer", "position": 4 },
-  { "id": 8, "name": "Odenwald Kulturtage e.V.", "logo": null, "url": null, "category": "kooperationspartner", "position": 1 },
-  { "id": 9, "name": "Jazz Initiative Darmstadt", "logo": null, "url": null, "category": "kooperationspartner", "position": 2 },
-  { "id": 10, "name": "Theaterverband Südhessen", "logo": null, "url": null, "category": "kooperationspartner", "position": 3 }
+  {
+    "id": 1,
+    "name": "LAKS Hessen e.V.",
+    "logo": "/sponsors/laks.png",
+    "url": "https://www.laks.de",
+    "category": "hauptfoerderer",
+    "position": 1
+  },
+  {
+    "id": 2,
+    "name": "Sparkasse Odenwaldkreis",
+    "logo": "/sponsors/sparkasse_odw.jpg",
+    "url": "https://www.sparkasse-odenwaldkreis.de",
+    "category": "hauptfoerderer",
+    "position": 2
+  },
+  {
+    "id": 3,
+    "name": "Hessisches Ministerium für Wissenschaft und Forschung, Kunst und Kultur",
+    "logo": "/sponsors/hmwk.png",
+    "url": "https://wissenschaft.hessen.de",
+    "category": "hauptfoerderer",
+    "position": 3
+  },
+  {
+    "id": 4,
+    "name": "C.H. Böck",
+    "logo": "/sponsors/Boeck.jpg",
+    "url": "http://www.c-h-boeck.de/unserladen.html",
+    "category": "foerderer",
+    "position": 1
+  },
+  {
+    "id": 5,
+    "name": "Orthopädie Buxmann",
+    "logo": "/sponsors/Buxmann.jpg",
+    "url": "http://orthopaedie-schuhtechnik-buxmann.de",
+    "category": "foerderer",
+    "position": 2
+  },
+  {
+    "id": 6,
+    "name": "Campanula Floristik",
+    "logo": "/sponsors/Campanula.jpg",
+    "url": "http://www.campanula-floristik.com",
+    "category": "foerderer",
+    "position": 3
+  },
+  {
+    "id": 7,
+    "name": "Kelterei Dölp",
+    "logo": "/sponsors/Dölp.jpg",
+    "url": "http://www.kelterei-doelp.de",
+    "category": "foerderer",
+    "position": 4
+  },
+  {
+    "id": 8,
+    "name": "Eidenmüller",
+    "logo": "/sponsors/Eidenmueller.jpg",
+    "url": null,
+    "category": "foerderer",
+    "position": 5
+  },
+  {
+    "id": 9,
+    "name": "Bäckerei Friedrich",
+    "logo": "/sponsors/baeckerei-friedrich.jpg",
+    "url": "https://baeckereifriedrich.de",
+    "category": "foerderer",
+    "position": 6
+  },
+  {
+    "id": 10,
+    "name": "Germann GmbH",
+    "logo": "/sponsors/Germann.jpg",
+    "url": "http://www.germanngmbh.de",
+    "category": "foerderer",
+    "position": 7
+  },
+  {
+    "id": 11,
+    "name": "KS Zweiradstore",
+    "logo": "/sponsors/KS-Zweiradstore-1.jpg",
+    "url": "http://www.ks-zweiradstore.de",
+    "category": "foerderer",
+    "position": 8
+  },
+  {
+    "id": 12,
+    "name": "Fußpflege Monyer",
+    "logo": "/sponsors/Fußpflege-Monyer.jpg",
+    "url": "http://www.fusspflege-podologie.com",
+    "category": "foerderer",
+    "position": 9
+  },
+  {
+    "id": 13,
+    "name": "Nicole's Haarstudio",
+    "logo": "/sponsors/Nicole-Friseur-1.jpg",
+    "url": "http://www.nicoleshaarstudio.de",
+    "category": "foerderer",
+    "position": 10
+  },
+  {
+    "id": 14,
+    "name": "Palme Hausverwaltung",
+    "logo": "/sponsors/Palme-Hausverwaltung-1.jpg",
+    "url": "http://www.hv-palme.de",
+    "category": "foerderer",
+    "position": 11
+  },
+  {
+    "id": 15,
+    "name": "Elektro Reich KG",
+    "logo": "/sponsors/Elektro-Reich-KG.jpg",
+    "url": "http://www.elektro-reich.de",
+    "category": "foerderer",
+    "position": 12
+  },
+  {
+    "id": 16,
+    "name": "Röhrig Granit",
+    "logo": "/sponsors/Röhrig-1.jpg",
+    "url": "http://www.roehrig-granit.de",
+    "category": "foerderer",
+    "position": 13
+  },
+  {
+    "id": 17,
+    "name": "Schmucker Bier",
+    "logo": "/sponsors/Schmucker-1.jpg",
+    "url": "http://www.schmucker-bier.de",
+    "category": "foerderer",
+    "position": 14
+  },
+  {
+    "id": 18,
+    "name": "Tecis",
+    "logo": "/sponsors/Tecis.jpg",
+    "url": null,
+    "category": "foerderer",
+    "position": 15
+  },
+  {
+    "id": 19,
+    "name": "Zörgiebel Mode",
+    "logo": "/sponsors/Zörgiebel-Mode.jpg",
+    "url": "http://www.zoergiebel.de",
+    "category": "foerderer",
+    "position": 16
+  },
+  {
+    "id": 20,
+    "name": "Frisierstube Gela",
+    "logo": "/sponsors/Gela-1.jpg",
+    "url": null,
+    "category": "foerderer",
+    "position": 17
+  }
 ]

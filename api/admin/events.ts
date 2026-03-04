@@ -222,7 +222,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       image: body.image || null,
       is_archived: body.is_archived === 'true' || body.is_archived === true,
       photos: Array.isArray(body.photos) ? body.photos : [],
-      ...(body.maxTickets != null ? { maxTickets: Number(body.maxTickets) } : {})
+      ...(body.maxTickets != null ? { maxTickets: Number(body.maxTickets) } : {}),
+      active: body.active !== undefined ? body.active : false,
+      eventType: body.eventType || 'program',
+      ...(body.extraSection1Title ? { extraSection1Title: body.extraSection1Title } : {}),
+      ...(body.extraSection1Content ? { extraSection1Content: body.extraSection1Content } : {}),
+      ...(body.extraSection2Title ? { extraSection2Title: body.extraSection2Title } : {}),
+      ...(body.extraSection2Content ? { extraSection2Content: body.extraSection2Content } : {})
     };
 
     events.push(newEvent);
@@ -235,6 +241,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // PUT requests
   if (req.method === 'PUT') {
     const body = req.body || {};
+
+    // Bulk replace all events if body is an array
+    if (Array.isArray(body)) {
+      await writeEvents(body as Event[]);
+      log(requestId, 'Bulk replace events', { count: body.length });
+      return res.status(200).json({ success: true, data: body, requestId });
+    }
+
     const id = body.id;
 
     log(requestId, 'PUT request', { id, bodyKeys: Object.keys(body) });
@@ -268,7 +282,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       image: body.image !== undefined ? body.image : events[eventIndex].image,
       is_archived: body.is_archived !== undefined ? (body.is_archived === 'true' || body.is_archived === true) : events[eventIndex].is_archived,
       photos: Array.isArray(body.photos) ? body.photos : events[eventIndex].photos || [],
-      maxTickets: body.maxTickets !== undefined ? Number(body.maxTickets) : events[eventIndex].maxTickets
+      maxTickets: body.maxTickets !== undefined ? Number(body.maxTickets) : events[eventIndex].maxTickets,
+      active: body.active !== undefined ? body.active : events[eventIndex].active,
+      eventType: body.eventType !== undefined ? body.eventType : events[eventIndex].eventType,
+      extraSection1Title: body.extraSection1Title !== undefined ? body.extraSection1Title : events[eventIndex].extraSection1Title,
+      extraSection1Content: body.extraSection1Content !== undefined ? body.extraSection1Content : events[eventIndex].extraSection1Content,
+      extraSection2Title: body.extraSection2Title !== undefined ? body.extraSection2Title : events[eventIndex].extraSection2Title,
+      extraSection2Content: body.extraSection2Content !== undefined ? body.extraSection2Content : events[eventIndex].extraSection2Content
     };
 
     if (body.date) {

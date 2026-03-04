@@ -17,6 +17,12 @@ interface Event {
   is_archived: boolean;
   photos?: string[];
   maxTickets?: number;
+  active?: boolean;
+  eventType?: 'program' | 'private';
+  extraSection1Title?: string;
+  extraSection1Content?: string;
+  extraSection2Title?: string;
+  extraSection2Content?: string;
 }
 
 interface Reservation {
@@ -930,6 +936,12 @@ export function AdminPage() {
         description: formData.get('description'),
         is_archived: formData.get('is_archived') === 'true',
         maxTickets: formData.get('maxTickets') ? Number(formData.get('maxTickets')) : undefined,
+        active: formData.get('active') === 'true',
+        eventType: formData.get('eventType') || 'program',
+        extraSection1Title: formData.get('extraSection1Title') || '',
+        extraSection1Content: formData.get('extraSection1Content') || '',
+        extraSection2Title: formData.get('extraSection2Title') || '',
+        extraSection2Content: formData.get('extraSection2Content') || '',
         photos: eventPhotos
       };
 
@@ -1167,7 +1179,7 @@ export function AdminPage() {
 
     try {
       const url = editingReservation
-        ? `${API_BASE}/reservations/${editingReservation.id}`
+        ? `${API_BASE}/reservations?id=${editingReservation.id}`
         : `${API_BASE}/reservations`;
 
       const res = await fetch(url, {
@@ -1891,6 +1903,22 @@ export function AdminPage() {
                 <input type="number" name="maxTickets" defaultValue={event?.maxTickets ?? 30} min={0} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
                 <p className="text-xs text-[#666666] mt-1">Tickets werden automatisch gezählt</p>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Status</label>
+                <select name="active" defaultValue={event?.active !== undefined ? String(event.active) : 'false'} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]">
+                  <option value="true">Aktiv (sichtbar)</option>
+                  <option value="false">Inaktiv (versteckt)</option>
+                </select>
+                <p className="text-xs text-[#666666] mt-1">Inaktive Events sind öffentlich nicht sichtbar</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Veranstaltungstyp</label>
+                <select name="eventType" defaultValue={event?.eventType || 'program'} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]">
+                  <option value="program">Programm (öffentlich)</option>
+                  <option value="private">Privatveranstaltung</option>
+                </select>
+                <p className="text-xs text-[#666666] mt-1">Private Events erscheinen nur im Belegungsplan</p>
+              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Bild</label>
                 <div className="space-y-3">
@@ -1976,6 +2004,21 @@ export function AdminPage() {
               <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Beschreibung</label>
               <textarea name="description" defaultValue={event?.description || ''} rows={3} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
             </div>
+
+            {/* Extra Section 1 */}
+            <div className="mb-4 p-4 bg-[#faf9f7] rounded-lg border border-[rgba(107,142,111,0.15)]">
+              <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Zusätzliche Information 1 (optional)</label>
+              <input type="text" name="extraSection1Title" defaultValue={event?.extraSection1Title || ''} placeholder="Titel (z.B. Speisekarte, Getränkekarte)" className="w-full px-4 py-2 mb-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+              <textarea name="extraSection1Content" defaultValue={event?.extraSection1Content || ''} rows={3} placeholder="Inhalt..." className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+            </div>
+
+            {/* Extra Section 2 */}
+            <div className="mb-4 p-4 bg-[#faf9f7] rounded-lg border border-[rgba(107,142,111,0.15)]">
+              <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Zusätzliche Information 2 (optional)</label>
+              <input type="text" name="extraSection2Title" defaultValue={event?.extraSection2Title || ''} placeholder="Titel (z.B. Abendprogramm)" className="w-full px-4 py-2 mb-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+              <textarea name="extraSection2Content" defaultValue={event?.extraSection2Content || ''} rows={3} placeholder="Inhalt..." className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+            </div>
+
             <div className="mb-6">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" name="is_archived" value="true" defaultChecked={event?.is_archived || false} className="w-4 h-4 accent-[#6b8e6f]" />
@@ -2268,7 +2311,7 @@ export function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
-                  {events.map(event => (
+                  {[...events].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(event => (
                     <tr key={event.id} className="hover:bg-[#faf9f7]">
                       <td className="p-4">
                         <div className="font-medium text-[#2d2d2d]">{event.title}</div>
@@ -2277,13 +2320,19 @@ export function AdminPage() {
                       <td className="p-4 text-[#666666]">{event.artist}</td>
                       <td className="p-4 text-[#666666]">{event.date}</td>
                       <td className="p-4">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                          event.availability === 'available' ? 'bg-green-100 text-green-800' :
-                          event.availability === 'few-left' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {event.availability === 'available' ? 'Verfügbar' : event.availability === 'few-left' ? 'Wenige' : 'Ausverkauft'}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                            event.active === false ? 'bg-gray-100 text-gray-600' :
+                            event.availability === 'available' ? 'bg-green-100 text-green-800' :
+                            event.availability === 'few-left' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {event.active === false ? 'Inaktiv' : event.availability === 'available' ? 'Verfügbar' : event.availability === 'few-left' ? 'Wenige' : 'Ausverkauft'}
+                          </span>
+                          {event.eventType === 'private' && (
+                            <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Privat</span>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <div className="flex justify-end gap-2">

@@ -118,6 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           data: {
             upcoming: events.filter(e => !e.is_archived).length,
             archived: events.filter(e => e.is_archived).length,
+            inactive: events.filter(e => e.active === false).length,
             total: events.length,
             reservations: {
               active: reservations.filter(r => r.status === 'active').length,

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Mail, Users, Volume2, MapPin, Phone, X, Heart, Snowflake, Sun, TreePalm } from 'lucide-react';
+import { Mail, Users, Volume2, MapPin, Phone, X, Heart, Snowflake, Sun, TreePalm, Archive, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { QuoteCard } from './QuoteCard';
 import { ContactForm } from './ContactForm';
 import { useCmsPage } from '../hooks/useCmsPage';
@@ -207,31 +208,50 @@ export function ArtistsSection() {
         </div>
       </section>
 
-      {/* Section 3: Green CTA Banner (matches Sponsors page) */}
-      <section className="bg-[#6b8e6f] py-12 lg:py-16">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 text-white text-center">
-          <h3 className="font-['Playfair_Display',serif] text-3xl mb-4">
-            {content.ctaBanner.title}
-          </h3>
-          <p className="text-lg mb-2 max-w-2xl mx-auto leading-relaxed opacity-95">
-            {content.ctaBanner.description}
-          </p>
-          <p className="text-sm opacity-90">
-            {content.ctaBanner.subtitle}
-          </p>
+      {/* Archiv Link Section */}
+      <section className="py-16 lg:py-20 bg-white">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#2d2d2d] to-[#1a1a1a] p-10 lg:p-16">
+            <div className="absolute top-0 right-0 w-72 h-72 bg-[#6b8e6f]/15 rounded-full -mr-20 -mt-20 blur-2xl"></div>
+            <div className="absolute bottom-0 left-0 w-56 h-56 bg-[#d4a574]/10 rounded-full -ml-16 -mb-16 blur-2xl"></div>
+
+            <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+              <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-[#6b8e6f]/20 flex items-center justify-center flex-shrink-0">
+                <Archive className="h-10 w-10 lg:h-12 lg:w-12 text-[#6b8e6f]" />
+              </div>
+              <div className="flex-1 text-center lg:text-left">
+                <h3 className="font-['Playfair_Display',serif] text-2xl lg:text-3xl text-white mb-3">
+                  Unser Archiv
+                </h3>
+                <p className="text-[#d9cfc1] font-['Inter',sans-serif] leading-relaxed text-lg max-w-2xl">
+                  Lassen Sie sich von unseren vergangenen Veranstaltungen inspirieren. Entdecken Sie Bilder und Erinnerungen aus über 30 Jahren Kleinkunst in der Alten Post.
+                </p>
+              </div>
+              <Link
+                to="/archiv"
+                className="inline-flex items-center gap-3 rounded-lg bg-[#6b8e6f] px-8 py-4 text-white hover:bg-[#5a7a5e] transition-all shadow-lg hover:shadow-xl font-['Inter',sans-serif] text-lg flex-shrink-0 group"
+              >
+                Archiv entdecken
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Section 4: Contact Form (white bg) */}
+      {/* Section 3: Contact Form */}
       <section className="py-20 lg:py-28 bg-white">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="max-w-3xl mx-auto">
-            <div className="mb-8 text-center">
-              <h3 className="font-['Playfair_Display',serif] text-3xl text-[#2d2d2d] mb-4">
-                {content.contact.title}
+            <div className="mb-10 text-center">
+              <h3 className="font-['Playfair_Display',serif] text-3xl lg:text-4xl text-[#2d2d2d] mb-4">
+                Treten Sie bei uns auf
               </h3>
-              <p className="text-[#666666] font-['Inter',sans-serif]">
-                {content.contact.description}
+              <p className="text-lg text-[#666666] font-['Inter',sans-serif] leading-relaxed max-w-2xl mx-auto mb-2">
+                {content.ctaBanner.description}
+              </p>
+              <p className="text-sm text-[#666666] font-['Inter',sans-serif]">
+                {content.ctaBanner.subtitle}
               </p>
             </div>
             <ContactForm formType="artist" emailTo={content.contact.email} />
