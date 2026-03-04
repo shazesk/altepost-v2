@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera, Loader2, Star } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -129,6 +129,7 @@ interface Sponsor {
   url: string | null;
   category: 'hauptfoerderer' | 'foerderer' | 'kooperationspartner';
   position: number;
+  featured?: boolean;
 }
 
 interface NewsletterSubscriber {
@@ -3050,7 +3051,7 @@ export function AdminPage() {
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Sponsoren verwalten</h2>
               <button
-                onClick={() => { setIsCreatingSponsor(true); setEditingSponsor({ id: 0, name: '', logo: null, url: null, category: 'foerderer', position: 0 }); }}
+                onClick={() => { setIsCreatingSponsor(true); setEditingSponsor({ id: 0, name: '', logo: null, url: null, category: 'foerderer', position: 0, featured: false }); }}
                 className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors"
               >
                 <Plus className="w-5 h-5" />
@@ -3108,6 +3109,19 @@ export function AdminPage() {
                     />
                   </div>
                 </div>
+                <div className="mt-4">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editingSponsor?.featured || false}
+                      onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, featured: e.target.checked } : null)}
+                      className="w-4 h-4 rounded border-[rgba(107,142,111,0.3)] text-[#6b8e6f] focus:ring-[#6b8e6f]"
+                    />
+                    <Star className="w-4 h-4 text-[#d4a843]" />
+                    <span className="text-sm font-medium text-[#2d2d2d]">Hauptsponsor</span>
+                    <span className="text-xs text-[#666666]">— wird oben auf der Sponsoren-Seite angezeigt</span>
+                  </label>
+                </div>
                 <div className="flex gap-3 mt-4">
                   <button
                     onClick={() => editingSponsor && handleSaveSponsor(editingSponsor)}
@@ -3148,7 +3162,12 @@ export function AdminPage() {
                       <tbody className="divide-y divide-[rgba(107,142,111,0.1)]">
                         {catSponsors.map(sponsor => (
                           <tr key={sponsor.id} className="hover:bg-[#faf9f7] transition-colors">
-                            <td className="px-4 py-3 text-[#2d2d2d]">{sponsor.name}</td>
+                            <td className="px-4 py-3 text-[#2d2d2d]">
+                              <span className="flex items-center gap-1.5">
+                                {sponsor.name}
+                                {sponsor.featured && <Star className="w-4 h-4 text-[#d4a843] fill-[#d4a843]" />}
+                              </span>
+                            </td>
                             <td className="px-4 py-3 text-[#666666] text-sm">
                               {sponsor.url ? (
                                 <a href={sponsor.url} target="_blank" rel="noopener noreferrer" className="text-[#6b8e6f] hover:underline flex items-center gap-1">

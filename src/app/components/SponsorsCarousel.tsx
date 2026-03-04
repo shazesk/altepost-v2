@@ -8,6 +8,7 @@ interface Sponsor {
   url?: string | null;
   category: string;
   position: number;
+  featured?: boolean;
 }
 
 export function SponsorsCarousel() {

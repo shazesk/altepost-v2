@@ -173,6 +173,7 @@ export interface Sponsor {
   url: string | null;
   category: 'hauptfoerderer' | 'foerderer' | 'kooperationspartner';
   position: number;
+  featured?: boolean;
 }
 
 export interface NewsletterSubscriber {
