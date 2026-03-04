@@ -57,11 +57,11 @@ export function SponsorsCarousel() {
           <div className="flex flex-wrap items-center justify-center gap-8 mb-10">
             {featuredSponsors.map((sponsor) => {
               const card = (
-                <div className="flex items-center justify-center bg-[#faf9f7] rounded-xl border border-[rgba(107,142,111,0.2)] px-8 py-5 transition-all hover:border-[#6b8e6f] hover:shadow-lg" style={{ minWidth: '200px', height: '90px' }}>
+                <div className="flex items-center justify-center bg-[#faf9f7] rounded-xl border border-[rgba(107,142,111,0.2)] px-10 py-8 transition-all hover:border-[#6b8e6f] hover:shadow-lg" style={{ minWidth: '260px', height: '130px' }}>
                   {sponsor.logo ? (
-                    <img src={sponsor.logo} alt={sponsor.name} className="max-h-14 max-w-[180px] object-contain" />
+                    <img src={sponsor.logo} alt={sponsor.name} className="max-h-20 max-w-[220px] object-contain" />
                   ) : (
-                    <span className="font-['Playfair_Display',serif] text-xl text-[#2d2d2d]">{sponsor.name}</span>
+                    <span className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">{sponsor.name}</span>
                   )}
                 </div>
               );
