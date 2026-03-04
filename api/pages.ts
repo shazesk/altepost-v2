@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readPageContent, readTestimonials, listPages, readSettings, readEvents, readReservations, readGallery } from './admin/_lib/data.js';
+import { readPageContent, readTestimonials, listPages, readSettings, readEvents, readReservations, readGallery } from './_lib/data.js';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);

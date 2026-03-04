@@ -17,7 +17,6 @@ export async function authenticateAdmin(username: string, password: string): Pro
 }
 
 export function createSession(adminId: number, username: string): string {
-  // Create a JWT token instead of storing session in memory
   const token = jwt.sign(
     { adminId, username },
     JWT_SECRET,
@@ -37,5 +36,4 @@ export function validateSession(sessionId: string): { adminId: number; username:
 
 export function destroySession(sessionId: string): void {
   // With JWT, logout is handled client-side by removing the token
-  // For production, you could add the token to a blacklist in a database
 }

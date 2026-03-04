@@ -1,3 +1,52 @@
+import { Resend } from 'resend';
+
+// --- LOGGER ---
+
+export function generateRequestId(): string {
+  return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+export function log(requestId: string, message: string, data?: any) {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] [${requestId}] ${message}`, data ? JSON.stringify(data) : '');
+}
+
+// --- RESEND ---
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'Alte Post Brensbach <noreply@friedrichholdings.de>';
+
+interface SendEmailOptions {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+  requestId?: string;
+}
+
+export async function sendEmail({ to, subject, html, replyTo, requestId }: SendEmailOptions) {
+  const rid = requestId || 'no-rid';
+  log(rid, 'Resend: sending email', { to, subject, replyTo: replyTo || null });
+
+  const result = await resend.emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject,
+    html,
+    ...(replyTo ? { replyTo } : {}),
+  });
+
+  if (result.error) {
+    log(rid, 'Resend: send FAILED', { error: result.error.message, name: result.error.name });
+    throw new Error(`Resend error: ${result.error.message} (${result.error.name})`);
+  }
+
+  log(rid, 'Resend: send SUCCESS', { emailId: result.data?.id });
+  return result.data;
+}
+
+// --- EMAIL TEMPLATES ---
+
 function layout(content: string): string {
   return `<!DOCTYPE html>
 <html lang="de">
@@ -29,8 +78,6 @@ function dataTable(rows: string): string {
   return `<table style="width:100%;border-collapse:collapse;margin:16px 0">${rows}</table>`;
 }
 
-// --- CONTACT ---
-
 export function contactNotification(data: { name: string; email: string; phone: string; subject: string; message: string; formType: string }) {
   return layout(`
     <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Neue Kontaktanfrage</h2>
@@ -54,8 +101,6 @@ export function contactConfirmation(data: { name: string; subject: string }) {
     <p style="margin-top:24px">Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>
   `);
 }
-
-// --- TICKET RESERVATION ---
 
 export function ticketNotification(data: { name: string; email: string; phone: string; message: string; ticketCount: string; eventTitle: string; eventArtist: string; eventDate: string; eventTime: string; eventPrice: string; totalPrice: string }) {
   return layout(`
@@ -94,8 +139,6 @@ export function ticketConfirmation(data: { name: string; ticketCount: string; ev
   `);
 }
 
-// --- MEMBERSHIP ---
-
 export function membershipNotification(data: { name: string; email: string; phone: string; birthdate: string; address: string; postalCode: string; city: string; message: string; membershipType: string; memberSince: string; iban: string }) {
   return layout(`
     <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Neuer Mitgliedsantrag</h2>
@@ -128,8 +171,6 @@ export function membershipConfirmation(data: { name: string; membershipType: str
     <p style="margin-top:24px">Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>
   `);
 }
-
-// --- VOUCHER ---
 
 export function voucherNotification(data: { buyerName: string; buyerEmail: string; buyerPhone: string; voucherDetails: string; voucherValue: string; delivery: string; recipientName: string; recipientEmail: string; message: string }) {
   return layout(`
@@ -166,8 +207,6 @@ export function voucherConfirmation(data: { buyerName: string; voucherDetails: s
     <p style="margin-top:24px">Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>
   `);
 }
-
-// --- INFO-POST NEWSLETTER ---
 
 interface InfoPostEvent {
   id: number;

@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { put } from '@vercel/blob';
-import { cors } from './_lib/cors.js';
-import { validateSession } from './_lib/auth.js';
-import { readEvents, writeEvents, Event } from './_lib/data.js';
+import { cors } from '../_lib/cors.js';
+import { validateSession } from '../_lib/auth.js';
+import { readEvents, writeEvents, Event } from '../_lib/data.js';
 
 const BUILD_VERSION = 'v3-post-delete';
 

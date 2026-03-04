@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { cors } from './_lib/cors.js';
-import { validateSession } from './_lib/auth.js';
+import { cors } from '../_lib/cors.js';
+import { validateSession } from '../_lib/auth.js';
 import {
   readEvents,
   readReservations,
@@ -32,7 +32,7 @@ import {
   Sponsor,
   NewsletterSubscriber,
   NewsletterIssue
-} from './_lib/data.js';
+} from '../_lib/data.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;

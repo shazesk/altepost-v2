@@ -1,10 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
-import { cors } from './_lib/cors.js';
-import { sendEmail } from './_lib/resend.js';
-import { generateRequestId, log } from './_lib/logger.js';
-import { infoPostEmail } from './_lib/templates.js';
-import { validateSession } from '../admin/_lib/auth.js';
+import { cors } from '../_lib/cors.js';
+import { sendEmail, generateRequestId, log, infoPostEmail } from '../_lib/send.js';
+import { validateSession } from '../_lib/auth.js';
 import {
   readNewsletterIssues,
   writeNewsletterIssues,
@@ -12,7 +10,7 @@ import {
   writeNewsletterSubscribers,
   readMemberships,
   readEvents,
-} from '../admin/_lib/data.js';
+} from '../_lib/data.js';
 
 const BASE_URL = 'https://friedrichholdings.de';
 
