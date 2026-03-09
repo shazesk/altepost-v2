@@ -15,7 +15,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Speisekarte",
-    "extraSection1Content": "Heißer Käsebrezel\nGemischter Salatteller mit Baguette\nGemischter Salatteller mit gebackenem Schafskäse\nSchweinemedaillons in Champignon-Rahmsauce mit hausgemachten Spätzle\nHausgemachte Tortelli mit Spinat-Ricotta-Füllung in Sahnesauce (vegetarisch)\nVanille-Espresso-Eis\nSchokoladeneis mit Eierlikör"
+    "extraSection1Content": "Heißer Käsebrezel\nGemischter Salatteller mit Baguette\nGemischter Salatteller mit gebackenem Schafskäse\nSchweinemedaillons in Champignon-Rahmsauce mit hausgemachten Spätzle\nHausgemachte Tortelli mit Spinat-Ricotta-Füllung in Sahnesauce (vegetarisch)\nVanille-Espresso-Eis\nSchokoladeneis mit Eierlikör",
+    "pretixSlug": "12-stufentheater-2026"
   },
   {
     "id": 2,
@@ -33,7 +34,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit.",
+    "pretixSlug": "herta-wacker-2026"
   },
   {
     "id": 3,
@@ -51,7 +53,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Kühle Getränke und Spezialitäten vom Grill vom Team der KleinKunstKneipe."
+    "extraSection1Content": "Kühle Getränke und Spezialitäten vom Grill vom Team der KleinKunstKneipe.",
+    "pretixSlug": "britgirl-abroad-2026"
   },
   {
     "id": 4,
@@ -69,7 +72,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Spezialitäten aus der Postküche, darunter die legendären Zwiwwelkreppel à la Post-Luise."
+    "extraSection1Content": "Spezialitäten aus der Postküche, darunter die legendären Zwiwwelkreppel à la Post-Luise.",
+    "pretixSlug": "offene-buehne-2026"
   },
   {
     "id": 5,
@@ -87,7 +91,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Spezialitäten vom Grill\nFrisch gezapftes Bier\nLeckerer Äppelwoi\nSpezialitäten aus der Küche"
+    "extraSection1Content": "Spezialitäten vom Grill\nFrisch gezapftes Bier\nLeckerer Äppelwoi\nSpezialitäten aus der Küche",
+    "pretixSlug": "en-haufe-leit-2026"
   },
   {
     "id": 6,
@@ -105,7 +110,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit.",
+    "pretixSlug": "duke-elvis-2026"
   },
   {
     "id": 7,
@@ -123,7 +129,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit.",
+    "pretixSlug": "andre-coluccelli-2026"
   },
   {
     "id": 8,
@@ -141,7 +148,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit."
+    "extraSection1Content": "Köstlichkeiten aus der Postküche stehen bereit.",
+    "pretixSlug": "frenesi-2026"
   },
   {
     "id": 9,
@@ -159,7 +167,8 @@
     "active": true,
     "eventType": "program",
     "extraSection1Title": "Essen & Trinken",
-    "extraSection1Content": "Spezialitäten vom Grill\nFrisch gezapftes Bier\nLeckerer Äppelwoi"
+    "extraSection1Content": "Spezialitäten vom Grill\nFrisch gezapftes Bier\nLeckerer Äppelwoi",
+    "pretixSlug": "game-of-jones-2026"
   },
   {
     "id": 10,
@@ -175,6 +184,7 @@
     "image": "/events/Mexico.jpg",
     "is_archived": false,
     "active": true,
-    "eventType": "program"
+    "eventType": "program",
+    "pretixSlug": "mexico-vortrag-2026"
   }
 ]

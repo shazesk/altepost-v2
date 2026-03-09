@@ -61,7 +61,20 @@
       "Bash(npx -y jsonwebtoken:*)",
       "WebFetch(domain:www.kleinkunstkneipe.de)",
       "Bash(git -C /Users/shahzadeskandari/Downloads/Altepost log --oneline -40)",
-      "Bash(git -C /Users/shahzadeskandari/Downloads/Altepost log --oneline)"
+      "Bash(git -C /Users/shahzadeskandari/Downloads/Altepost log --oneline)",
+      "Bash(git rm:*)",
+      "Bash(git:*)",
+      "Bash(source:*)",
+      "Bash(yes | npx vercel git connect https://github.com/shazesk/altepost-v2 2>&1)",
+      "Bash(dig:*)",
+      "Bash(pip3 list:*)",
+      "WebFetch(domain:www.cookieyes.com)",
+      "WebSearch",
+      "WebFetch(domain:www.productcool.com)",
+      "WebFetch(domain:pretix.eu)",
+      "Bash(VERCEL_ENV=production npx vercel:*)",
+      "WebFetch(domain:vercel.link)",
+      "Bash(gh repo:*)"
     ]
   }
 }

@@ -83,6 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       extraSection1Content: event.extraSection1Content || '',
       extraSection2Title: event.extraSection2Title || '',
       extraSection2Content: event.extraSection2Content || '',
+      pretixSlug: event.pretixSlug || null,
     };
     if (remainingTickets != null) formatted.remainingTickets = remainingTickets;
     return res.status(200).json({ success: true, data: formatted });
@@ -172,6 +173,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           image: e.image,
           photos: e.photos || [],
           is_past,
+          pretixSlug: e.pretixSlug || null,
         };
         if (remainingTickets != null) result.remainingTickets = remainingTickets;
         return result;

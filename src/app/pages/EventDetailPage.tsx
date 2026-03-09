@@ -4,6 +4,38 @@ import { useParams, Link } from 'react-router-dom';
 import { Calendar, CalendarPlus, Clock, Euro, Ticket, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
+function PretixWidget({ slug }: { slug: string }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  React.useEffect(() => {
+    const scriptId = 'pretix-widget-script';
+    let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (!script) {
+      script = document.createElement('script');
+      script.id = scriptId;
+      script.src = 'https://pretix.eu/widget/v1.de.js';
+      script.async = true;
+      script.onload = () => setLoaded(true);
+      script.onerror = () => setLoaded(false);
+      document.head.appendChild(script);
+    } else {
+      setLoaded(true);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (!loaded || !ref.current) return;
+    ref.current.innerHTML = '';
+    const widget = document.createElement('pretix-widget');
+    widget.setAttribute('event', `https://pretix.eu/Altepost/${slug}/`);
+    ref.current.appendChild(widget);
+  }, [slug, loaded]);
+
+  if (!loaded) return null;
+  return <div ref={ref} className="mt-6" />;
+}
+
 interface EventData {
   id: string;
   title: string;
@@ -24,6 +56,7 @@ interface EventData {
   extraSection1Content?: string;
   extraSection2Title?: string;
   extraSection2Content?: string;
+  pretixSlug?: string | null;
 }
 
 const GERMAN_MONTHS: Record<string, string> = {
@@ -294,37 +327,43 @@ export function EventDetailPage() {
 
         {/* Availability + Ticket button */}
         {!event.is_archived && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {config && (
-              <span className={`text-sm ${config.color}`}>{config.text}</span>
+          <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              {config && (
+                <span className={`text-sm ${config.color}`}>{config.text}</span>
+              )}
+              <Link
+                to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
+                state={isSoldOutOrPast ? undefined : { event }}
+                className={`inline-flex items-center gap-2 rounded-md px-6 py-3 text-lg transition-colors ${
+                  isSoldOutOrPast
+                    ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
+                    : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
+                }`}
+                onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+              >
+                <Ticket className="h-5 w-5" />
+                {event.is_past ? 'Veranstaltung beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets reservieren'}
+              </Link>
+              {!event.is_past && (() => {
+                const calUrl = buildGoogleCalendarUrl(event);
+                return calUrl ? (
+                  <a
+                    href={calUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-lg border border-[#6b8e6f] text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-colors"
+                  >
+                    <CalendarPlus className="h-5 w-5" />
+                    Zum Kalender hinzufügen
+                  </a>
+                ) : null;
+              })()}
+            </div>
+            {/* Pretix ticket widget */}
+            {event.pretixSlug && !isSoldOutOrPast && (
+              <PretixWidget slug={event.pretixSlug} />
             )}
-            <Link
-              to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
-              state={isSoldOutOrPast ? undefined : { event }}
-              className={`inline-flex items-center gap-2 rounded-md px-6 py-3 text-lg transition-colors ${
-                isSoldOutOrPast
-                  ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
-                  : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
-              }`}
-              onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
-            >
-              <Ticket className="h-5 w-5" />
-              {event.is_past ? 'Veranstaltung beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets reservieren'}
-            </Link>
-            {!event.is_past && (() => {
-              const calUrl = buildGoogleCalendarUrl(event);
-              return calUrl ? (
-                <a
-                  href={calUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-md px-6 py-3 text-lg border border-[#6b8e6f] text-[#6b8e6f] hover:bg-[#6b8e6f] hover:text-white transition-colors"
-                >
-                  <CalendarPlus className="h-5 w-5" />
-                  Zum Kalender hinzufügen
-                </a>
-              ) : null;
-            })()}
           </div>
         )}
       </div>

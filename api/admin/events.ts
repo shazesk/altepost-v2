@@ -4,7 +4,8 @@ import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
 import { readEvents, writeEvents, Event } from '../_lib/data.js';
 
-const BUILD_VERSION = 'v3-post-delete';
+const BUILD_VERSION = 'v4-pretix-sync';
+const PRETIX_API = 'https://pretix.eu/api/v1/organizers/Altepost';
 
 function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -25,6 +26,142 @@ function getMonthYear(dateStr: string): string {
   const month = monthNames[String(date.getMonth() + 1).padStart(2, '0')];
   const year = date.getFullYear();
   return `${month} ${year}`;
+}
+
+function generateSlug(title: string, date: string): string {
+  const year = new Date(date).getFullYear();
+  const slug = title
+    .toLowerCase()
+    .replace(/[äÄ]/g, 'ae').replace(/[öÖ]/g, 'oe').replace(/[üÜ]/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 40);
+  return `${slug}-${year}`;
+}
+
+async function pretixFetch(path: string, options: RequestInit = {}): Promise<any> {
+  const token = process.env.PRETIX_API_TOKEN;
+  if (!token) return null;
+
+  const res = await fetch(`${PRETIX_API}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Token ${token}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function syncEventToPretix(event: Event, requestId: string): Promise<string | null> {
+  const token = process.env.PRETIX_API_TOKEN;
+  if (!token) {
+    log(requestId, 'Pretix sync skipped - no API token');
+    return event.pretixSlug || null;
+  }
+
+  // Only sync program events (not private)
+  if (event.eventType === 'private') return event.pretixSlug || null;
+
+  const slug = event.pretixSlug || generateSlug(event.title, event.date);
+  const dateObj = new Date(event.date);
+  const timeParts = (event.time || '20:00').split(':');
+  dateObj.setHours(parseInt(timeParts[0]), parseInt(timeParts[1] || '0'));
+
+  const endDate = new Date(dateObj.getTime() + 3 * 60 * 60 * 1000); // +3 hours
+  const admissionDate = new Date(dateObj.getTime() - 90 * 60 * 1000); // -1.5 hours before
+
+  const eventPayload = {
+    name: { de: event.artist ? `${event.title} – ${event.artist}` : event.title },
+    slug,
+    live: false,
+    currency: 'EUR',
+    date_from: dateObj.toISOString(),
+    date_to: endDate.toISOString(),
+    date_admission: admissionDate.toISOString(),
+    is_public: event.active !== false,
+    location: { de: 'KleinKunstKneipe Alte Post, Hauptstraße 15, 64395 Brensbach' },
+    geo_lat: '49.7741',
+    geo_lon: '8.8789',
+    timezone: 'Europe/Berlin',
+  };
+
+  try {
+    // Try to update existing event first
+    let pretixEvent = await pretixFetch(`/events/${slug}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(eventPayload),
+    });
+
+    if (!pretixEvent) {
+      // Create new event
+      pretixEvent = await pretixFetch('/events/', {
+        method: 'POST',
+        body: JSON.stringify(eventPayload),
+      });
+
+      if (pretixEvent && pretixEvent.slug) {
+        log(requestId, 'Pretix event created', { slug: pretixEvent.slug });
+
+        // Create ticket items
+        const price = event.price || 0;
+        if (price > 0) {
+          // Paid event: regular + reduced ticket
+          const item1 = await pretixFetch(`/events/${slug}/items/`, {
+            method: 'POST',
+            body: JSON.stringify({ name: { de: 'Eintrittskarte' }, default_price: price.toFixed(2), admission: true, active: true }),
+          });
+          const reducedPrice = Math.ceil(price / 2);
+          const item2 = await pretixFetch(`/events/${slug}/items/`, {
+            method: 'POST',
+            body: JSON.stringify({ name: { de: 'Ermäßigt' }, default_price: reducedPrice.toFixed(2), admission: true, active: true }),
+          });
+          const itemIds = [item1?.id, item2?.id].filter(Boolean);
+          if (itemIds.length > 0) {
+            await pretixFetch(`/events/${slug}/quotas/`, {
+              method: 'POST',
+              body: JSON.stringify({ name: 'Kapazität', size: event.maxTickets || 80, items: itemIds }),
+            });
+          }
+        } else {
+          // Free event
+          const item = await pretixFetch(`/events/${slug}/items/`, {
+            method: 'POST',
+            body: JSON.stringify({ name: { de: 'Eintritt frei' }, default_price: '0.00', admission: true, active: true }),
+          });
+          if (item?.id) {
+            await pretixFetch(`/events/${slug}/quotas/`, {
+              method: 'POST',
+              body: JSON.stringify({ name: 'Kapazität', size: event.maxTickets || 150, items: [item.id] }),
+            });
+          }
+        }
+      }
+    } else {
+      log(requestId, 'Pretix event updated', { slug });
+    }
+
+    return pretixEvent?.slug || slug;
+  } catch (err: any) {
+    log(requestId, 'Pretix sync error', { error: err.message });
+    return event.pretixSlug || null;
+  }
+}
+
+async function deletePretixEvent(slug: string, requestId: string): Promise<void> {
+  const token = process.env.PRETIX_API_TOKEN;
+  if (!token || !slug) return;
+  try {
+    await fetch(`${PRETIX_API}/events/${slug}/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Token ${token}` },
+    });
+    log(requestId, 'Pretix event deleted', { slug });
+  } catch (err: any) {
+    log(requestId, 'Pretix delete error', { error: err.message });
+  }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -106,6 +243,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const deletedEvent = events.splice(eventIndex, 1)[0];
       await writeEvents(events);
+
+      // Delete from Pretix
+      if (deletedEvent.pretixSlug) await deletePretixEvent(deletedEvent.pretixSlug, requestId);
 
       const response = { success: true, data: deletedEvent, requestId };
       log(requestId, 'Delete success', { eventId, title: deletedEvent.title });
@@ -228,13 +368,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(body.extraSection1Title ? { extraSection1Title: body.extraSection1Title } : {}),
       ...(body.extraSection1Content ? { extraSection1Content: body.extraSection1Content } : {}),
       ...(body.extraSection2Title ? { extraSection2Title: body.extraSection2Title } : {}),
-      ...(body.extraSection2Content ? { extraSection2Content: body.extraSection2Content } : {})
+      ...(body.extraSection2Content ? { extraSection2Content: body.extraSection2Content } : {}),
+      ...(body.pretixSlug ? { pretixSlug: body.pretixSlug } : {})
     };
+
+    // Sync to Pretix (non-blocking — if it fails, event is still saved locally)
+    const pretixSlug = await syncEventToPretix(newEvent, requestId);
+    if (pretixSlug) newEvent.pretixSlug = pretixSlug;
 
     events.push(newEvent);
     await writeEvents(events);
 
-    log(requestId, 'Create event success', { eventId: newEvent.id });
+    log(requestId, 'Create event success', { eventId: newEvent.id, pretixSlug });
     return res.status(200).json({ success: true, data: newEvent, requestId });
   }
 
@@ -288,17 +433,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       extraSection1Title: body.extraSection1Title !== undefined ? body.extraSection1Title : events[eventIndex].extraSection1Title,
       extraSection1Content: body.extraSection1Content !== undefined ? body.extraSection1Content : events[eventIndex].extraSection1Content,
       extraSection2Title: body.extraSection2Title !== undefined ? body.extraSection2Title : events[eventIndex].extraSection2Title,
-      extraSection2Content: body.extraSection2Content !== undefined ? body.extraSection2Content : events[eventIndex].extraSection2Content
+      extraSection2Content: body.extraSection2Content !== undefined ? body.extraSection2Content : events[eventIndex].extraSection2Content,
+      pretixSlug: body.pretixSlug !== undefined ? body.pretixSlug : events[eventIndex].pretixSlug
     };
 
     if (body.date) {
       updatedEvent.month = getMonthYear(body.date);
     }
 
+    // Sync to Pretix
+    const pretixSlug = await syncEventToPretix(updatedEvent, requestId);
+    if (pretixSlug) updatedEvent.pretixSlug = pretixSlug;
+
     events[eventIndex] = updatedEvent;
     await writeEvents(events);
 
-    log(requestId, 'PUT success', { eventId });
+    log(requestId, 'PUT success', { eventId, pretixSlug });
     return res.status(200).json({ success: true, data: updatedEvent, requestId });
   }
 
@@ -327,6 +477,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const deletedEvent = events.splice(eventIndex, 1)[0];
     await writeEvents(events);
+
+    if (deletedEvent.pretixSlug) await deletePretixEvent(deletedEvent.pretixSlug, requestId);
 
     log(requestId, 'DELETE success', { eventId });
     return res.status(200).json({ success: true, data: deletedEvent, requestId });

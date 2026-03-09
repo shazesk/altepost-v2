@@ -21,6 +21,7 @@ interface Event {
   photos?: string[];
   is_past?: boolean;
   remainingTickets?: number;
+  pretixSlug?: string | null;
 }
 
 const GERMAN_MONTHS: Record<string, string> = {

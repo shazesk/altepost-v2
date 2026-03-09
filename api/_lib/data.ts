@@ -69,6 +69,7 @@ export interface Event {
   extraSection1Content?: string;
   extraSection2Title?: string;
   extraSection2Content?: string;
+  pretixSlug?: string;
 }
 
 export interface Reservation {
