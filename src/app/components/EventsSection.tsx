@@ -296,8 +296,13 @@ export function EventsSection() {
   );
 }
 
+function isFreeEvent(event: Event) {
+  return event.price === 'Eintritt frei' || event.price === '0,00 EUR';
+}
+
 function getAvailabilityDisplay(event: Event) {
   if (event.is_past) return { text: 'Veranstaltung beendet', color: 'text-[#666666]' };
+  if (isFreeEvent(event)) return { text: 'Jeder ist herzlich Willkommen!', color: 'text-[#6b8e6f]' };
   if (event.remainingTickets != null) {
     if (event.remainingTickets <= 0) return { text: 'Ausverkauft', color: 'text-[#666666]' };
     if (event.remainingTickets <= 5) return { text: `Nur noch ${event.remainingTickets} Tickets!`, color: 'text-[#8b4454]' };
@@ -366,19 +371,21 @@ function EventCard({ event }: { event: Event }) {
                   </a>
                 ) : null;
               })()}
-              <Link
-                to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
-                state={isSoldOutOrPast ? undefined : { event }}
-                className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
-                  isSoldOutOrPast
-                    ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
-                    : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
-                }`}
-                onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
-              >
-                <Ticket className="h-4 w-4" />
-                {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
-              </Link>
+              {!isFreeEvent(event) && (
+                <Link
+                  to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
+                  state={isSoldOutOrPast ? undefined : { event }}
+                  className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
+                    isSoldOutOrPast
+                      ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
+                      : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
+                  }`}
+                  onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+                >
+                  <Ticket className="h-4 w-4" />
+                  {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -441,19 +448,21 @@ function EventListItem({ event }: { event: Event }) {
               </a>
             ) : null;
           })()}
-          <Link
-            to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
-            state={isSoldOutOrPast ? undefined : { event }}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
-              isSoldOutOrPast
-                ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
-                : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
-            }`}
-            onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
-          >
-            <Ticket className="h-4 w-4" />
-            {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
-          </Link>
+          {!isFreeEvent(event) && (
+            <Link
+              to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
+              state={isSoldOutOrPast ? undefined : { event }}
+              className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
+                isSoldOutOrPast
+                  ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
+                  : 'bg-[#6b8e6f] text-white hover:bg-[#5a7a5e]'
+              }`}
+              onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+            >
+              <Ticket className="h-4 w-4" />
+              {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
+            </Link>
+          )}
         </div>
       </div>
     </article>

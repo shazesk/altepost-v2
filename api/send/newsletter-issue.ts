@@ -73,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         title: issue.title,
         introText: issue.introText,
         events: selectedEvents,
+        unsubscribeUrl: `${BASE_URL}/api/admin/data?type=newsletter-unsubscribe&token=test`,
       });
       await sendEmail({
         to: testEmail,

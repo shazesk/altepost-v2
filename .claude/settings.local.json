@@ -74,7 +74,9 @@
       "WebFetch(domain:pretix.eu)",
       "Bash(VERCEL_ENV=production npx vercel:*)",
       "WebFetch(domain:vercel.link)",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "WebFetch(domain:resend.com)",
+      "WebFetch(domain:friedrichholdings.de)"
     ]
   }
 }

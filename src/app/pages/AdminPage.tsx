@@ -1868,8 +1868,8 @@ export function AdminPage() {
                 <input type="text" name="title" defaultValue={event?.title || ''} required className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Künstler *</label>
-                <input type="text" name="artist" defaultValue={event?.artist || ''} required className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Künstler</label>
+                <input type="text" name="artist" defaultValue={event?.artist || ''} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Datum *</label>
@@ -1884,8 +1884,8 @@ export function AdminPage() {
                 <input type="number" name="price" step="0.01" min="0" defaultValue={event?.price || 0} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Genre *</label>
-                <input type="text" name="genre" defaultValue={event?.genre || ''} required list="genre-suggestions" className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Genre</label>
+                <input type="text" name="genre" defaultValue={event?.genre || ''} list="genre-suggestions" placeholder="z.B. Jazz, Kabarett, oder eigenes Genre" className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
                 <datalist id="genre-suggestions">
                   <option value="Jazz" /><option value="Kabarett" /><option value="Theater" /><option value="Liedermacher" /><option value="Folk" /><option value="Klassik" /><option value="Blues" /><option value="Literatur" />
                 </datalist>

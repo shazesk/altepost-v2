@@ -222,7 +222,7 @@ export function infoPostEmail(data: { title: string; introText: string; events: 
     ? `<h3 style="margin:24px 0 12px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Kommende Veranstaltungen</h3>` +
       data.events.map(ev => `
         <div style="background:#faf9f7;border-radius:6px;padding:16px;margin-bottom:12px;border-left:4px solid #6b8e6f">
-          ${ev.image ? `<img src="${ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
+          ${ev.image ? `<img src="${ev.image.startsWith('http') ? ev.image : 'https://friedrichholdings.de' + ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
           <a href="https://friedrichholdings.de/veranstaltung/${ev.id}" style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px;text-decoration:none;display:block"><strong>${ev.title}</strong></a>
           <div style="color:#666;font-size:14px;margin-bottom:4px">${ev.artist}</div>
           <div style="color:#6b8e6f;font-size:14px;font-weight:600">${ev.date}, ${ev.time}</div>
