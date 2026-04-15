@@ -83,6 +83,13 @@ export interface Reservation {
   status: 'active' | 'archived';
   notes: string;
   createdAt: string;
+  // Manual phone-call flow (added 2026-04-15)
+  source?: 'public' | 'admin';
+  paymentStatus?: 'pending' | 'paid';
+  paymentReference?: string;
+  totalPrice?: number;
+  paidAt?: string;
+  reminderSentAt?: string;
 }
 
 export interface SiteSettings {
@@ -105,6 +112,12 @@ export interface SiteSettings {
   };
   officeHours: { days: string; hours: string };
   images?: { logo: string; hero: string };
+  bank?: {
+    accountHolder: string;
+    iban: string;
+    bic: string;
+    bankName: string;
+  };
 }
 
 export interface Contact {
@@ -226,6 +239,12 @@ const defaultSettings: SiteSettings = {
     description: '',
   },
   officeHours: { days: 'Montag bis Freitag', hours: '10:00 - 18:00 Uhr' },
+  bank: {
+    accountHolder: 'KleinKunstKneipe Alte Post Brensbach e.V.',
+    iban: 'DE00 0000 0000 0000 0000 00',
+    bic: 'XXXXDEXXXXX',
+    bankName: 'Sparkasse Odenwaldkreis',
+  },
 };
 
 // ============ EVENTS ============
@@ -616,4 +635,16 @@ export async function readAdmins(): Promise<any[]> {
     }
   }
   return readLocalFile<any[]>('admins.json', []);
+}
+
+export async function writeAdmins(admins: any[]): Promise<void> {
+  if (isRedisConfigured()) {
+    try {
+      await getRedis()!.set('admins', admins);
+      return;
+    } catch (e) {
+      console.error('Redis error writing admins:', e);
+    }
+  }
+  writeLocalFile('admins.json', admins);
 }

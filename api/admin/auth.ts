@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from '../_lib/cors.js';
-import { authenticateAdmin, createSession, validateSession, destroySession } from '../_lib/auth.js';
+import { authenticateAdmin, createSession, validateSession, destroySession, hashPassword } from '../_lib/auth.js';
+import { readAdmins, writeAdmins } from '../_lib/data.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (cors(req, res)) return;
@@ -55,5 +56,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ success: true, username: session.username });
   }
 
-  return res.status(400).json({ success: false, error: 'Invalid action. Use: login, logout, check' });
+  // POST /api/admin/auth?action=changePassword
+  if (action === 'changePassword' && req.method === 'POST') {
+    const sessionId = req.headers['x-session-id'] as string;
+    if (!sessionId) {
+      return res.status(401).json({ success: false, error: 'Not authenticated' });
+    }
+    const session = validateSession(sessionId);
+    if (!session) {
+      return res.status(401).json({ success: false, error: 'Session expired' });
+    }
+
+    try {
+      const { currentPassword, newPassword } = req.body || {};
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ success: false, error: 'Aktuelles und neues Passwort erforderlich' });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({ success: false, error: 'Neues Passwort muss mindestens 6 Zeichen lang sein' });
+      }
+
+      const admins = await readAdmins();
+      const admin = admins.find((a: any) => a.username === session.username);
+      if (!admin) {
+        return res.status(404).json({ success: false, error: 'Admin nicht gefunden' });
+      }
+
+      if (admin.password !== hashPassword(currentPassword)) {
+        return res.status(401).json({ success: false, error: 'Aktuelles Passwort ist falsch' });
+      }
+
+      admin.password = hashPassword(newPassword);
+      await writeAdmins(admins);
+
+      return res.status(200).json({ success: true, message: 'Passwort erfolgreich geändert' });
+    } catch (error: any) {
+      console.error('Change password error:', error);
+      return res.status(500).json({ success: false, error: 'Server error' });
+    }
+  }
+
+  return res.status(400).json({ success: false, error: 'Invalid action' });
 }

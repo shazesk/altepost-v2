@@ -208,6 +208,102 @@ export function voucherConfirmation(data: { buyerName: string; voucherDetails: s
   `);
 }
 
+export function reservationPaymentRequest(data: {
+  name: string;
+  eventTitle: string;
+  eventDate: string;
+  eventTime: string;
+  ticketCount: string;
+  totalPrice: string;
+  paymentReference: string;
+  iban: string;
+  bic: string;
+  accountHolder: string;
+  bankName: string;
+}) {
+  return layout(`
+    <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Ihre Reservierung – Zahlungsinformationen</h2>
+    <p>Liebe/r ${data.name},</p>
+    <p>vielen Dank für Ihre Reservierung! Hier die Details:</p>
+    <div style="background:#faf9f7;padding:16px;border-radius:6px;margin:16px 0;border-left:4px solid #6b8e6f">
+      <strong>${data.eventTitle}</strong><br>
+      ${data.eventDate}, ${data.eventTime}<br>
+      ${data.ticketCount} Ticket(s) – <strong>${data.totalPrice} EUR</strong>
+    </div>
+    <h3 style="margin:24px 0 8px;color:#2d2d2d">Bitte überweisen Sie den Gesamtbetrag</h3>
+    ${dataTable(
+      row('Kontoinhaber', data.accountHolder) +
+      row('IBAN', `<code style="font-family:monospace">${data.iban}</code>`) +
+      row('BIC', `<code style="font-family:monospace">${data.bic}</code>`) +
+      row('Bank', data.bankName) +
+      row('Betrag', `<strong>${data.totalPrice} EUR</strong>`) +
+      row('Verwendungszweck', `<strong style="color:#6b8e6f;font-family:monospace;font-size:16px">${data.paymentReference}</strong>`)
+    )}
+    <p style="background:#fff8e1;padding:12px;border-radius:6px;border-left:4px solid #f0ad4e;margin:16px 0">
+      <strong>Wichtig:</strong> Bitte geben Sie unbedingt den Verwendungszweck <code style="background:#fff;padding:2px 6px;border-radius:3px">${data.paymentReference}</code> bei der Überweisung an, damit wir Ihre Zahlung zuordnen können.
+    </p>
+    <p>Ihre Tickets sind reserviert. Sobald die Zahlung bei uns eingegangen ist, erhalten Sie eine separate Bestätigungs-E-Mail.</p>
+    <p style="margin-top:24px">Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>
+  `);
+}
+
+export function reservationPaymentConfirmed(data: {
+  name: string;
+  eventTitle: string;
+  eventDate: string;
+  eventTime: string;
+  ticketCount: string;
+  paymentReference: string;
+  qrUrl: string;
+}) {
+  return layout(`
+    <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Zahlung bestätigt – Ihr Ticket</h2>
+    <p>Liebe/r ${data.name},</p>
+    <p>vielen Dank! Wir haben Ihre Zahlung erhalten. Ihre Tickets sind nun fest gebucht.</p>
+    <div style="background:#faf9f7;padding:16px;border-radius:6px;margin:16px 0;border-left:4px solid #6b8e6f">
+      <strong>${data.eventTitle}</strong><br>
+      ${data.eventDate}, ${data.eventTime}<br>
+      ${data.ticketCount} Ticket(s)
+    </div>
+    <h3 style="margin:24px 0 8px;color:#2d2d2d;text-align:center">Ihr Eintritts-QR-Code</h3>
+    <div style="text-align:center;margin:16px 0">
+      <img src="${data.qrUrl}" alt="QR-Code" style="width:200px;height:200px;border:1px solid rgba(107,142,111,0.2);border-radius:6px;padding:8px;background:#fff" />
+      <div style="margin-top:8px;color:#666;font-size:13px">Buchungs-Nr.: <strong>${data.paymentReference}</strong></div>
+    </div>
+    <p style="text-align:center;color:#666;font-size:14px">Bitte zeigen Sie diesen QR-Code beim Einlass vor (digital oder ausgedruckt).</p>
+    <p style="margin-top:24px">Wir freuen uns auf Ihren Besuch!<br><br>Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>
+  `);
+}
+
+export function reservationPaymentReminder(data: {
+  name: string;
+  eventTitle: string;
+  eventDate: string;
+  totalPrice: string;
+  paymentReference: string;
+  iban: string;
+}) {
+  return layout(`
+    <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Erinnerung: Ihre Reservierung</h2>
+    <p>Liebe/r ${data.name},</p>
+    <p>vor einer Woche haben Sie für die folgende Veranstaltung reserviert:</p>
+    <div style="background:#faf9f7;padding:16px;border-radius:6px;margin:16px 0;border-left:4px solid #6b8e6f">
+      <strong>${data.eventTitle}</strong><br>
+      ${data.eventDate}<br>
+      Betrag: <strong>${data.totalPrice} EUR</strong>
+    </div>
+    <p>Wir konnten bisher keinen Zahlungseingang feststellen. Falls Sie bereits überwiesen haben, ignorieren Sie diese E-Mail bitte – möglicherweise ist die Zahlung gerade noch unterwegs.</p>
+    <p>Falls nicht, hier nochmals die Daten:</p>
+    ${dataTable(
+      row('IBAN', `<code style="font-family:monospace">${data.iban}</code>`) +
+      row('Betrag', `<strong>${data.totalPrice} EUR</strong>`) +
+      row('Verwendungszweck', `<strong style="color:#6b8e6f;font-family:monospace">${data.paymentReference}</strong>`)
+    )}
+    <p>Sie können auch gerne an der Abendkasse bar bezahlen.</p>
+    <p style="margin-top:24px">Mit freundlichen Grüßen,<br>Ihr Team der Alten Post Brensbach</p>
+  `);
+}
+
 interface InfoPostEvent {
   id: number;
   title: string;

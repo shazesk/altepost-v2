@@ -1,6 +1,6 @@
 import React from "react";
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera, Loader2, CheckCircle2, Bell, Euro } from 'lucide-react';
 
 interface Event {
   id: number;
@@ -38,6 +38,12 @@ interface Reservation {
   status: 'active' | 'archived';
   notes: string;
   createdAt: string;
+  source?: 'public' | 'admin';
+  paymentStatus?: 'pending' | 'paid';
+  paymentReference?: string;
+  totalPrice?: number;
+  paidAt?: string;
+  reminderSentAt?: string;
 }
 
 interface Stats {
@@ -1182,10 +1188,12 @@ export function AdminPage() {
         ? `${API_BASE}/reservations?id=${editingReservation.id}`
         : `${API_BASE}/reservations`;
 
+      const payload = editingReservation ? data : { ...data, source: 'admin' };
+
       const res = await fetch(url, {
         method: editingReservation ? 'PUT' : 'POST',
         headers: { 'x-session-id': sessionId!, 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify(payload)
       });
 
       const result = await res.json();
@@ -1249,6 +1257,45 @@ export function AdminPage() {
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
       loadReservations(); // revert on failure
+    }
+  }
+
+  async function handleMarkReservationPaid(id: number) {
+    if (!confirm('Diese Reservierung als bezahlt markieren? Es wird eine Bestätigungs-E-Mail mit QR-Code versendet.')) return;
+    try {
+      const res = await fetch(`${API_BASE}/reservations?id=${id}&action=markPaid`, {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Als bezahlt markiert. Bestätigungs-E-Mail wurde versendet.', type: 'success' });
+        loadReservations();
+        loadStats();
+      } else {
+        setMessage({ text: data.error || 'Aktion fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    }
+  }
+
+  async function handleSendReservationReminder(id: number) {
+    if (!confirm('Zahlungserinnerung an den Kunden senden?')) return;
+    try {
+      const res = await fetch(`${API_BASE}/reservations?id=${id}&action=sendReminder`, {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId! }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ text: 'Erinnerung versendet.', type: 'success' });
+        loadReservations();
+      } else {
+        setMessage({ text: data.error || 'Versand fehlgeschlagen', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: 'Verbindungsfehler', type: 'error' });
     }
   }
 
@@ -1672,6 +1719,31 @@ export function AdminPage() {
               <div className="text-2xl font-['Playfair_Display',serif] text-[#6b8e6f]">{r.tickets} Tickets</div>
             </div>
 
+            {r.paymentStatus && (
+              <div className="border-t border-[rgba(107,142,111,0.1)] pt-4">
+                <h3 className="font-medium text-[#2d2d2d] mb-2">Zahlung</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                      r.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {r.paymentStatus === 'paid' ? <><CheckCircle2 className="w-3 h-3" />Bezahlt</> : <><Clock className="w-3 h-3" />Offen</>}
+                    </span>
+                    {r.paidAt && <span className="text-sm text-[#666666]">am {formatDate(r.paidAt)}</span>}
+                  </div>
+                  {r.totalPrice !== undefined && (
+                    <div className="text-[#666666]">Betrag: <span className="font-medium text-[#2d2d2d]">{r.totalPrice} €</span></div>
+                  )}
+                  {r.paymentReference && (
+                    <div className="text-[#666666]">Verwendungszweck: <span className="font-mono font-medium text-[#2d2d2d]">{r.paymentReference}</span></div>
+                  )}
+                  {r.reminderSentAt && (
+                    <div className="text-xs text-[#999]">Letzte Erinnerung: {formatDate(r.reminderSentAt)}</div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {r.notes && (
               <div className="border-t border-[rgba(107,142,111,0.1)] pt-4">
                 <h3 className="font-medium text-[#2d2d2d] mb-2">Notizen</h3>
@@ -1685,6 +1757,22 @@ export function AdminPage() {
             </div>
 
             <div className="border-t border-[rgba(107,142,111,0.1)] pt-4 flex gap-2 flex-wrap">
+              {r.paymentStatus === 'pending' && (
+                <>
+                  <button
+                    onClick={() => { handleMarkReservationPaid(r.id); setViewingReservation(null); }}
+                    className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700"
+                  >
+                    <Euro className="w-4 h-4" /> Als bezahlt markieren
+                  </button>
+                  <button
+                    onClick={() => handleSendReservationReminder(r.id)}
+                    className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600"
+                  >
+                    <Bell className="w-4 h-4" /> Erinnerung senden
+                  </button>
+                </>
+              )}
               <a
                 href={`mailto:${r.email}?subject=Ihre Reservierung - ${r.eventTitle}`}
                 className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e]"
@@ -2242,6 +2330,7 @@ export function AdminPage() {
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Name</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Veranstaltung</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Tickets</th>
+                    <th className="text-left p-4 font-medium text-[#2d2d2d]">Zahlung</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Status</th>
                     <th className="text-left p-4 font-medium text-[#2d2d2d]">Datum</th>
                     <th className="text-right p-4 font-medium text-[#2d2d2d]">Aktionen</th>
@@ -2260,6 +2349,25 @@ export function AdminPage() {
                       </td>
                       <td className="p-4 text-[#2d2d2d] font-medium">{r.tickets}</td>
                       <td className="p-4">
+                        {r.paymentStatus ? (
+                          <div>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                              r.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {r.paymentStatus === 'paid' ? <><CheckCircle2 className="w-3 h-3" />Bezahlt</> : <><Clock className="w-3 h-3" />Offen</>}
+                            </span>
+                            {r.totalPrice !== undefined && (
+                              <div className="text-xs text-[#666666] mt-1">{r.totalPrice} €</div>
+                            )}
+                            {r.paymentReference && (
+                              <div className="text-xs text-[#999] font-mono mt-0.5">{r.paymentReference}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#999]">—</span>
+                        )}
+                      </td>
+                      <td className="p-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                           r.status === 'archived' ? 'bg-[#e8e4df] text-[#666666]' : 'bg-green-100 text-green-800'
                         }`}>
@@ -2269,6 +2377,12 @@ export function AdminPage() {
                       <td className="p-4 text-[#666666] text-sm">{formatDate(r.createdAt)}</td>
                       <td className="p-4">
                         <div className="flex justify-end gap-1">
+                          {r.paymentStatus === 'pending' && (
+                            <>
+                              <button onClick={() => handleMarkReservationPaid(r.id)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg" title="Als bezahlt markieren"><Euro className="w-4 h-4" /></button>
+                              <button onClick={() => handleSendReservationReminder(r.id)} className="p-2 text-amber-600 hover:bg-amber-50 rounded-lg" title="Erinnerung senden"><Bell className="w-4 h-4" /></button>
+                            </>
+                          )}
                           <button onClick={() => setViewingReservation(r)} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Details"><Eye className="w-4 h-4" /></button>
                           <a href={`mailto:${r.email}?subject=Ihre Reservierung - ${r.eventTitle}`} className="p-2 text-[#6b8e6f] hover:bg-[#6b8e6f]/10 rounded-lg" title="Antworten"><Mail className="w-4 h-4" /></a>
                           {r.status === 'archived' ? (
@@ -3001,6 +3115,56 @@ export function AdminPage() {
                 Einstellungen werden geladen...
               </div>
             )}
+
+            {/* Change Password */}
+            <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] mt-8">
+              <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">Passwort ändern</h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const currentPassword = (form.elements.namedItem('currentPassword') as HTMLInputElement).value;
+                const newPassword = (form.elements.namedItem('newPassword') as HTMLInputElement).value;
+                const confirmPassword = (form.elements.namedItem('confirmPassword') as HTMLInputElement).value;
+                if (newPassword !== confirmPassword) {
+                  setMessage({ text: 'Neue Passwörter stimmen nicht überein', type: 'error' });
+                  return;
+                }
+                if (newPassword.length < 6) {
+                  setMessage({ text: 'Neues Passwort muss mindestens 6 Zeichen lang sein', type: 'error' });
+                  return;
+                }
+                try {
+                  const res = await fetch(`${API_BASE}/auth?action=changePassword`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-session-id': sessionId! },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setMessage({ text: 'Passwort erfolgreich geändert', type: 'success' });
+                    form.reset();
+                  } else {
+                    setMessage({ text: data.error || 'Fehler beim Ändern des Passworts', type: 'error' });
+                  }
+                } catch {
+                  setMessage({ text: 'Serverfehler', type: 'error' });
+                }
+              }} className="space-y-4 max-w-md">
+                <div>
+                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Aktuelles Passwort</label>
+                  <input type="password" name="currentPassword" required className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Neues Passwort</label>
+                  <input type="password" name="newPassword" required minLength={6} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Neues Passwort bestätigen</label>
+                  <input type="password" name="confirmPassword" required minLength={6} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                </div>
+                <button type="submit" className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">Passwort ändern</button>
+              </form>
+            </div>
           </>
         )}
 
