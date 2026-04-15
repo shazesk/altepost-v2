@@ -5,7 +5,7 @@ import { validateSession } from '../_lib/auth.js';
 import { readEvents, writeEvents, Event } from '../_lib/data.js';
 
 const BUILD_VERSION = 'v4-pretix-sync';
-const PRETIX_API = 'https://pretix.eu/api/v1/organizers/Altepost';
+const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
 
 function generateRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
