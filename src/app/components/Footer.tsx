@@ -165,6 +165,29 @@ export function Footer() {
               </Link>
             </div>
           </div>
+
+          {/* Made by VISUAX */}
+          <div className="mt-8 flex justify-center">
+            <a
+              href="https://visuax.com/?utm_campaign=watermark&utm_medium=badge&utm_source=friedrichholdings.de"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Made by VISUAX"
+              className="group inline-flex items-center gap-2.5 rounded-full bg-black px-4 py-1 ring-1 ring-white/10 shadow-lg hover:ring-white/25 transition-all duration-300"
+            >
+              <span className="text-[11px] font-medium tracking-wide text-white/70 group-hover:text-white/90 transition-colors">Made by</span>
+              <span className="text-sm font-bold tracking-[0.15em] text-white leading-none">VISUAX</span>
+              <img
+                src="/made-by-visuax-dark.gif"
+                alt=""
+                aria-hidden="true"
+                className="h-12 w-auto object-contain"
+                width={600}
+                height={338}
+                loading="lazy"
+              />
+            </a>
+          </div>
         </div>
       </div>
     </footer>
