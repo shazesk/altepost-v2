@@ -12,3 +12,5 @@ api/uploads/*.webp
 .vercel
 .env*.local
 .next/
+project-docs/
+.claude/settings.local.json
