@@ -136,7 +136,6 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
   const eventPayload = {
     name: { de: event.artist ? `${event.title} – ${event.artist}` : event.title },
     slug,
-    live: false,
     currency: 'EUR',
     date_from: dateObj.toISOString(),
     date_to: endDate.toISOString(),
@@ -160,10 +159,12 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
     });
 
     if (!pretixEvent) {
-      // Create new event
+      // Create new event. `live` is set only here: whether a shop is selling is the
+      // Verein's decision, made in Pretix. Sending it on every update would silently
+      // take a published shop offline the next time someone edits the event here.
       pretixEvent = await pretixFetch('/events/', {
         method: 'POST',
-        body: JSON.stringify(eventPayload),
+        body: JSON.stringify({ ...eventPayload, live: false }),
       }, requestId);
 
       if (pretixEvent && pretixEvent.slug) {
