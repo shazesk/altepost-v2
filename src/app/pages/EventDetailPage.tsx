@@ -7,25 +7,41 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 // Must match the organizer the backend syncs to (api/admin/events.ts).
 const PRETIX_ORGANIZER = 'kleinkunstkneipe';
 
+function pretixShopUrl(slug: string): string {
+  return `https://pretix.eu/${PRETIX_ORGANIZER}/${slug}/`;
+}
+
+/**
+ * Whether this event's Pretix shop is published and actually sellable.
+ * `null` while the answer is still unknown.
+ *
+ * The page uses this to pick the booking route: once Pretix is selling an event,
+ * it is the only way to book it. Showing the club's own reservation form beside a
+ * live shop would mean two booking systems sharing seats without knowing it.
+ */
+function usePretixShopAvailable(slug: string | null | undefined): boolean | null {
+  const [available, setAvailable] = useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    if (!slug) { setAvailable(false); return; }
+    let cancelled = false;
+    setAvailable(null);
+    fetch(`${pretixShopUrl(slug)}widget/product_list?lang=de`)
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(data => { if (!cancelled) setAvailable(!data?.error); })
+      .catch(() => { if (!cancelled) setAvailable(false); });
+    return () => { cancelled = true; };
+  }, [slug]);
+
+  return available;
+}
+
 function PretixWidget({ slug }: { slug: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
-  const [shopAvailable, setShopAvailable] = useState<boolean | null>(null);
+  const shopAvailable = true;
 
-  const shopUrl = `https://pretix.eu/${PRETIX_ORGANIZER}/${slug}/`;
-
-  // Ask Pretix whether the shop is actually sellable before mounting the widget.
-  // An unpublished event makes the widget throw and render nothing but its own
-  // "powered by" line, which looked like a broken page.
-  React.useEffect(() => {
-    let cancelled = false;
-    setShopAvailable(null);
-    fetch(`${shopUrl}widget/product_list?lang=de`)
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(data => { if (!cancelled) setShopAvailable(!data?.error); })
-      .catch(() => { if (!cancelled) setShopAvailable(false); });
-    return () => { cancelled = true; };
-  }, [shopUrl]);
+  const shopUrl = pretixShopUrl(slug);
 
   // Pretix ships the widget's own stylesheet per shop. Without it the widget
   // renders unstyled. It is swapped whenever the event changes and removed on
@@ -145,6 +161,7 @@ export function EventDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [recommendations, setRecommendations] = useState<EventData[]>([]);
+  const pretixSelling = usePretixShopAvailable(event?.pretixSlug);
 
   const allPhotos = event ? [...(event.image ? [event.image] : []), ...(event.photos || [])] : [];
 
@@ -376,7 +393,10 @@ export function EventDetailPage() {
               {config && (
                 <span className={`text-sm ${config.color}`}>{config.text}</span>
               )}
-              {!isFreeEvent && (
+              {/* Once Pretix is selling this event it owns the booking. The club's
+                  own reservation form only appears as the fallback for events with
+                  no live shop, so the two can never sell the same seat twice. */}
+              {!isFreeEvent && pretixSelling !== true && (
                 <Link
                   to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
                   state={isSoldOutOrPast ? undefined : { event }}
@@ -407,7 +427,7 @@ export function EventDetailPage() {
               })()}
             </div>
             {/* Pretix ticket widget */}
-            {event.pretixSlug && !isSoldOutOrPast && (
+            {event.pretixSlug && pretixSelling === true && !isSoldOutOrPast && (
               <PretixWidget slug={event.pretixSlug} />
             )}
           </div>
