@@ -3,6 +3,7 @@ import { put } from '@vercel/blob';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
 import { readEvents, writeEvents, readReservations, writeReservations, readSettings, Event } from '../_lib/data.js';
+import { SITE_URL } from '../_lib/send.js';
 
 const BUILD_VERSION = 'v5-pretix-tz-fix';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
@@ -117,6 +118,29 @@ async function venueAddress(): Promise<string> {
   return 'KleinKunstKneipe Alte Post, 64395 Brensbach';
 }
 
+/**
+ * Language, contact address and imprint link are event *settings* in Pretix, not
+ * fields on the event itself — passing them in the event payload is silently
+ * ignored. Without them a new shop renders in English and Pretix refuses to
+ * publish it at all ("public contact address" and "imprint link" required).
+ */
+async function applyPretixEventSettings(slug: string, requestId: string): Promise<void> {
+  const settings = await readSettings().catch(() => null);
+  const contactMail = settings?.contact?.emailTickets || settings?.contact?.emailGeneral;
+  const payload: Record<string, any> = {
+    locales: ['de'],
+    locale: 'de',
+    imprint_url: `${SITE_URL}/impressum`,
+  };
+  if (contactMail) payload.contact_mail = contactMail;
+
+  const res = await pretixFetch(`/events/${slug}/settings/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  }, requestId);
+  log(requestId, res ? 'Pretix event settings applied' : 'Pretix event settings FAILED', { slug });
+}
+
 async function syncEventToPretix(event: Event, requestId: string): Promise<string | null> {
   const token = process.env.PRETIX_API_TOKEN;
   if (!token) {
@@ -145,10 +169,6 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
     geo_lat: '49.7741',
     geo_lon: '8.8789',
     timezone: 'Europe/Berlin',
-    // Without these the shop defaults to English, which is wrong for a German
-    // Verein — the whole checkout rendered in English.
-    locales: ['de'],
-    locale: 'de',
   };
 
   try {
@@ -169,6 +189,8 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
 
       if (pretixEvent && pretixEvent.slug) {
         log(requestId, 'Pretix event created', { slug: pretixEvent.slug });
+
+        await applyPretixEventSettings(pretixEvent.slug, requestId);
 
         // Create ticket items
         const price = event.price || 0;

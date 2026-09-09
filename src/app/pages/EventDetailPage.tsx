@@ -390,7 +390,10 @@ export function EventDetailPage() {
         {!event.is_archived && (
           <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              {config && (
+              {/* This count is derived from the club's own reservations, so once
+                  Pretix is selling it is blind to real sales and would advertise
+                  seats that are already gone. The widget shows live availability. */}
+              {config && pretixSelling !== true && (
                 <span className={`text-sm ${config.color}`}>{config.text}</span>
               )}
               {/* Once Pretix is selling this event it owns the booking. The club's
