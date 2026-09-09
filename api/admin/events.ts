@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { put } from '@vercel/blob';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
-import { readEvents, writeEvents, readReservations, writeReservations, Event } from '../_lib/data.js';
+import { readEvents, writeEvents, readReservations, writeReservations, readSettings, Event } from '../_lib/data.js';
 
 const BUILD_VERSION = 'v5-pretix-tz-fix';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
@@ -102,6 +102,21 @@ async function pretixFetch(path: string, options: RequestInit = {}, requestId?: 
   return res.json();
 }
 
+// The venue shown on the Pretix shop. Read from site settings so it is corrected
+// in one place rather than hardcoded here, where it had drifted from the Impressum.
+async function venueAddress(): Promise<string> {
+  try {
+    const settings = await readSettings();
+    const name = settings?.organization?.name || 'KleinKunstKneipe Alte Post';
+    const { street, postalCode, city } = settings?.address || ({} as any);
+    const parts = [name, street, [postalCode, city].filter(Boolean).join(' ')].filter(Boolean);
+    if (parts.length > 1) return parts.join(', ');
+  } catch {
+    /* fall through */
+  }
+  return 'KleinKunstKneipe Alte Post, 64395 Brensbach';
+}
+
 async function syncEventToPretix(event: Event, requestId: string): Promise<string | null> {
   const token = process.env.PRETIX_API_TOKEN;
   if (!token) {
@@ -127,10 +142,14 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
     date_to: endDate.toISOString(),
     date_admission: admissionDate.toISOString(),
     is_public: event.active !== false,
-    location: { de: 'KleinKunstKneipe Alte Post, Hauptstraße 15, 64395 Brensbach' },
+    location: { de: await venueAddress() },
     geo_lat: '49.7741',
     geo_lon: '8.8789',
     timezone: 'Europe/Berlin',
+    // Without these the shop defaults to English, which is wrong for a German
+    // Verein — the whole checkout rendered in English.
+    locales: ['de'],
+    locale: 'de',
   };
 
   try {
