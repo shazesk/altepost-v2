@@ -247,6 +247,34 @@ const defaultSettings: SiteSettings = {
   },
 };
 
+// Derived from the seeded value rather than retyped, so the two cannot drift apart.
+const PLACEHOLDER_IBAN = (defaultSettings.bank?.iban || '').replace(/\s/g, '').toUpperCase();
+
+export interface BankDetails {
+  accountHolder: string;
+  iban: string;
+  bic: string;
+  bankName: string;
+}
+
+/**
+ * Returns the configured bank account, or null when the Verein has not entered a
+ * real one yet. Callers must treat null as "do not send" — mailing the seeded
+ * placeholder IBAN would ask a customer to transfer money to a dead account.
+ */
+export function resolveBank(settings: SiteSettings | null | undefined): BankDetails | null {
+  const bank = settings?.bank;
+  const iban = String(bank?.iban || '').trim();
+  if (!iban) return null;
+  if (iban.replace(/\s/g, '').toUpperCase() === PLACEHOLDER_IBAN) return null;
+  return {
+    accountHolder: bank?.accountHolder || settings?.organization?.name || '',
+    iban,
+    bic: bank?.bic || '',
+    bankName: bank?.bankName || '',
+  };
+}
+
 // ============ EVENTS ============
 export async function readEvents(): Promise<Event[]> {
   if (isRedisConfigured()) {

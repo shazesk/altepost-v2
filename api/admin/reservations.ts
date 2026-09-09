@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
-import { readEvents, readReservations, writeReservations, readSettings, Reservation } from '../_lib/data.js';
-import { sendEmail, generateRequestId, log, reservationPaymentRequest, reservationPaymentConfirmed, reservationPaymentReminder } from '../_lib/send.js';
+import { readEvents, readReservations, writeReservations, readSettings, resolveBank, Reservation } from '../_lib/data.js';
+import { sendEmail, configureEmailFooter, generateRequestId, log, reservationPaymentRequest, reservationPaymentConfirmed, reservationPaymentReminder } from '../_lib/send.js';
 
 function pad2(n: number): string { return n < 10 ? `0${n}` : `${n}`; }
 
@@ -71,6 +71,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Send payment-confirmed email
       try {
+        configureEmailFooter(await readSettings());
         const events = await readEvents();
         const event = events.find(e => e.id === reservation.eventId);
         const html = reservationPaymentConfirmed({
@@ -101,11 +102,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (reservation.paymentStatus === 'paid') {
         return res.status(400).json({ success: false, error: 'Reservation is already paid' });
       }
+      const settings = await readSettings();
+      configureEmailFooter(settings);
+      const bank = resolveBank(settings);
+      if (!bank) {
+        log(requestId, 'reminder blocked - no bank details configured', { reservationId });
+        return res.status(400).json({
+          success: false,
+          error: 'Es ist noch keine Bankverbindung hinterlegt. Bitte unter Einstellungen > Bankverbindung eintragen.',
+        });
+      }
       try {
         const events = await readEvents();
         const event = events.find(e => e.id === reservation.eventId);
-        const settings = await readSettings();
-        const bank = settings.bank || { iban: 'DE00 0000 0000 0000 0000 00' } as any;
         const html = reservationPaymentReminder({
           name: reservation.name,
           eventTitle: event?.title || reservation.eventTitle || 'Veranstaltung',
@@ -239,14 +248,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Send payment-request email for admin-created (phone-call) reservations
     if (isAdminFlow && event) {
+      const settings = await readSettings();
+      configureEmailFooter(settings);
+      const bank = resolveBank(settings);
+      if (!bank) {
+        // The reservation itself is saved; only the payment mail is withheld so
+        // nobody is asked to transfer money to a placeholder account.
+        log(requestId, 'payment-request skipped - no bank details configured', { reservationId: newReservation.id });
+        return res.status(200).json({
+          success: true,
+          data: newReservation,
+          warning: 'Reservierung gespeichert, aber es wurde keine Zahlungs-E-Mail versendet: Es ist noch keine Bankverbindung hinterlegt (Einstellungen > Bankverbindung).',
+        });
+      }
       try {
-        const settings = await readSettings();
-        const bank = settings.bank || {
-          accountHolder: 'KleinKunstKneipe Alte Post Brensbach e.V.',
-          iban: 'DE00 0000 0000 0000 0000 00',
-          bic: 'XXXXDEXXXXX',
-          bankName: 'Sparkasse Odenwaldkreis',
-        };
         const html = reservationPaymentRequest({
           name,
           eventTitle: event.title,

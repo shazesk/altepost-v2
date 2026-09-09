@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
 import { cors } from '../_lib/cors.js';
-import { sendEmail, generateRequestId, log, infoPostEmail } from '../_lib/send.js';
+import { sendEmail, configureEmailFooter, generateRequestId, log, infoPostEmail, SITE_URL } from '../_lib/send.js';
 import { validateSession } from '../_lib/auth.js';
 import {
   readNewsletterIssues,
@@ -12,7 +12,7 @@ import {
   readEvents,
 } from '../_lib/data.js';
 
-const BASE_URL = 'https://friedrichholdings.de';
+const BASE_URL = SITE_URL;
 
 function ensureUnsubscribeToken(subscriber: { unsubscribeToken?: string }): string {
   if (subscriber.unsubscribeToken) return subscriber.unsubscribeToken;

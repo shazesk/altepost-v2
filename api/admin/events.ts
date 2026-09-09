@@ -2,9 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { put } from '@vercel/blob';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
-import { readEvents, writeEvents, Event } from '../_lib/data.js';
+import { readEvents, writeEvents, readReservations, writeReservations, Event } from '../_lib/data.js';
 
-const BUILD_VERSION = 'v4-pretix-sync';
+const BUILD_VERSION = 'v5-pretix-tz-fix';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
 
 function generateRequestId(): string {
@@ -28,6 +28,40 @@ function getMonthYear(dateStr: string): string {
   return `${month} ${year}`;
 }
 
+// The Vercel runtime is UTC, so `setHours` on a Date would store a 20:00 show as
+// 20:00 UTC — 22:00 in Brensbach. These two helpers pin the wall-clock time to
+// Europe/Berlin regardless of where the function runs.
+function berlinOffsetMinutes(instant: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Europe/Berlin',
+    hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(instant).reduce<Record<string, string>>((acc, p) => {
+    if (p.type !== 'literal') acc[p.type] = p.value;
+    return acc;
+  }, {});
+  const asUTC = Date.UTC(
+    Number(parts.year), Number(parts.month) - 1, Number(parts.day),
+    Number(parts.hour) % 24, Number(parts.minute), Number(parts.second)
+  );
+  return (asUTC - instant.getTime()) / 60000;
+}
+
+function berlinWallClockToDate(dateStr: string, timeStr: string): Date {
+  const [y, mo, d] = String(dateStr).slice(0, 10).split('-').map(Number);
+  const [hhRaw, mmRaw] = String(timeStr || '20:00').split(':');
+  const hh = parseInt(hhRaw, 10) || 0;
+  const mm = parseInt(mmRaw || '0', 10) || 0;
+  const naive = Date.UTC(y, (mo || 1) - 1, d || 1, hh, mm, 0);
+  // Two passes so the DST changeover days resolve correctly.
+  let instant = new Date(naive);
+  for (let i = 0; i < 2; i++) {
+    instant = new Date(naive - berlinOffsetMinutes(instant) * 60000);
+  }
+  return instant;
+}
+
 function generateSlug(title: string, date: string): string {
   const year = new Date(date).getFullYear();
   const slug = title
@@ -39,7 +73,7 @@ function generateSlug(title: string, date: string): string {
   return `${slug}-${year}`;
 }
 
-async function pretixFetch(path: string, options: RequestInit = {}): Promise<any> {
+async function pretixFetch(path: string, options: RequestInit = {}, requestId?: string): Promise<any> {
   const token = process.env.PRETIX_API_TOKEN;
   if (!token) return null;
 
@@ -51,7 +85,20 @@ async function pretixFetch(path: string, options: RequestInit = {}): Promise<any
       ...(options.headers || {}),
     },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // A 404 on PATCH is the normal "event does not exist yet" path, so only the
+    // body of a real failure is worth keeping.
+    if (requestId && res.status !== 404) {
+      const body = await res.text().catch(() => '');
+      log(requestId, 'Pretix API call failed', {
+        path,
+        method: options.method || 'GET',
+        status: res.status,
+        body: body.slice(0, 500),
+      });
+    }
+    return null;
+  }
   return res.json();
 }
 
@@ -66,9 +113,7 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
   if (event.eventType === 'private') return event.pretixSlug || null;
 
   const slug = event.pretixSlug || generateSlug(event.title, event.date);
-  const dateObj = new Date(event.date);
-  const timeParts = (event.time || '20:00').split(':');
-  dateObj.setHours(parseInt(timeParts[0]), parseInt(timeParts[1] || '0'));
+  const dateObj = berlinWallClockToDate(event.date, event.time);
 
   const endDate = new Date(dateObj.getTime() + 3 * 60 * 60 * 1000); // +3 hours
   const admissionDate = new Date(dateObj.getTime() - 90 * 60 * 1000); // -1.5 hours before
@@ -100,7 +145,7 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
       pretixEvent = await pretixFetch('/events/', {
         method: 'POST',
         body: JSON.stringify(eventPayload),
-      });
+      }, requestId);
 
       if (pretixEvent && pretixEvent.slug) {
         log(requestId, 'Pretix event created', { slug: pretixEvent.slug });
@@ -112,30 +157,30 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
           const item1 = await pretixFetch(`/events/${slug}/items/`, {
             method: 'POST',
             body: JSON.stringify({ name: { de: 'Eintrittskarte' }, default_price: price.toFixed(2), admission: true, active: true }),
-          });
+          }, requestId);
           const reducedPrice = Math.ceil(price / 2);
           const item2 = await pretixFetch(`/events/${slug}/items/`, {
             method: 'POST',
             body: JSON.stringify({ name: { de: 'Ermäßigt' }, default_price: reducedPrice.toFixed(2), admission: true, active: true }),
-          });
+          }, requestId);
           const itemIds = [item1?.id, item2?.id].filter(Boolean);
           if (itemIds.length > 0) {
             await pretixFetch(`/events/${slug}/quotas/`, {
               method: 'POST',
               body: JSON.stringify({ name: 'Kapazität', size: event.maxTickets || 80, items: itemIds }),
-            });
+            }, requestId);
           }
         } else {
           // Free event
           const item = await pretixFetch(`/events/${slug}/items/`, {
             method: 'POST',
             body: JSON.stringify({ name: { de: 'Eintritt frei' }, default_price: '0.00', admission: true, active: true }),
-          });
+          }, requestId);
           if (item?.id) {
             await pretixFetch(`/events/${slug}/quotas/`, {
               method: 'POST',
               body: JSON.stringify({ name: 'Kapazität', size: event.maxTickets || 150, items: [item.id] }),
-            });
+            }, requestId);
           }
         }
       }
@@ -143,10 +188,39 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
       log(requestId, 'Pretix event updated', { slug });
     }
 
-    return pretixEvent?.slug || slug;
+    // Only claim a slug once Pretix has confirmed the event exists. Returning the
+    // locally generated slug on a failed create used to leave the event pointing
+    // at a shop that was never created, which rendered a dead ticket widget.
+    if (!pretixEvent?.slug) {
+      log(requestId, 'Pretix sync did not confirm an event; slug not stored', { slug });
+      return event.pretixSlug || null;
+    }
+    return pretixEvent.slug;
   } catch (err: any) {
     log(requestId, 'Pretix sync error', { error: err.message });
     return event.pretixSlug || null;
+  }
+}
+
+// Deleting an event used to leave its reservations pointing at a missing id, which
+// showed up in the admin as "Unbekannt". Keep the records — they are customer data —
+// but stamp the title so they stay readable and move them out of the active list.
+async function detachReservationsFromEvent(event: Event, requestId: string): Promise<number> {
+  try {
+    const reservations = await readReservations();
+    let touched = 0;
+    for (const r of reservations) {
+      if (r.eventId !== event.id) continue;
+      if (!r.eventTitle) r.eventTitle = event.title;
+      r.status = 'archived';
+      touched++;
+    }
+    if (touched > 0) await writeReservations(reservations);
+    log(requestId, 'Reservations detached from deleted event', { eventId: event.id, count: touched });
+    return touched;
+  } catch (err: any) {
+    log(requestId, 'Reservation detach failed', { eventId: event.id, error: err.message });
+    return 0;
   }
 }
 
@@ -243,6 +317,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       const deletedEvent = events.splice(eventIndex, 1)[0];
       await writeEvents(events);
+
+      await detachReservationsFromEvent(deletedEvent, requestId);
 
       // Delete from Pretix
       if (deletedEvent.pretixSlug) await deletePretixEvent(deletedEvent.pretixSlug, requestId);
@@ -477,6 +553,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const deletedEvent = events.splice(eventIndex, 1)[0];
     await writeEvents(events);
+
+    await detachReservationsFromEvent(deletedEvent, requestId);
 
     if (deletedEvent.pretixSlug) await deletePretixEvent(deletedEvent.pretixSlug, requestId);
 

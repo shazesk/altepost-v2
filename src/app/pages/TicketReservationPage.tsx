@@ -72,6 +72,12 @@ export function TicketReservationPage() {
         }),
       });
       const data = await res.json();
+      // 409 means the seats went while the page was open — show that message as-is
+      // rather than dressing it up as a temporary failure.
+      if (res.status === 409) {
+        setError(data.error || 'Diese Veranstaltung ist leider ausverkauft.');
+        return;
+      }
       if (!res.ok || !data.success) throw new Error(data.error || `HTTP ${res.status}`);
       setIsSubmitted(true);
     } catch (err: any) {

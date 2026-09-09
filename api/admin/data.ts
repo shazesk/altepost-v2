@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
+import { SITE_URL } from '../_lib/send.js';
 import {
   readEvents,
   readReservations,
@@ -502,5 +503,5 @@ function unsubPage(title: string, message: string): string {
 <html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>${title} – Alte Post Brensbach</title>
 <style>body{margin:0;padding:40px 20px;background:#faf9f7;font-family:'Inter',Arial,sans-serif;color:#2d2d2d}.card{max-width:500px;margin:0 auto;background:#fff;border-radius:8px;padding:40px;text-align:center;border:1px solid rgba(107,142,111,0.2)}h1{font-family:'Playfair Display',Georgia,serif;font-size:24px;margin:0 0 16px}p{color:#666;line-height:1.6;margin:0 0 24px}a{color:#6b8e6f;text-decoration:underline}</style>
-</head><body><div class="card"><h1>${title}</h1><p>${message}</p><a href="https://friedrichholdings.de">Zurück zur Webseite</a></div></body></html>`;
+</head><body><div class="card"><h1>${title}</h1><p>${message}</p><a href="${SITE_URL}">Zurück zur Webseite</a></div></body></html>`;
 }

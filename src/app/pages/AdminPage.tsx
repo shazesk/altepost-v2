@@ -132,6 +132,12 @@ interface SiteSettings {
   };
   officeHours: { days: string; hours: string };
   images?: { logo: string; hero: string };
+  bank?: {
+    accountHolder: string;
+    iban: string;
+    bic: string;
+    bankName: string;
+  };
 }
 
 interface Sponsor {
@@ -648,15 +654,18 @@ export function AdminPage() {
 
   function generatePreviewHtml(title: string, introText: string, selectedIds: number[]) {
     const selectedEvts = events.filter(e => selectedIds.includes(e.id));
+    // The preview linked to /programm/:id on a host with no DNS record; the real
+    // route is /veranstaltung/:id on whatever origin the admin is served from.
+    const siteOrigin = window.location.origin;
     const eventsHtml = selectedEvts.length > 0
       ? `<h3 style="margin:24px 0 12px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Kommende Veranstaltungen</h3>` +
         selectedEvts.map(ev => `
           <div style="background:#faf9f7;border-radius:6px;padding:16px;margin-bottom:12px;border-left:4px solid #6b8e6f">
             ${ev.image ? `<img src="${ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
-            <a href="https://friedrichholdings.de/programm/${ev.id}" style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px;text-decoration:none;display:block"><strong>${ev.title}</strong></a>
+            <a href="${siteOrigin}/veranstaltung/${ev.id}" style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px;text-decoration:none;display:block"><strong>${ev.title}</strong></a>
             <div style="color:#666;font-size:14px;margin-bottom:4px">${ev.artist}</div>
             <div style="color:#6b8e6f;font-size:14px;font-weight:600">${ev.date}, ${ev.time}</div>
-            <a href="https://friedrichholdings.de/programm/${ev.id}" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
+            <a href="${siteOrigin}/veranstaltung/${ev.id}" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
           </div>
         `).join('')
       : '';
@@ -884,15 +893,74 @@ export function AdminPage() {
     }
   }
 
+  async function persistGallery(next: Array<{ id: number; position: number; image: string; alt: string; label: string }>) {
+    const res = await fetch(`${API_BASE}/data?type=gallery`, {
+      method: 'PUT',
+      headers: {
+        'x-session-id': sessionId!,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(next)
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Speichern fehlgeschlagen');
+    setGalleryImages(next);
+  }
+
+  async function handleAddGalleryImage() {
+    setSavingGallery(true);
+    try {
+      const nextPosition = galleryImages.length > 0 ? Math.max(...galleryImages.map(g => g.position)) + 1 : 0;
+      const nextId = galleryImages.length > 0 ? Math.max(...galleryImages.map(g => g.id)) + 1 : 1;
+      const next = [
+        ...galleryImages,
+        { id: nextId, position: nextPosition, image: '', alt: '', label: `Bild ${nextPosition + 1}` },
+      ];
+      await persistGallery(next);
+      setEditingGallerySlot(nextPosition);
+      setGalleryAlt('');
+      setGalleryImagePreview(null);
+      setGalleryImageFile(null);
+      setMessage({ text: 'Neuer Galerie-Platz angelegt', type: 'success' });
+    } catch (e: any) {
+      setMessage({ text: e.message || 'Verbindungsfehler', type: 'error' });
+    } finally {
+      setSavingGallery(false);
+    }
+  }
+
+  async function handleDeleteGalleryImage(position: number) {
+    setSavingGallery(true);
+    try {
+      const next = galleryImages
+        .filter(img => img.position !== position)
+        .map((img, i) => ({ ...img, position: i }));
+      await persistGallery(next);
+      if (editingGallerySlot === position) setEditingGallerySlot(null);
+      setMessage({ text: 'Galerie-Bild gelöscht', type: 'success' });
+    } catch (e: any) {
+      setMessage({ text: e.message || 'Verbindungsfehler', type: 'error' });
+    } finally {
+      setSavingGallery(false);
+    }
+  }
+
   async function handleSaveGallerySlot() {
     if (editingGallerySlot === null) return;
     setSavingGallery(true);
     try {
+      // Gallery images used to be stored as base64 data URIs inside the gallery
+      // record itself, which bloated every read of it. Push them to Blob storage
+      // like event images and keep only the URL.
+      let imageUrl = galleryImagePreview;
+      if (imageUrl && imageUrl.startsWith('data:')) {
+        imageUrl = await uploadToBlob(imageUrl, galleryImageFile?.name || `gallery-${editingGallerySlot}.jpg`);
+      }
       const updated = galleryImages.map(img => {
         if (img.position === editingGallerySlot) {
           return {
             ...img,
-            image: galleryImagePreview || img.image,
+            image: imageUrl || img.image,
             alt: galleryAlt || img.alt
           };
         }
@@ -1199,7 +1267,11 @@ export function AdminPage() {
       const result = await res.json();
 
       if (result.success) {
-        setMessage({ text: editingReservation ? 'Reservierung aktualisiert' : 'Reservierung erstellt', type: 'success' });
+        // The API returns a warning when it saved the reservation but withheld the
+        // payment e-mail, e.g. because no bank details are configured yet.
+        setMessage(result.warning
+          ? { text: result.warning, type: 'error' }
+          : { text: editingReservation ? 'Reservierung aktualisiert' : 'Reservierung erstellt', type: 'success' });
         setEditingReservation(null);
         setIsCreatingReservation(false);
         loadReservations();
@@ -1543,30 +1615,36 @@ export function AdminPage() {
         days: formData.get('hours_days') as string,
         hours: formData.get('hours_hours') as string,
       },
+      bank: {
+        accountHolder: formData.get('bank_accountHolder') as string,
+        iban: formData.get('bank_iban') as string,
+        bic: formData.get('bank_bic') as string,
+        bankName: formData.get('bank_bankName') as string,
+      },
       images: {
         logo: siteSettings?.images?.logo || '/logo.png',
         hero: siteSettings?.images?.hero || '/hero-band.jpg',
       },
     };
 
-    // Handle logo upload
-    if (logoFile) {
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(logoFile);
-      });
-      updatedSettings.images!.logo = base64;
-    }
+    // Logo and hero go to Blob storage. They used to be inlined as base64 in the
+    // settings record, which every public page load then had to download.
+    const readAsDataUrl = (file: File) => new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
 
-    // Handle hero image upload
-    if (heroFile) {
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(heroFile);
-      });
-      updatedSettings.images!.hero = base64;
+    try {
+      if (logoFile) {
+        updatedSettings.images!.logo = await uploadToBlob(await readAsDataUrl(logoFile), logoFile.name);
+      }
+      if (heroFile) {
+        updatedSettings.images!.hero = await uploadToBlob(await readAsDataUrl(heroFile), heroFile.name);
+      }
+    } catch (err: any) {
+      setMessage({ text: err.message || 'Bild-Upload fehlgeschlagen', type: 'error' });
+      return;
     }
 
     try {
@@ -3101,6 +3179,31 @@ export function AdminPage() {
                   </div>
                 </div>
 
+                {/* Bank details — used in the payment request and reminder e-mails
+                    for reservations taken over the phone. */}
+                <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)]">
+                  <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-1">Bankverbindung</h3>
+                  <p className="text-sm text-[#666666] mb-4">Diese Angaben erscheinen in den Zahlungs-E-Mails für telefonische Reservierungen.</p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Kontoinhaber</label>
+                      <input type="text" name="bank_accountHolder" defaultValue={siteSettings.bank?.accountHolder || ''} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Bank</label>
+                      <input type="text" name="bank_bankName" defaultValue={siteSettings.bank?.bankName || ''} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">IBAN</label>
+                      <input type="text" name="bank_iban" defaultValue={siteSettings.bank?.iban || ''} disabled={!editingSettings} placeholder="DE00 0000 0000 0000 0000 00" className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-[#2d2d2d] mb-1">BIC</label>
+                      <input type="text" name="bank_bic" defaultValue={siteSettings.bank?.bic || ''} disabled={!editingSettings} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]" />
+                    </div>
+                  </div>
+                </div>
+
                 {editingSettings && (
                   <div className="flex gap-4">
                     <button type="submit" className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">Speichern</button>
@@ -3173,6 +3276,14 @@ export function AdminPage() {
           <>
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Galerie verwalten</h2>
+              <button
+                onClick={handleAddGalleryImage}
+                disabled={savingGallery}
+                className="flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
+              >
+                <Plus className="w-5 h-5" />
+                Bild hinzufügen
+              </button>
             </div>
             <p className="text-[#666666] mb-6">Verwalten Sie die Bilder der Instagram-Galerie auf der Startseite. Klicken Sie auf ein Bild, um es zu ändern.</p>
 
@@ -3185,11 +3296,17 @@ export function AdminPage() {
                   <div>
                     <label className="block text-sm font-medium text-[#2d2d2d] mb-2">Aktuelles Bild</label>
                     <div className="w-full h-48 bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)]">
-                      <img
-                        src={galleryImagePreview || galleryImages.find(g => g.position === editingGallerySlot)?.image}
-                        alt="Vorschau"
-                        className="w-full h-full object-cover"
-                      />
+                      {(galleryImagePreview || galleryImages.find(g => g.position === editingGallerySlot)?.image) ? (
+                        <img
+                          src={galleryImagePreview || galleryImages.find(g => g.position === editingGallerySlot)?.image}
+                          alt="Vorschau"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[#999999] text-sm">
+                          Noch kein Bild ausgewählt
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-4">
@@ -3233,8 +3350,21 @@ export function AdminPage() {
               </div>
             ) : null}
 
+            {galleryImages.length === 0 ? (
+              <div className="bg-white rounded-xl p-10 border border-[rgba(107,142,111,0.2)] text-center">
+                <p className="text-[#666666] mb-4">Noch keine Galerie-Bilder vorhanden.</p>
+                <button
+                  onClick={handleAddGalleryImage}
+                  disabled={savingGallery}
+                  className="inline-flex items-center gap-2 bg-[#6b8e6f] text-white px-4 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-50"
+                >
+                  <Plus className="w-5 h-5" />
+                  Erstes Bild hinzufügen
+                </button>
+              </div>
+            ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {galleryImages
+              {[...galleryImages]
                 .sort((a, b) => a.position - b.position)
                 .map((img) => (
                 <div
@@ -3243,18 +3373,33 @@ export function AdminPage() {
                   className="cursor-pointer group relative bg-white rounded-xl overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg"
                 >
                   <div className={`overflow-hidden ${img.position === 0 ? 'aspect-square' : img.position === 1 || img.position === 4 ? 'aspect-[1/2]' : 'aspect-square'}`}>
-                    <img src={img.image} alt={img.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    {img.image ? (
+                      <img src={img.image} alt={img.alt} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    ) : (
+                      <div className="w-full h-full bg-[#faf9f7] flex items-center justify-center text-[#999999] text-sm">
+                        Kein Bild
+                      </div>
+                    )}
                   </div>
                   <div className="p-3">
                     <p className="text-sm font-medium text-[#2d2d2d]">{img.label}</p>
                     <p className="text-xs text-[#666666] truncate">{img.alt}</p>
                   </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDeleteGalleryImage(img.position); }}
+                    disabled={savingGallery}
+                    aria-label="Bild löschen"
+                    className="absolute top-2 right-2 z-10 p-1.5 rounded-lg bg-white/90 text-[#c0392b] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <Edit2 className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
               ))}
             </div>
+            )}
           </>
         )}
 

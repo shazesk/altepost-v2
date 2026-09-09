@@ -25,8 +25,10 @@ export function Footer() {
               Steuernummer: {settings.organization.taxNumber}
             </div>
 
-            {/* Social Media */}
+            {/* Social Media — only rendered once a URL is configured, otherwise
+                the icons were dead links that just reloaded the page. */}
             <div className="mt-6 flex gap-4">
+              {settings.social.instagram && (
               <a
                 href={settings.social.instagram}
                 target="_blank"
@@ -36,6 +38,8 @@ export function Footer() {
               >
                 <Instagram className="h-5 w-5" />
               </a>
+              )}
+              {settings.social.facebook && (
               <a
                 href={settings.social.facebook}
                 target="_blank"
@@ -45,6 +49,7 @@ export function Footer() {
               >
                 <Facebook className="h-5 w-5" />
               </a>
+              )}
             </div>
 
             {/* Made by VISUAX */}

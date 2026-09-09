@@ -16,6 +16,14 @@ export function log(requestId: string, message: string, data?: any) {
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS || 'Alte Post Brensbach <noreply@friedrichholdings.de>';
 
+// Public origin used for links inside e-mails. The bare domain has no DNS record,
+// so linking to it produced dead links in every newsletter.
+export const SITE_URL = (
+  process.env.PUBLIC_BASE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '') ||
+  'https://www.friedrichholdings.de'
+).replace(/\/$/, '');
+
 interface SendEmailOptions {
   to: string;
   subject: string;
@@ -47,6 +55,29 @@ export async function sendEmail({ to, subject, html, replyTo, requestId }: SendE
 
 // --- EMAIL TEMPLATES ---
 
+// The e-mail footer used to hardcode an address that matched neither the site
+// settings nor the Impressum. Handlers call configureEmailFooter() with the saved
+// settings so there is one source of truth; the fallback only applies if that read
+// fails.
+let emailFooter = {
+  organization: 'KleinKunstKneipe Alte Post Brensbach e.V.',
+  address: '',
+};
+
+export function configureEmailFooter(settings: any): void {
+  const org = settings?.organization?.name;
+  const street = settings?.address?.street;
+  const postalCode = settings?.address?.postalCode;
+  const city = settings?.address?.city;
+  if (org) emailFooter.organization = org;
+  const line = [street, [postalCode, city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  if (line) emailFooter.address = line;
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function layout(content: string): string {
   return `<!DOCTYPE html>
 <html lang="de">
@@ -60,8 +91,7 @@ function layout(content: string): string {
 </td></tr>
 <tr><td style="padding:32px">${content}</td></tr>
 <tr><td style="background:#faf9f7;padding:20px 32px;text-align:center;font-size:12px;color:#999">
-  KleinKunstKneipe Alte Post Brensbach e.V.<br>
-  Darmstädter Str. 42, 64395 Brensbach
+  ${escapeHtml(emailFooter.organization)}${emailFooter.address ? `<br>\n  ${escapeHtml(emailFooter.address)}` : ''}
 </td></tr>
 </table>
 </td></tr>
@@ -318,11 +348,11 @@ export function infoPostEmail(data: { title: string; introText: string; events: 
     ? `<h3 style="margin:24px 0 12px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">Kommende Veranstaltungen</h3>` +
       data.events.map(ev => `
         <div style="background:#faf9f7;border-radius:6px;padding:16px;margin-bottom:12px;border-left:4px solid #6b8e6f">
-          ${ev.image ? `<img src="${ev.image.startsWith('http') ? ev.image : 'https://friedrichholdings.de' + ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
-          <a href="https://friedrichholdings.de/veranstaltung/${ev.id}" style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px;text-decoration:none;display:block"><strong>${ev.title}</strong></a>
+          ${ev.image ? `<img src="${ev.image.startsWith('http') ? ev.image : SITE_URL + ev.image}" alt="${ev.title}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px" />` : ''}
+          <a href="${SITE_URL}/veranstaltung/${ev.id}" style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:#2d2d2d;margin-bottom:4px;text-decoration:none;display:block"><strong>${ev.title}</strong></a>
           <div style="color:#666;font-size:14px;margin-bottom:4px">${ev.artist}</div>
           <div style="color:#6b8e6f;font-size:14px;font-weight:600">${ev.date}, ${ev.time}</div>
-          <a href="https://friedrichholdings.de/veranstaltung/${ev.id}" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
+          <a href="${SITE_URL}/veranstaltung/${ev.id}" style="display:inline-block;margin-top:8px;color:#6b8e6f;font-size:13px;text-decoration:underline">Tickets reservieren</a>
         </div>
       `).join('')
     : '';
@@ -337,7 +367,7 @@ export function infoPostEmail(data: { title: string; introText: string; events: 
 <tr><td style="background:#6b8e6f;padding:24px 32px;text-align:center">
   <h1 style="margin:0;color:#fff;font-family:'Playfair Display',Georgia,serif;font-size:22px">Newsletter</h1>
   <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px">KleinKunstKneipe Alte Post e.V.</p>
-  <a href="https://friedrichholdings.de" style="color:rgba(255,255,255,0.7);font-size:12px;text-decoration:underline">friedrichholdings.de</a>
+  <a href="${SITE_URL}" style="color:rgba(255,255,255,0.7);font-size:12px;text-decoration:underline">${SITE_URL.replace(/^https?:\/\//, '')}</a>
 </td></tr>
 <tr><td style="padding:32px">
   <h2 style="margin:0 0 16px;font-family:'Playfair Display',Georgia,serif;color:#2d2d2d">${data.title}</h2>

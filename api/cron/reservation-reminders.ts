@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readEvents, readReservations, writeReservations, readSettings } from '../_lib/data.js';
-import { sendEmail, generateRequestId, log, reservationPaymentReminder } from '../_lib/send.js';
+import { readEvents, readReservations, writeReservations, readSettings, resolveBank } from '../_lib/data.js';
+import { sendEmail, configureEmailFooter, generateRequestId, log, reservationPaymentReminder } from '../_lib/send.js';
 
 const REMINDER_AFTER_DAYS = 7;
 
@@ -29,15 +29,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const reservations = await readReservations();
   const events = await readEvents();
   const settings = await readSettings();
-  const bank = settings.bank || { iban: 'DE00 0000 0000 0000 0000 00' } as any;
+  configureEmailFooter(settings);
+  const bank = resolveBank(settings);
+  if (!bank) {
+    // Better to send nothing than to mail out a placeholder account number.
+    log(requestId, 'cron: skipped - no bank details configured');
+    return res.status(200).json({ success: true, skipped: 'no-bank-details', sent: 0 });
+  }
 
   const now = Date.now();
   const cutoff = REMINDER_AFTER_DAYS * 24 * 60 * 60 * 1000;
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
   const candidates = reservations.filter(r => {
     if (r.paymentStatus !== 'pending') return false;
     if (r.status === 'archived') return false;
     if (r.reminderSentAt) return false; // only send once
+    // Never chase payment for a show that has already taken place.
+    const event = events.find(e => e.id === r.eventId);
+    if (event) {
+      const eventDate = new Date(event.date);
+      eventDate.setHours(0, 0, 0, 0);
+      if (eventDate.getTime() < startOfToday.getTime()) return false;
+    }
     const ageMs = now - new Date(r.createdAt).getTime();
     return ageMs >= cutoff;
   });

@@ -4,35 +4,77 @@ import { useParams, Link } from 'react-router-dom';
 import { Calendar, CalendarPlus, Clock, Euro, Ticket, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 
+// Must match the organizer the backend syncs to (api/admin/events.ts).
+const PRETIX_ORGANIZER = 'kleinkunstkneipe';
+
 function PretixWidget({ slug }: { slug: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
+  const [shopAvailable, setShopAvailable] = useState<boolean | null>(null);
+
+  const shopUrl = `https://pretix.eu/${PRETIX_ORGANIZER}/${slug}/`;
+
+  // Ask Pretix whether the shop is actually sellable before mounting the widget.
+  // An unpublished event makes the widget throw and render nothing but its own
+  // "powered by" line, which looked like a broken page.
+  React.useEffect(() => {
+    let cancelled = false;
+    setShopAvailable(null);
+    fetch(`${shopUrl}widget/product_list?lang=de`)
+      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(data => { if (!cancelled) setShopAvailable(!data?.error); })
+      .catch(() => { if (!cancelled) setShopAvailable(false); });
+    return () => { cancelled = true; };
+  }, [shopUrl]);
+
+  // Pretix ships the widget's own stylesheet per shop. Without it the widget
+  // renders unstyled. It is swapped whenever the event changes and removed on
+  // unmount so its rules do not leak onto other pages.
+  React.useEffect(() => {
+    if (shopAvailable !== true) return;
+    const styleId = 'pretix-widget-style';
+    let link = document.getElementById(styleId) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = styleId;
+      link.rel = 'stylesheet';
+      link.type = 'text/css';
+      link.crossOrigin = 'anonymous';
+      document.head.appendChild(link);
+    }
+    link.href = `${shopUrl}widget/v2.css`;
+    return () => {
+      document.getElementById(styleId)?.remove();
+    };
+  }, [shopAvailable, shopUrl]);
 
   React.useEffect(() => {
+    if (shopAvailable !== true) return;
     const scriptId = 'pretix-widget-script';
     let script = document.getElementById(scriptId) as HTMLScriptElement | null;
     if (!script) {
       script = document.createElement('script');
       script.id = scriptId;
-      script.src = 'https://pretix.eu/widget/v1.de.js';
+      script.src = 'https://pretix.eu/widget/v2.de.js';
       script.async = true;
+      script.crossOrigin = 'anonymous';
       script.onload = () => setLoaded(true);
       script.onerror = () => setLoaded(false);
       document.head.appendChild(script);
     } else {
       setLoaded(true);
     }
-  }, []);
+  }, [shopAvailable]);
 
   React.useEffect(() => {
     if (!loaded || !ref.current) return;
     ref.current.innerHTML = '';
     const widget = document.createElement('pretix-widget');
-    widget.setAttribute('event', `https://pretix.eu/Altepost/${slug}/`);
+    widget.setAttribute('event', shopUrl);
     ref.current.appendChild(widget);
-  }, [slug, loaded]);
+  }, [shopUrl, loaded]);
 
-  if (!loaded) return null;
+  if (shopAvailable !== true || !loaded) return null;
   return <div ref={ref} className="mt-6" />;
 }
 

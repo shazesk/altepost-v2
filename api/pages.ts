@@ -101,6 +101,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       now.setHours(0, 0, 0, 0);
       const archivedEvents = events
         .filter(e => {
+          // Never expose inactive or private events publicly, archived or not
+          if (e.active === false) return false;
+          if (e.eventType === 'private') return false;
           if (e.is_archived) return true;
           const eventDate = new Date(e.date);
           eventDate.setHours(0, 0, 0, 0);
