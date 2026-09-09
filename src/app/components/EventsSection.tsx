@@ -358,7 +358,7 @@ function EventCard({ event }: { event: Event }) {
             </div>
           </div>
           <div className="flex items-center justify-between relative z-20">
-            <span className={`text-sm ${config.color}`}>{config.text}</span>
+            {config && <span className={`text-sm ${config.color}`}>{config.text}</span>}
             <div className="flex items-center gap-2">
               {!event.is_past && (() => {
                 const calUrl = buildGoogleCalendarUrl(event);
@@ -419,7 +419,7 @@ function EventListItem({ event }: { event: Event }) {
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <span className="inline-block rounded-full bg-[#e8e4df] px-3 py-1 text-xs text-[#666666]">{event.genre}</span>
-            <span className={`text-sm ${config.color}`}>{config.text}</span>
+            {config && <span className={`text-sm ${config.color}`}>{config.text}</span>}
           </div>
           <h3 className="font-['Playfair_Display',serif] text-xl lg:text-2xl text-[#2d2d2d] mb-1">{event.title}</h3>
           <p className="text-[#666666] mb-2">{event.artist}</p>
