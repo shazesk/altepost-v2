@@ -1,6 +1,7 @@
 import React from "react";
 import { useState, useEffect } from 'react';
 import { Calendar, CalendarPlus, Clock, Euro, Ticket, Grid, List, Download, Gift } from 'lucide-react';
+import { usePretixShopAvailable } from '../lib/pretix';
 // Build trigger: ticket-reservation-fix-v2
 import { Link } from 'react-router-dom';
 import { ImageWithFallback } from './figma/ImageWithFallback';
@@ -317,7 +318,9 @@ function getAvailabilityDisplay(event: Event) {
 }
 
 function EventCard({ event }: { event: Event }) {
-  const config = getAvailabilityDisplay(event);
+  const pretixSelling = usePretixShopAvailable(event.pretixSlug);
+  // Derived from the club's own reservations, so it is blind to Pretix sales.
+  const config = pretixSelling === true ? null : getAvailabilityDisplay(event);
   const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
 
   return (
@@ -373,8 +376,8 @@ function EventCard({ event }: { event: Event }) {
               })()}
               {!isFreeEvent(event) && (
                 <Link
-                  to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
-                  state={isSoldOutOrPast ? undefined : { event }}
+                  to={isSoldOutOrPast ? '#' : pretixSelling === true ? `/veranstaltung/${event.id}` : '/ticket-reservation'}
+                  state={isSoldOutOrPast || pretixSelling === true ? undefined : { event }}
                   className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
                     isSoldOutOrPast
                       ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'
@@ -395,7 +398,9 @@ function EventCard({ event }: { event: Event }) {
 }
 
 function EventListItem({ event }: { event: Event }) {
-  const config = getAvailabilityDisplay(event);
+  const pretixSelling = usePretixShopAvailable(event.pretixSlug);
+  // Derived from the club's own reservations, so it is blind to Pretix sales.
+  const config = pretixSelling === true ? null : getAvailabilityDisplay(event);
   const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
 
   return (
@@ -450,8 +455,8 @@ function EventListItem({ event }: { event: Event }) {
           })()}
           {!isFreeEvent(event) && (
             <Link
-              to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
-              state={isSoldOutOrPast ? undefined : { event }}
+              to={isSoldOutOrPast ? '#' : pretixSelling === true ? `/veranstaltung/${event.id}` : '/ticket-reservation'}
+              state={isSoldOutOrPast || pretixSelling === true ? undefined : { event }}
               className={`inline-flex items-center gap-2 rounded-md px-4 py-2 transition-colors ${
                 isSoldOutOrPast
                   ? 'bg-[#e8e4df] text-[#666666] cursor-not-allowed'

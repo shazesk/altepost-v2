@@ -3,38 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, CalendarPlus, Clock, Euro, Ticket, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
-
-// Must match the organizer the backend syncs to (api/admin/events.ts).
-const PRETIX_ORGANIZER = 'kleinkunstkneipe';
-
-function pretixShopUrl(slug: string): string {
-  return `https://pretix.eu/${PRETIX_ORGANIZER}/${slug}/`;
-}
-
-/**
- * Whether this event's Pretix shop is published and actually sellable.
- * `null` while the answer is still unknown.
- *
- * The page uses this to pick the booking route: once Pretix is selling an event,
- * it is the only way to book it. Showing the club's own reservation form beside a
- * live shop would mean two booking systems sharing seats without knowing it.
- */
-function usePretixShopAvailable(slug: string | null | undefined): boolean | null {
-  const [available, setAvailable] = useState<boolean | null>(null);
-
-  React.useEffect(() => {
-    if (!slug) { setAvailable(false); return; }
-    let cancelled = false;
-    setAvailable(null);
-    fetch(`${pretixShopUrl(slug)}widget/product_list?lang=de`)
-      .then(r => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(data => { if (!cancelled) setAvailable(!data?.error); })
-      .catch(() => { if (!cancelled) setAvailable(false); });
-    return () => { cancelled = true; };
-  }, [slug]);
-
-  return available;
-}
+import { pretixShopUrl, usePretixShopAvailable } from '../lib/pretix';
 
 function PretixWidget({ slug }: { slug: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
