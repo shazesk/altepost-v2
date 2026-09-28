@@ -1,6 +1,6 @@
 import React from "react";
 import { useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, Link, Navigate } from 'react-router-dom';
 import { Ticket, User, Mail, Phone, Users, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface Event {
@@ -15,7 +15,6 @@ interface Event {
 
 export function TicketReservationPage() {
   const location = useLocation();
-  const navigate = useNavigate();
   const event = location.state?.event as Event | undefined;
 
   const [formData, setFormData] = useState({
@@ -32,10 +31,11 @@ export function TicketReservationPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // If no event data, redirect to tickets page
+  // Opened directly (a bookmark or a reload without the chosen event) there is
+  // nothing to reserve. Calling navigate() during render is ignored by the router
+  // and left the page blank, so redirect declaratively instead.
   if (!event && !isSubmitted) {
-    navigate('/tickets');
-    return null;
+    return <Navigate to="/tickets" replace />;
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
