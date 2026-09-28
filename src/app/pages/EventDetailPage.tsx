@@ -70,6 +70,7 @@ interface EventData {
   date: string;
   time: string;
   admissionTime?: string | null;
+  onlineSalesEnded?: boolean;
   price: string;
   genre: string;
   month: string;
@@ -237,7 +238,10 @@ export function EventDetailPage() {
   }
 
   const isFreeEvent = event.price === 'Eintritt frei' || event.price === '0,00 EUR';
-  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
+  // Online booking closes with the presale; the Pretix shop stops selling at the
+  // same moment, so the club's own form must not take over as a fallback.
+  const salesClosed = !event.is_past && !!event.onlineSalesEnded && !isFreeEvent;
+  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out' || salesClosed;
 
   const config = (() => {
     if (event.is_past) return { text: 'Veranstaltung beendet', color: 'text-[#666666]' };
@@ -363,13 +367,16 @@ export function EventDetailPage() {
               {/* This count is derived from the club's own reservations, so once
                   Pretix is selling it is blind to real sales and would advertise
                   seats that are already gone. The widget shows live availability. */}
-              {config && pretixSelling !== true && (
+              {salesClosed && (
+                <span className="text-sm text-[#666666]">Online-Vorverkauf beendet – Restkarten an der Abendkasse</span>
+              )}
+              {config && !salesClosed && pretixSelling !== true && (
                 <span className={`text-sm ${config.color}`}>{config.text}</span>
               )}
               {/* Once Pretix is selling this event it owns the booking. The club's
                   own reservation form only appears as the fallback for events with
                   no live shop, so the two can never sell the same seat twice. */}
-              {!isFreeEvent && pretixSelling !== true && (
+              {!isFreeEvent && !salesClosed && pretixSelling !== true && (
                 <Link
                   to={isSoldOutOrPast ? '#' : '/ticket-reservation'}
                   state={isSoldOutOrPast ? undefined : { event }}

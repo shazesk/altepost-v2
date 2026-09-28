@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { X, Loader2, ImageIcon } from 'lucide-react';
+import { X, Loader2, ImageIcon, Trash2 } from 'lucide-react';
 
 export interface MediaImage {
   url: string;
   // Where the file lives, shown so editors can tell uploads from website files.
   location: string;
   name: string;
+  // Only uploads can be deleted; website files are part of the code.
+  deletable?: boolean;
 }
 
 interface MediaLibraryProps {
@@ -35,6 +37,28 @@ export function MediaLibrary({ open, apiBase, sessionId, extraImages = [], onSel
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function deleteImage(url: string) {
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch(`${apiBase}/events?action=delete-image`, {
+        method: 'POST',
+        headers: { 'x-session-id': sessionId, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || 'Löschen fehlgeschlagen');
+      setUploads(prev => prev.filter(img => img.url !== url));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(null);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -47,7 +71,7 @@ export function MediaLibrary({ open, apiBase, sessionId, extraImages = [], onSel
         setUploads(
           (data.data as { url: string; pathname: string }[])
             .filter(b => /\.(png|jpe?g|gif|webp|svg)$/i.test(b.pathname))
-            .map(b => ({ url: b.url, location: describeBlob(b.pathname), name: b.pathname.split('/').pop() || b.pathname }))
+            .map(b => ({ url: b.url, location: describeBlob(b.pathname), name: b.pathname.split('/').pop() || b.pathname, deletable: true }))
         );
       })
       .catch(err => setError(err.message))
@@ -96,7 +120,7 @@ export function MediaLibrary({ open, apiBase, sessionId, extraImages = [], onSel
               <Loader2 className="w-6 h-6 animate-spin mr-2" /> Bilder werden geladen…
             </div>
           )}
-          {error && <p className="text-[#8b4454] text-sm mb-4">Upload-Speicher konnte nicht geladen werden: {error}</p>}
+          {error && <p className="text-[#8b4454] text-sm mb-4">Fehler im Upload-Speicher: {error}</p>}
           {!loading && shown.length === 0 && (
             <div className="flex flex-col items-center py-12 text-[#666666]">
               <ImageIcon className="w-8 h-8 mb-2" /> Keine Bilder gefunden
@@ -104,20 +128,59 @@ export function MediaLibrary({ open, apiBase, sessionId, extraImages = [], onSel
           )}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {shown.map(img => (
-              <button
+              <div
                 key={img.url}
-                onClick={() => { onSelect(img.url); onClose(); }}
-                className="text-left border border-[rgba(107,142,111,0.2)] rounded-lg overflow-hidden hover:border-[#6b8e6f] hover:shadow transition"
-                title={img.url}
+                className="relative border border-[rgba(107,142,111,0.2)] rounded-lg overflow-hidden hover:border-[#6b8e6f] hover:shadow transition"
               >
-                <div className="h-28 bg-[#faf9f7] flex items-center justify-center p-2">
-                  <img src={img.url} alt={img.name} loading="lazy" className="max-h-full max-w-full object-contain" />
-                </div>
-                <div className="px-2 py-1.5">
-                  <div className="text-xs text-[#2d2d2d] truncate">{img.name}</div>
-                  <div className="text-[11px] text-[#666666] truncate">{img.location}</div>
-                </div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => { onSelect(img.url); onClose(); }}
+                  className="block w-full text-left"
+                  title={img.url}
+                >
+                  <div className="h-28 bg-[#faf9f7] flex items-center justify-center p-2">
+                    <img src={img.url} alt={img.name} loading="lazy" className="max-h-full max-w-full object-contain" />
+                  </div>
+                  <div className="px-2 py-1.5 pr-8">
+                    <div className="text-xs text-[#2d2d2d] truncate">{img.name}</div>
+                    <div className="text-[11px] text-[#666666] truncate">{img.location}</div>
+                  </div>
+                </button>
+                {img.deletable && confirmDelete !== img.url && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(img.url)}
+                    className="absolute bottom-1.5 right-1.5 p-1 rounded text-[#8b4454] hover:bg-[#f5e9ec]"
+                    title="Bild löschen"
+                    aria-label={`${img.name} löschen`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {confirmDelete === img.url && (
+                  <div className="absolute inset-0 bg-white/95 flex flex-col items-center justify-center gap-2 p-2 text-center">
+                    <p className="text-xs text-[#2d2d2d]">Bild endgültig löschen? Wo es noch verwendet wird, fehlt es danach.</p>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={deleting}
+                        onClick={() => deleteImage(img.url)}
+                        className="px-3 py-1 rounded text-xs bg-[#8b4454] text-white hover:bg-[#7a3343] disabled:opacity-50"
+                      >
+                        {deleting ? 'Löscht…' : 'Löschen'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={deleting}
+                        onClick={() => setConfirmDelete(null)}
+                        className="px-3 py-1 rounded text-xs bg-[#e8e4df] text-[#2d2d2d]"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </div>

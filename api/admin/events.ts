@@ -1,11 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { put, list } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
 import { readEvents, writeEvents, readReservations, writeReservations, readSettings, Event } from '../_lib/data.js';
 import { SITE_URL } from '../_lib/send.js';
+import { berlinWallClockToDate, presaleEndDate } from '../_lib/berlin-time.js';
 
-const BUILD_VERSION = 'v6-pretix-template';
+const BUILD_VERSION = 'v7-pretix-no-drift';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
 
 function generateRequestId(): string {
@@ -27,40 +28,6 @@ function getMonthYear(dateStr: string): string {
   const month = monthNames[String(date.getMonth() + 1).padStart(2, '0')];
   const year = date.getFullYear();
   return `${month} ${year}`;
-}
-
-// The Vercel runtime is UTC, so `setHours` on a Date would store a 20:00 show as
-// 20:00 UTC — 22:00 in Brensbach. These two helpers pin the wall-clock time to
-// Europe/Berlin regardless of where the function runs.
-function berlinOffsetMinutes(instant: Date): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Europe/Berlin',
-    hour12: false,
-    year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit',
-  }).formatToParts(instant).reduce<Record<string, string>>((acc, p) => {
-    if (p.type !== 'literal') acc[p.type] = p.value;
-    return acc;
-  }, {});
-  const asUTC = Date.UTC(
-    Number(parts.year), Number(parts.month) - 1, Number(parts.day),
-    Number(parts.hour) % 24, Number(parts.minute), Number(parts.second)
-  );
-  return (asUTC - instant.getTime()) / 60000;
-}
-
-function berlinWallClockToDate(dateStr: string, timeStr: string): Date {
-  const [y, mo, d] = String(dateStr).slice(0, 10).split('-').map(Number);
-  const [hhRaw, mmRaw] = String(timeStr || '20:00').split(':');
-  const hh = parseInt(hhRaw, 10) || 0;
-  const mm = parseInt(mmRaw || '0', 10) || 0;
-  const naive = Date.UTC(y, (mo || 1) - 1, d || 1, hh, mm, 0);
-  // Two passes so the DST changeover days resolve correctly.
-  let instant = new Date(naive);
-  for (let i = 0; i < 2; i++) {
-    instant = new Date(naive - berlinOffsetMinutes(instant) * 60000);
-  }
-  return instant;
 }
 
 function generateSlug(title: string, date: string): string {
@@ -146,17 +113,6 @@ async function applyPretixEventSettings(slug: string, requestId: string): Promis
 // API, so they are configured once on this event in Pretix and copied on create.
 const PRETIX_TEMPLATE_SLUG = 'vorlage';
 
-const PRESALE_DAYS_BEFORE = 3;
-
-// Online sales close at the end of the last selling day, Berlin time. Without an
-// explicit date that day is three days before the show.
-function presaleEndDate(event: Event): Date {
-  if (event.presaleEnd) return berlinWallClockToDate(event.presaleEnd, '23:59');
-  const [y, m, d] = String(event.date).slice(0, 10).split('-').map(Number);
-  const lastDay = new Date(Date.UTC(y, m - 1, d - PRESALE_DAYS_BEFORE));
-  return berlinWallClockToDate(lastDay.toISOString().slice(0, 10), '23:59');
-}
-
 // Checkout asks for e-mail and phone once per order; tickets are not personalised.
 // Sent apart from the language settings so an unknown key cannot block those.
 async function applyPretixCheckoutSettings(slug: string, requestId: string): Promise<void> {
@@ -175,32 +131,55 @@ async function applyPretixCheckoutSettings(slug: string, requestId: string): Pro
 // The CMS status is the master: an active event sells, an inactive one does not.
 // Kept out of the main PATCH because Pretix rejects going live while the shop is
 // incomplete (e.g. no payment method), which must not block the date/name update.
-async function setPretixLive(slug: string, live: boolean, requestId: string): Promise<void> {
+async function setPretixLive(slug: string, live: boolean, requestId: string): Promise<boolean> {
   const res = await pretixFetch(`/events/${slug}/`, {
     method: 'PATCH',
     body: JSON.stringify({ live }),
   }, requestId);
   log(requestId, res ? 'Pretix shop status set' : 'Pretix shop status FAILED', { slug, live });
+  return !!res;
 }
 
-// A copied event carries the template's products and quota; bring price and
-// capacity in line with this event.
-async function alignClonedProducts(slug: string, event: Event, requestId: string): Promise<void> {
-  const price = (event.price || 0).toFixed(2);
+// Whether the shop should sell: only public programme events that are active and
+// not archived. Everything else is closed so it cannot sell unseen.
+function shouldSell(event: Event): boolean {
+  return event.active !== false && !event.is_archived && event.eventType !== 'private';
+}
+
+// Keep price and capacity in Pretix equal to the CMS, on create and on every edit.
+// Only the ticket types this sync creates are touched: "Eintrittskarte" / "Eintritt
+// frei" carry the CMS price and the legacy "Ermäßigt" half of it; anything an
+// editor added by hand in Pretix is left alone.
+async function syncPretixProducts(slug: string, event: Event, requestId: string): Promise<boolean> {
+  let ok = true;
+  const price = event.price || 0;
   const items = await pretixFetch(`/events/${slug}/items/`, {}, requestId);
-  for (const item of items?.results || []) {
-    await pretixFetch(`/events/${slug}/items/${item.id}/`, {
+  if (!items) return false;
+  for (const item of items.results || []) {
+    const name = item.name?.de || item.name?.en || '';
+    let target: number | null = null;
+    if (name === 'Eintrittskarte' || name === 'Eintritt frei') target = price;
+    else if (name === 'Ermäßigt') target = Math.ceil(price / 2);
+    if (target === null || Number(item.default_price) === target) continue;
+    const res = await pretixFetch(`/events/${slug}/items/${item.id}/`, {
       method: 'PATCH',
-      body: JSON.stringify({ default_price: price }),
+      body: JSON.stringify({ default_price: target.toFixed(2) }),
     }, requestId);
+    if (!res) ok = false;
   }
-  const quotas = await pretixFetch(`/events/${slug}/quotas/`, {}, requestId);
-  for (const quota of quotas?.results || []) {
-    await pretixFetch(`/events/${slug}/quotas/${quota.id}/`, {
-      method: 'PATCH',
-      body: JSON.stringify({ size: event.maxTickets || 30 }),
-    }, requestId);
+  if (event.maxTickets != null) {
+    const quotas = await pretixFetch(`/events/${slug}/quotas/`, {}, requestId);
+    if (!quotas) return false;
+    for (const quota of quotas.results || []) {
+      if (quota.size === event.maxTickets) continue;
+      const res = await pretixFetch(`/events/${slug}/quotas/${quota.id}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ size: event.maxTickets }),
+      }, requestId);
+      if (!res) ok = false;
+    }
   }
+  return ok;
 }
 
 // Fallback when the template event is missing: products and quota built by hand.
@@ -224,15 +203,26 @@ async function createPretixProducts(slug: string, event: Event, requestId: strin
   }
 }
 
-async function syncEventToPretix(event: Event, requestId: string): Promise<string | null> {
+interface PretixSyncResult {
+  slug: string | null;
+  // false when Pretix did not take every change; the editor is told so.
+  ok: boolean;
+}
+
+async function syncEventToPretix(event: Event, requestId: string): Promise<PretixSyncResult> {
   const token = process.env.PRETIX_API_TOKEN;
   if (!token) {
     log(requestId, 'Pretix sync skipped - no API token');
-    return event.pretixSlug || null;
+    return { slug: event.pretixSlug || null, ok: true };
   }
 
-  // Only sync program events (not private)
-  if (event.eventType === 'private') return event.pretixSlug || null;
+  // Private events are never sold online. One that used to be public keeps its
+  // Pretix event, so its shop is closed rather than left selling.
+  if (event.eventType === 'private') {
+    if (!event.pretixSlug) return { slug: null, ok: true };
+    const ok = await setPretixLive(event.pretixSlug, false, requestId);
+    return { slug: event.pretixSlug, ok };
+  }
 
   const slug = event.pretixSlug || generateSlug(event.title, event.date);
   const dateObj = berlinWallClockToDate(event.date, event.time);
@@ -248,7 +238,7 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
       ? berlinWallClockToDate(event.date, event.admissionTime).toISOString()
       : null,
     presale_end: presaleEndDate(event).toISOString(),
-    is_public: event.active !== false,
+    is_public: shouldSell(event),
     location: { de: await venueAddress() },
     geo_lat: '49.7741',
     geo_lon: '8.8789',
@@ -256,13 +246,22 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
   };
 
   try {
-    // Try to update existing event first
-    let pretixEvent = await pretixFetch(`/events/${slug}/`, {
+    // Update first. Only a 404 means "not in Pretix yet"; any other failure must not
+    // fall through to creating a second event under the same name.
+    const patch = await fetch(`${PRETIX_API}/events/${slug}/`, {
       method: 'PATCH',
+      headers: { 'Authorization': `Token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(eventPayload),
     });
-
-    if (!pretixEvent) {
+    let pretixEvent: any = null;
+    if (patch.ok) {
+      pretixEvent = await patch.json();
+      log(requestId, 'Pretix event updated', { slug });
+    } else if (patch.status !== 404) {
+      const body = await patch.text().catch(() => '');
+      log(requestId, 'Pretix event update FAILED', { slug, status: patch.status, body: body.slice(0, 500) });
+      return { slug: event.pretixSlug || null, ok: false };
+    } else {
       // Create as a copy of the template so payment, tickets and checkout
       // questions come along. Always created offline; setPretixLive below decides.
       pretixEvent = await pretixFetch(`/events/${PRETIX_TEMPLATE_SLUG}/clone/`, {
@@ -272,7 +271,6 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
 
       if (pretixEvent?.slug) {
         log(requestId, 'Pretix event created from template', { slug: pretixEvent.slug });
-        await alignClonedProducts(pretixEvent.slug, event, requestId);
       } else {
         log(requestId, 'Pretix template copy failed, creating a bare event', { template: PRETIX_TEMPLATE_SLUG });
         pretixEvent = await pretixFetch('/events/', {
@@ -284,8 +282,6 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
           await createPretixProducts(pretixEvent.slug, event, requestId);
         }
       }
-    } else {
-      log(requestId, 'Pretix event updated', { slug });
     }
 
     // Only claim a slug once Pretix has confirmed the event exists. Returning the
@@ -293,16 +289,17 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
     // at a shop that was never created, which rendered a dead ticket widget.
     if (!pretixEvent?.slug) {
       log(requestId, 'Pretix sync did not confirm an event; slug not stored', { slug });
-      return event.pretixSlug || null;
+      return { slug: event.pretixSlug || null, ok: false };
     }
 
+    const productsOk = await syncPretixProducts(pretixEvent.slug, event, requestId);
     await applyPretixEventSettings(pretixEvent.slug, requestId);
     await applyPretixCheckoutSettings(pretixEvent.slug, requestId);
-    await setPretixLive(pretixEvent.slug, event.active !== false, requestId);
-    return pretixEvent.slug;
+    const liveOk = await setPretixLive(pretixEvent.slug, shouldSell(event), requestId);
+    return { slug: pretixEvent.slug, ok: productsOk && liveOk };
   } catch (err: any) {
     log(requestId, 'Pretix sync error', { error: err.message });
-    return event.pretixSlug || null;
+    return { slug: event.pretixSlug || null, ok: false };
   }
 }
 
@@ -332,11 +329,14 @@ async function deletePretixEvent(slug: string, requestId: string): Promise<void>
   const token = process.env.PRETIX_API_TOKEN;
   if (!token || !slug) return;
   try {
-    await fetch(`${PRETIX_API}/events/${slug}/`, {
+    // Pretix refuses to delete an event that has orders. Close the shop first so
+    // such an event at least stops selling once it is gone from the website.
+    await setPretixLive(slug, false, requestId);
+    const res = await fetch(`${PRETIX_API}/events/${slug}/`, {
       method: 'DELETE',
       headers: { 'Authorization': `Token ${token}` },
     });
-    log(requestId, 'Pretix event deleted', { slug });
+    log(requestId, res.ok ? 'Pretix event deleted' : 'Pretix event kept (has orders?), shop closed', { slug, status: res.status });
   } catch (err: any) {
     log(requestId, 'Pretix delete error', { error: err.message });
   }
@@ -478,6 +478,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       events[eventIndex].is_archived = !events[eventIndex].is_archived;
       await writeEvents(events);
 
+      // An archived event is gone from the website, so its shop must stop too.
+      const archivedEvent = events[eventIndex];
+      if (archivedEvent.pretixSlug && process.env.PRETIX_API_TOKEN && archivedEvent.eventType !== 'private') {
+        await setPretixLive(archivedEvent.pretixSlug, shouldSell(archivedEvent), requestId);
+      }
+
       log(requestId, 'Toggle archive success', { eventId, isArchived: events[eventIndex].is_archived });
       return res.status(200).json({ success: true, data: events[eventIndex], requestId });
     }
@@ -508,6 +514,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       log(requestId, 'Update photos success', { eventId, photoCount: events[eventIndex].photos?.length });
       return res.status(200).json({ success: true, data: events[eventIndex], requestId });
+    }
+
+    // Remove an uploaded image from the media library. Only files in this store can
+    // be deleted; images shipped with the website are part of the code.
+    if (action === 'delete-image') {
+      const url = String(body.url || '');
+      if (!/^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\//i.test(url)) {
+        return res.status(400).json({ success: false, error: 'Nur hochgeladene Bilder können gelöscht werden', requestId });
+      }
+      try {
+        await del(url);
+        log(requestId, 'Delete image success', { url });
+        return res.status(200).json({ success: true, requestId });
+      } catch (err: any) {
+        log(requestId, 'Delete image failed', { error: err.message });
+        return res.status(500).json({ success: false, error: 'Delete failed: ' + err.message, requestId });
+      }
     }
 
     // Handle upload-image action (Vercel Blob)
@@ -577,14 +600,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     // Sync to Pretix (non-blocking — if it fails, event is still saved locally)
-    const pretixSlug = await syncEventToPretix(newEvent, requestId);
-    if (pretixSlug) newEvent.pretixSlug = pretixSlug;
+    const sync = await syncEventToPretix(newEvent, requestId);
+    if (sync.slug) newEvent.pretixSlug = sync.slug;
 
     events.push(newEvent);
     await writeEvents(events);
 
-    log(requestId, 'Create event success', { eventId: newEvent.id, pretixSlug });
-    return res.status(200).json({ success: true, data: newEvent, requestId });
+    log(requestId, 'Create event success', { eventId: newEvent.id, pretixSlug: sync.slug, pretixSyncOk: sync.ok });
+    return res.status(200).json({ success: true, data: newEvent, pretixSyncOk: sync.ok, requestId });
   }
 
   // PUT requests
@@ -649,14 +672,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Sync to Pretix
-    const pretixSlug = await syncEventToPretix(updatedEvent, requestId);
-    if (pretixSlug) updatedEvent.pretixSlug = pretixSlug;
+    const sync = await syncEventToPretix(updatedEvent, requestId);
+    if (sync.slug) updatedEvent.pretixSlug = sync.slug;
 
     events[eventIndex] = updatedEvent;
     await writeEvents(events);
 
-    log(requestId, 'PUT success', { eventId, pretixSlug });
-    return res.status(200).json({ success: true, data: updatedEvent, requestId });
+    log(requestId, 'PUT success', { eventId, pretixSlug: sync.slug, pretixSyncOk: sync.ok });
+    return res.status(200).json({ success: true, data: updatedEvent, pretixSyncOk: sync.ok, requestId });
   }
 
   // DELETE requests (fallback, but we prefer POST with action=delete)

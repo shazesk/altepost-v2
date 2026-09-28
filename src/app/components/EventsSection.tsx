@@ -13,6 +13,8 @@ interface Event {
   artist: string;
   date: string;
   time: string;
+  admissionTime?: string | null;
+  onlineSalesEnded?: boolean;
   price: string;
   genre: string;
   month: string;
@@ -321,7 +323,10 @@ function EventCard({ event }: { event: Event }) {
   const pretixSelling = usePretixShopAvailable(event.pretixSlug);
   // Derived from the club's own reservations, so it is blind to Pretix sales.
   const config = pretixSelling === true ? null : getAvailabilityDisplay(event);
-  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
+  // Online booking closes with the presale (default: three days before the show);
+  // after that the seats are only sold at the door.
+  const salesClosed = !event.is_past && !!event.onlineSalesEnded && !isFreeEvent(event);
+  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out' || salesClosed;
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg overflow-hidden border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all hover:shadow-lg">
@@ -386,7 +391,7 @@ function EventCard({ event }: { event: Event }) {
                   onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
                 >
                   <Ticket className="h-4 w-4" />
-                  {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
+                  {event.is_past ? 'Beendet' : salesClosed ? 'Abendkasse' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
                 </Link>
               )}
             </div>
@@ -401,7 +406,10 @@ function EventListItem({ event }: { event: Event }) {
   const pretixSelling = usePretixShopAvailable(event.pretixSlug);
   // Derived from the club's own reservations, so it is blind to Pretix sales.
   const config = pretixSelling === true ? null : getAvailabilityDisplay(event);
-  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out';
+  // Online booking closes with the presale (default: three days before the show);
+  // after that the seats are only sold at the door.
+  const salesClosed = !event.is_past && !!event.onlineSalesEnded && !isFreeEvent(event);
+  const isSoldOutOrPast = event.is_past || event.availability === 'sold-out' || salesClosed;
 
   return (
     <article className="group relative bg-[#faf9f7] rounded-lg p-6 border border-[rgba(107,142,111,0.2)] hover:border-[#6b8e6f] transition-all">
@@ -465,7 +473,7 @@ function EventListItem({ event }: { event: Event }) {
               onClick={isSoldOutOrPast ? (e: React.MouseEvent) => e.preventDefault() : undefined}
             >
               <Ticket className="h-4 w-4" />
-              {event.is_past ? 'Beendet' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
+              {event.is_past ? 'Beendet' : salesClosed ? 'Abendkasse' : isSoldOutOrPast ? 'Ausverkauft' : 'Tickets'}
             </Link>
           )}
         </div>

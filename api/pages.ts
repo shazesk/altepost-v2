@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { readPageContent, readTestimonials, listPages, readSettings, readEvents, readReservations, readGallery } from './_lib/data.js';
+import { presaleEndDate } from './_lib/berlin-time.js';
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -71,6 +72,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       date: formatDate(event.date),
       time: formatTime(event.time),
       admissionTime: event.admissionTime ? formatTime(event.admissionTime) : null,
+      // Online booking (Pretix and the club's form alike) closes with the presale.
+      onlineSalesEnded: Date.now() > presaleEndDate(event).getTime(),
       price: formatPrice(event.price),
       genre: event.genre,
       month: event.month,
@@ -169,6 +172,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           artist: e.artist,
           date: formatDate(e.date),
           time: formatTime(e.time),
+          admissionTime: e.admissionTime ? formatTime(e.admissionTime) : null,
+          onlineSalesEnded: Date.now() > presaleEndDate(e).getTime(),
           price: formatPrice(e.price),
           genre: e.genre,
           month: e.month,

@@ -1090,7 +1090,12 @@ export function AdminPage() {
       const data = await res.json();
 
       if (data.success) {
-        setMessage({ text: editingEvent ? 'Event aktualisiert' : 'Event erstellt', type: 'success' });
+        const savedText = editingEvent ? 'Event aktualisiert' : 'Event erstellt';
+        // The event is saved either way; a failed sync must still be visible, or the
+        // website and the ticket shop silently disagree.
+        setMessage(data.pretixSyncOk === false
+          ? { text: `${savedText} – aber Pretix konnte nicht vollständig aktualisiert werden. Bitte erneut speichern oder in Pretix prüfen.`, type: 'error' }
+          : { text: savedText, type: 'success' });
         setEditingEvent(null);
         setIsCreating(false);
         setImagePreview(null);
