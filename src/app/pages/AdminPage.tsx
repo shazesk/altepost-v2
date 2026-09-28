@@ -1944,6 +1944,14 @@ export function AdminPage() {
               >
                 <Mail className="w-4 h-4" /> Antworten
               </a>
+              {/* The edit form existed but nothing opened it, so a changed booking
+                  had to be deleted and re-created. */}
+              <button
+                onClick={() => { setEditingReservation(r); setViewingReservation(null); }}
+                className="flex items-center gap-2 bg-[#e8e4df] text-[#2d2d2d] px-4 py-2 rounded-lg hover:bg-[#d8d4cf]"
+              >
+                <Edit2 className="w-4 h-4" /> Bearbeiten
+              </button>
               {r.status === 'archived' ? (
                 <button
                   onClick={() => { handleReservationRestore(r.id); setViewingReservation(null); }}
@@ -1994,7 +2002,10 @@ export function AdminPage() {
                   name="eventId"
                   defaultValue={r?.eventId || ''}
                   required
-                  className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
+                  // Moving a booking to another event is not supported by the API;
+                  // the choice is fixed once the reservation exists.
+                  disabled={!!r}
+                  className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] disabled:bg-[#faf9f7]"
                 >
                   <option value="">Bitte wählen...</option>
                   {events.filter(e => !e.is_archived).map(event => (

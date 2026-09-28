@@ -196,7 +196,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         phone: body.phone ?? reservation.phone,
         tickets: body.tickets !== undefined ? parseInt(body.tickets) : reservation.tickets,
         status: body.status ?? reservation.status,
-        notes: body.notes ?? reservation.notes
+        notes: body.notes ?? reservation.notes,
+        // An unpaid booking's amount due follows its ticket count; otherwise the
+        // reminder would ask for the old sum.
+        ...(event && reservation.paymentStatus === 'pending' && newTickets !== reservation.tickets
+          ? { totalPrice: event.price * newTickets }
+          : {}),
       };
       await writeReservations(reservations);
       await syncCapacityForEvents(events, [reservation.eventId], reservations);
