@@ -1838,10 +1838,19 @@ export function AdminPage() {
   }
 
   // Reservation detail view
+  // Rendered by every view. The full-page forms return early, and used to drop it,
+  // so a refused save (e.g. no seats left) showed no reason at all.
+  const messageToast = message && (
+    <div role="status" className={`fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+      {message.text}
+    </div>
+  );
+
   if (viewingReservation) {
     const r = viewingReservation;
     return (
       <div className="min-h-screen bg-[#faf9f7]">
+        {messageToast}
         <div className="max-w-2xl mx-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Reservierungsdetails</h1>
@@ -1981,6 +1990,7 @@ export function AdminPage() {
     // Load all events for dropdown
     return (
       <div className="min-h-screen bg-[#faf9f7]">
+        {messageToast}
         <div className="max-w-2xl mx-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">
@@ -2112,6 +2122,7 @@ export function AdminPage() {
     const event = editingEvent;
     return (
       <div className="min-h-screen bg-[#faf9f7]">
+        {messageToast}
         <div className="max-w-4xl mx-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">
@@ -2445,11 +2456,7 @@ export function AdminPage() {
 
       {/* Main content */}
       <main className="flex-1 p-8">
-        {message && (
-          <div className={`fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
-            {message.text}
-          </div>
-        )}
+        {messageToast}
 
         {/* Refresh notice */}
         <div className="mb-6 bg-[#f5f3ef] border border-[rgba(107,142,111,0.25)] rounded-xl px-5 py-4 flex items-start gap-3">
