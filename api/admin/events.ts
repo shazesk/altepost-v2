@@ -6,7 +6,7 @@ import { readEvents, writeEvents, readReservations, writeReservations, readSetti
 import { SITE_URL } from '../_lib/send.js';
 import { berlinWallClockToDate, presaleEndDate } from '../_lib/berlin-time.js';
 
-const BUILD_VERSION = 'v7-pretix-no-drift';
+const BUILD_VERSION = 'v8-pretix-create-fix';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
 
 function generateRequestId(): string {
@@ -246,22 +246,31 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<Preti
   };
 
   try {
-    // Update first. Only a 404 means "not in Pretix yet"; any other failure must not
-    // fall through to creating a second event under the same name.
-    const patch = await fetch(`${PRETIX_API}/events/${slug}/`, {
-      method: 'PATCH',
-      headers: { 'Authorization': `Token ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(eventPayload),
-    });
+    // An event already linked to Pretix is updated. Pretix answers a missing event
+    // with 403 (not 404), so 403/404 means "gone" and it is created again; any other
+    // failure must not fall through to creating a second event.
     let pretixEvent: any = null;
-    if (patch.ok) {
-      pretixEvent = await patch.json();
-      log(requestId, 'Pretix event updated', { slug });
-    } else if (patch.status !== 404) {
-      const body = await patch.text().catch(() => '');
-      log(requestId, 'Pretix event update FAILED', { slug, status: patch.status, body: body.slice(0, 500) });
-      return { slug: event.pretixSlug || null, ok: false };
-    } else {
+    let exists = false;
+    if (event.pretixSlug) {
+      const patch = await fetch(`${PRETIX_API}/events/${slug}/`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Token ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventPayload),
+      });
+      if (patch.ok) {
+        pretixEvent = await patch.json();
+        exists = true;
+        log(requestId, 'Pretix event updated', { slug });
+      } else if (patch.status !== 403 && patch.status !== 404) {
+        const body = await patch.text().catch(() => '');
+        log(requestId, 'Pretix event update FAILED', { slug, status: patch.status, body: body.slice(0, 500) });
+        return { slug: event.pretixSlug, ok: false };
+      } else {
+        log(requestId, 'Pretix event missing, creating it again', { slug, status: patch.status });
+      }
+    }
+
+    if (!exists) {
       // Create as a copy of the template so payment, tickets and checkout
       // questions come along. Always created offline; setPretixLive below decides.
       pretixEvent = await pretixFetch(`/events/${PRETIX_TEMPLATE_SLUG}/clone/`, {

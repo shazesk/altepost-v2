@@ -1750,7 +1750,8 @@ export function AdminPage() {
   // Clear message after 3 seconds
   useEffect(() => {
     if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000);
+      // Errors stay long enough to be read; a sync warning that vanishes is useless.
+      const timer = setTimeout(() => setMessage(null), message.type === 'error' ? 15000 : 3000);
       return () => clearTimeout(timer);
     }
   }, [message]);
