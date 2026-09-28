@@ -31,8 +31,9 @@ function sells(event: Event): boolean {
 // Tickets held by the club's own reservations. Archived ones are cancelled.
 export function clubReservedTickets(reservations: Reservation[], eventId: number, excludeReservationId?: number): number {
   return reservations
-    .filter(r => r.eventId === eventId && r.status === 'active' && r.id !== excludeReservationId)
-    .reduce((sum, r) => sum + (r.tickets || 0), 0);
+    // Early records stored the event id as a string, hence Number().
+    .filter(r => Number(r.eventId) === eventId && r.status === 'active' && r.id !== excludeReservationId)
+    .reduce((sum, r) => sum + (Number(r.tickets) || 0), 0);
 }
 
 // Tickets Pretix has sold or is holding for an unpaid order. Carts are left out:
