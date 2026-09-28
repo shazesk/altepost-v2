@@ -5,8 +5,9 @@ import { validateSession } from '../_lib/auth.js';
 import { readEvents, writeEvents, readReservations, writeReservations, readSettings, Event } from '../_lib/data.js';
 import { SITE_URL } from '../_lib/send.js';
 import { berlinWallClockToDate, presaleEndDate } from '../_lib/berlin-time.js';
+import { syncPretixCapacity } from '../_lib/capacity.js';
 
-const BUILD_VERSION = 'v8-pretix-create-fix';
+const BUILD_VERSION = 'v9-shared-capacity';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
 
 function generateRequestId(): string {
@@ -146,7 +147,7 @@ function shouldSell(event: Event): boolean {
   return event.active !== false && !event.is_archived && event.eventType !== 'private';
 }
 
-// Keep price and capacity in Pretix equal to the CMS, on create and on every edit.
+// Keep price and seats in Pretix in line with the CMS, on create and on every edit.
 // Only the ticket types this sync creates are touched: "Eintrittskarte" / "Eintritt
 // frei" carry the CMS price and the legacy "Ermäßigt" half of it; anything an
 // editor added by hand in Pretix is left alone.
@@ -167,18 +168,9 @@ async function syncPretixProducts(slug: string, event: Event, requestId: string)
     }, requestId);
     if (!res) ok = false;
   }
-  if (event.maxTickets != null) {
-    const quotas = await pretixFetch(`/events/${slug}/quotas/`, {}, requestId);
-    if (!quotas) return false;
-    for (const quota of quotas.results || []) {
-      if (quota.size === event.maxTickets) continue;
-      const res = await pretixFetch(`/events/${slug}/quotas/${quota.id}/`, {
-        method: 'PATCH',
-        body: JSON.stringify({ size: event.maxTickets }),
-      }, requestId);
-      if (!res) ok = false;
-    }
-  }
+  // Capacity is shared with the club's own reservations, so the quota is the
+  // capacity minus those — not the capacity itself.
+  if (!(await syncPretixCapacity({ ...event, pretixSlug: slug }))) ok = false;
   return ok;
 }
 

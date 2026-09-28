@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from '../_lib/cors.js';
 import { sendEmail, configureEmailFooter, generateRequestId, log, contactNotification, contactConfirmation, voucherNotification, voucherConfirmation, membershipNotification, membershipConfirmation, ticketNotification, ticketConfirmation } from '../_lib/send.js';
 import { readContacts, writeContacts, Contact, readVouchers, writeVouchers, VoucherOrder, readNewsletterSubscribers, writeNewsletterSubscribers, readMemberships, writeMemberships, MembershipApplication, readReservations, writeReservations, readEvents, readSettings, Reservation } from '../_lib/data.js';
+import { checkClubCapacity, capacityError, syncCapacityForEvents } from '../_lib/capacity.js';
 
 type InboxKey = 'general' | 'tickets' | 'artists' | 'sponsors';
 
@@ -216,21 +217,17 @@ async function handleTicketReservation(req: VercelRequest, res: VercelResponse, 
     return res.status(400).json({ error: 'Invalid ticket count', requestId });
   }
   const targetEvent = events.find(e => e.id === resolvedEventId);
-  if (targetEvent?.maxTickets != null) {
-    const booked = reservations
-      .filter(r => r.eventId === targetEvent.id && r.status === 'active')
-      .reduce((sum, r) => sum + r.tickets, 0);
-    const remaining = Math.max(0, targetEvent.maxTickets - booked);
-    if (requestedTickets > remaining) {
+  if (targetEvent) {
+    // Counts Pretix sales too: the same seats are sold online there.
+    const cap = await checkClubCapacity(targetEvent, reservations, requestedTickets);
+    if (!cap.ok) {
       log(requestId, 'Reservation rejected - not enough seats', {
-        eventId: targetEvent.id, requested: requestedTickets, remaining,
+        eventId: targetEvent.id, requested: requestedTickets, remaining: cap.remaining,
       });
       return res.status(409).json({
         success: false,
-        error: remaining === 0
-          ? 'Diese Veranstaltung ist leider ausverkauft.'
-          : `Es sind nur noch ${remaining} Plätze verfügbar.`,
-        remainingTickets: remaining,
+        error: capacityError(cap.remaining),
+        remainingTickets: cap.remaining,
         requestId,
       });
     }
@@ -245,6 +242,7 @@ async function handleTicketReservation(req: VercelRequest, res: VercelResponse, 
   };
   reservations.push(newReservation);
   await writeReservations(reservations);
+  if (targetEvent) await syncCapacityForEvents(events, [targetEvent.id], reservations);
 
   if (newsletterOptIn && email) {
     await subscribeToNewsletter(requestId, email, name, 'ticket-reservation');

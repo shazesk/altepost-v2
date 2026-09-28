@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
 import { SITE_URL } from '../_lib/send.js';
+import { checkClubCapacity, capacityError, syncCapacityForEvents } from '../_lib/capacity.js';
 import {
   readEvents,
   readReservations,
@@ -350,8 +351,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const reservations = await readReservations();
       const index = reservations.findIndex(r => r.id === id);
       if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
-      reservations[index] = { ...reservations[index], ...req.body };
+      // Archive / restore in the admin come through here. Restoring (or adding
+      // tickets) takes seats that Pretix may have sold meanwhile, so it is checked.
+      const before = reservations[index];
+      const next = { ...before, ...req.body };
+      const events = await readEvents();
+      const event = events.find(e => e.id === before.eventId);
+      const needsSeats = next.status === 'active' && (before.status !== 'active' || (next.tickets || 0) > (before.tickets || 0));
+      if (event && needsSeats) {
+        const cap = await checkClubCapacity(event, reservations, next.tickets || 0, before.id);
+        if (!cap.ok) return res.status(409).json({ success: false, error: capacityError(cap.remaining), remainingTickets: cap.remaining });
+      }
+      reservations[index] = next;
       await writeReservations(reservations);
+      await syncCapacityForEvents(events, [before.eventId], reservations);
       return res.status(200).json({ success: true, data: reservations[index] });
     }
 
@@ -423,6 +436,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (index === -1) return res.status(404).json({ success: false, error: 'Not found' });
       const deleted = reservations.splice(index, 1)[0];
       await writeReservations(reservations);
+      await syncCapacityForEvents(await readEvents(), [deleted.eventId], reservations);
       return res.status(200).json({ success: true, data: deleted });
     }
 

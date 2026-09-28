@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
 import { readEvents, readReservations, writeReservations, readSettings, resolveBank, Reservation } from '../_lib/data.js';
+import { checkClubCapacity, capacityError, syncCapacityForEvents } from '../_lib/capacity.js';
 import { sendEmail, configureEmailFooter, generateRequestId, log, reservationPaymentRequest, reservationPaymentConfirmed, reservationPaymentReminder } from '../_lib/send.js';
 
 function pad2(n: number): string { return n < 10 ? `0${n}` : `${n}`; }
@@ -145,8 +146,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!status || !['active', 'archived'].includes(status)) {
         return res.status(400).json({ success: false, error: 'Invalid status. Must be: active or archived' });
       }
+      if (status === 'active' && reservation.status !== 'active') {
+        const events = await readEvents();
+        const event = events.find(e => e.id === reservation.eventId);
+        if (event) {
+          const cap = await checkClubCapacity(event, reservations, reservation.tickets, reservation.id);
+          if (!cap.ok) return res.status(409).json({ success: false, error: capacityError(cap.remaining), remainingTickets: cap.remaining });
+        }
+      }
       reservation.status = status;
       await writeReservations(reservations);
+      await syncCapacityForEvents(await readEvents(), [reservation.eventId], reservations);
       return res.status(200).json({ success: true, data: reservation });
     }
 
@@ -166,6 +176,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'PUT') {
       const body = req.body || {};
+      const newTickets = body.tickets !== undefined ? parseInt(body.tickets) : reservation.tickets;
+      const newStatus = body.status ?? reservation.status;
+      if (!Number.isFinite(newTickets) || newTickets < 1) {
+        return res.status(400).json({ success: false, error: 'Ungültige Ticketanzahl' });
+      }
+      const events = await readEvents();
+      const event = events.find(e => e.id === reservation.eventId);
+      // Only growth needs seats: more tickets, or a cancelled reservation revived.
+      const needsSeats = newStatus === 'active' && (newTickets > reservation.tickets || reservation.status !== 'active');
+      if (event && needsSeats) {
+        const cap = await checkClubCapacity(event, reservations, newTickets, reservation.id);
+        if (!cap.ok) return res.status(409).json({ success: false, error: capacityError(cap.remaining), remainingTickets: cap.remaining });
+      }
       reservations[reservationIndex] = {
         ...reservation,
         name: body.name ?? reservation.name,
@@ -176,12 +199,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         notes: body.notes ?? reservation.notes
       };
       await writeReservations(reservations);
+      await syncCapacityForEvents(events, [reservation.eventId], reservations);
       return res.status(200).json({ success: true, data: reservations[reservationIndex] });
     }
 
     if (req.method === 'DELETE') {
       const deleted = reservations.splice(reservationIndex, 1)[0];
       await writeReservations(reservations);
+      await syncCapacityForEvents(await readEvents(), [deleted.eventId], reservations);
       return res.status(200).json({ success: true, data: deleted });
     }
 
@@ -226,6 +251,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const event = events.find(e => e.id === parseInt(eId));
     const isAdminFlow = source === 'admin';
     const ticketsInt = parseInt(tickets);
+    if (!Number.isFinite(ticketsInt) || ticketsInt < 1) {
+      return res.status(400).json({ success: false, error: 'Ungültige Ticketanzahl' });
+    }
+    // Phone reservations used to have no limit at all; they share the seats with
+    // Pretix, so both channels' bookings count.
+    if (event) {
+      const cap = await checkClubCapacity(event, reservations, ticketsInt);
+      if (!cap.ok) {
+        log(requestId, 'Reservation rejected - not enough seats', { eventId: event.id, requested: ticketsInt, remaining: cap.remaining });
+        return res.status(409).json({ success: false, error: capacityError(cap.remaining), remainingTickets: cap.remaining });
+      }
+    }
     const totalPrice = event ? event.price * ticketsInt : 0;
     const paymentReference = isAdminFlow ? generatePaymentReference(reservations) : undefined;
 
@@ -245,6 +282,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     reservations.push(newReservation);
     await writeReservations(reservations);
+    await syncCapacityForEvents(events, [newReservation.eventId], reservations);
 
     // Send payment-request email for admin-created (phone-call) reservations
     if (isAdminFlow && event) {
