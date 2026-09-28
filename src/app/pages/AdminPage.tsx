@@ -8,6 +8,8 @@ interface Event {
   artist: string;
   date: string;
   time: string;
+  admissionTime?: string;
+  presaleEnd?: string;
   price: number;
   genre: string;
   month: string;
@@ -1004,6 +1006,8 @@ export function AdminPage() {
         artist: formData.get('artist'),
         date: formData.get('date'),
         time: formData.get('time'),
+        admissionTime: formData.get('admissionTime') || '',
+        presaleEnd: formData.get('presaleEnd') || '',
         price: formData.get('price'),
         genre: formData.get('genre'),
         availability: formData.get('availability'),
@@ -2042,8 +2046,18 @@ export function AdminPage() {
                 <input type="date" name="date" defaultValue={event?.date || ''} required className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Uhrzeit *</label>
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Beginn *</label>
                 <input type="time" name="time" defaultValue={event?.time?.substring(0, 5) || ''} required className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Einlass</label>
+                <input type="time" name="admissionTime" defaultValue={event?.admissionTime || ''} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                <p className="text-xs text-[#666666] mt-1">Wird auch an Pretix übertragen</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Ende Online-Vorverkauf</label>
+                <input type="date" name="presaleEnd" defaultValue={event?.presaleEnd || ''} className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]" />
+                <p className="text-xs text-[#666666] mt-1">Letzter Verkaufstag (bis 23:59). Leer = 3 Tage vor der Veranstaltung</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Preis (EUR)</label>
@@ -2075,7 +2089,7 @@ export function AdminPage() {
                   <option value="true">Aktiv (sichtbar)</option>
                   <option value="false">Inaktiv (versteckt)</option>
                 </select>
-                <p className="text-xs text-[#666666] mt-1">Inaktive Events sind öffentlich nicht sichtbar</p>
+                <p className="text-xs text-[#666666] mt-1">Inaktive Events sind öffentlich nicht sichtbar. Aktiv öffnet den Pretix-Shop, Inaktiv schließt ihn.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Veranstaltungstyp</label>

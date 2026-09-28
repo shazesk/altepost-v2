@@ -5,7 +5,7 @@ import { validateSession } from '../_lib/auth.js';
 import { readEvents, writeEvents, readReservations, writeReservations, readSettings, Event } from '../_lib/data.js';
 import { SITE_URL } from '../_lib/send.js';
 
-const BUILD_VERSION = 'v5-pretix-tz-fix';
+const BUILD_VERSION = 'v6-pretix-template';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
 
 function generateRequestId(): string {
@@ -141,6 +141,89 @@ async function applyPretixEventSettings(slug: string, requestId: string): Promis
   log(requestId, res ? 'Pretix event settings applied' : 'Pretix event settings FAILED', { slug });
 }
 
+// A Pretix event kept offline as the blueprint for every new shop. Payment methods
+// (bank account), ticket layout and checkout questions cannot be set through the
+// API, so they are configured once on this event in Pretix and copied on create.
+const PRETIX_TEMPLATE_SLUG = 'vorlage';
+
+const PRESALE_DAYS_BEFORE = 3;
+
+// Online sales close at the end of the last selling day, Berlin time. Without an
+// explicit date that day is three days before the show.
+function presaleEndDate(event: Event): Date {
+  if (event.presaleEnd) return berlinWallClockToDate(event.presaleEnd, '23:59');
+  const [y, m, d] = String(event.date).slice(0, 10).split('-').map(Number);
+  const lastDay = new Date(Date.UTC(y, m - 1, d - PRESALE_DAYS_BEFORE));
+  return berlinWallClockToDate(lastDay.toISOString().slice(0, 10), '23:59');
+}
+
+// Checkout asks for e-mail and phone once per order; tickets are not personalised.
+// Sent apart from the language settings so an unknown key cannot block those.
+async function applyPretixCheckoutSettings(slug: string, requestId: string): Promise<void> {
+  const res = await pretixFetch(`/events/${slug}/settings/`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      order_phone_asked: true,
+      order_phone_required: true,
+      attendee_names_asked: false,
+      attendee_names_required: false,
+    }),
+  }, requestId);
+  log(requestId, res ? 'Pretix checkout settings applied' : 'Pretix checkout settings FAILED', { slug });
+}
+
+// The CMS status is the master: an active event sells, an inactive one does not.
+// Kept out of the main PATCH because Pretix rejects going live while the shop is
+// incomplete (e.g. no payment method), which must not block the date/name update.
+async function setPretixLive(slug: string, live: boolean, requestId: string): Promise<void> {
+  const res = await pretixFetch(`/events/${slug}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ live }),
+  }, requestId);
+  log(requestId, res ? 'Pretix shop status set' : 'Pretix shop status FAILED', { slug, live });
+}
+
+// A copied event carries the template's products and quota; bring price and
+// capacity in line with this event.
+async function alignClonedProducts(slug: string, event: Event, requestId: string): Promise<void> {
+  const price = (event.price || 0).toFixed(2);
+  const items = await pretixFetch(`/events/${slug}/items/`, {}, requestId);
+  for (const item of items?.results || []) {
+    await pretixFetch(`/events/${slug}/items/${item.id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ default_price: price }),
+    }, requestId);
+  }
+  const quotas = await pretixFetch(`/events/${slug}/quotas/`, {}, requestId);
+  for (const quota of quotas?.results || []) {
+    await pretixFetch(`/events/${slug}/quotas/${quota.id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ size: event.maxTickets || 30 }),
+    }, requestId);
+  }
+}
+
+// Fallback when the template event is missing: products and quota built by hand.
+// The shop then has no payment method until one is set up in Pretix.
+async function createPretixProducts(slug: string, event: Event, requestId: string): Promise<void> {
+  const price = event.price || 0;
+  const item = await pretixFetch(`/events/${slug}/items/`, {
+    method: 'POST',
+    body: JSON.stringify({
+      name: { de: price > 0 ? 'Eintrittskarte' : 'Eintritt frei' },
+      default_price: price.toFixed(2),
+      admission: true,
+      active: true,
+    }),
+  }, requestId);
+  if (item?.id) {
+    await pretixFetch(`/events/${slug}/quotas/`, {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Kapazität', size: event.maxTickets || 30, items: [item.id] }),
+    }, requestId);
+  }
+}
+
 async function syncEventToPretix(event: Event, requestId: string): Promise<string | null> {
   const token = process.env.PRETIX_API_TOKEN;
   if (!token) {
@@ -153,9 +236,7 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
 
   const slug = event.pretixSlug || generateSlug(event.title, event.date);
   const dateObj = berlinWallClockToDate(event.date, event.time);
-
   const endDate = new Date(dateObj.getTime() + 3 * 60 * 60 * 1000); // +3 hours
-  const admissionDate = new Date(dateObj.getTime() - 90 * 60 * 1000); // -1.5 hours before
 
   const eventPayload = {
     name: { de: event.artist ? `${event.title} – ${event.artist}` : event.title },
@@ -163,7 +244,10 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
     currency: 'EUR',
     date_from: dateObj.toISOString(),
     date_to: endDate.toISOString(),
-    date_admission: admissionDate.toISOString(),
+    date_admission: event.admissionTime
+      ? berlinWallClockToDate(event.date, event.admissionTime).toISOString()
+      : null,
+    presale_end: presaleEndDate(event).toISOString(),
     is_public: event.active !== false,
     location: { de: await venueAddress() },
     geo_lat: '49.7741',
@@ -179,51 +263,25 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
     });
 
     if (!pretixEvent) {
-      // Create new event. `live` is set only here: whether a shop is selling is the
-      // Verein's decision, made in Pretix. Sending it on every update would silently
-      // take a published shop offline the next time someone edits the event here.
-      pretixEvent = await pretixFetch('/events/', {
+      // Create as a copy of the template so payment, tickets and checkout
+      // questions come along. Always created offline; setPretixLive below decides.
+      pretixEvent = await pretixFetch(`/events/${PRETIX_TEMPLATE_SLUG}/clone/`, {
         method: 'POST',
         body: JSON.stringify({ ...eventPayload, live: false }),
       }, requestId);
 
-      if (pretixEvent && pretixEvent.slug) {
-        log(requestId, 'Pretix event created', { slug: pretixEvent.slug });
-
-        await applyPretixEventSettings(pretixEvent.slug, requestId);
-
-        // Create ticket items
-        const price = event.price || 0;
-        if (price > 0) {
-          // Paid event: regular + reduced ticket
-          const item1 = await pretixFetch(`/events/${slug}/items/`, {
-            method: 'POST',
-            body: JSON.stringify({ name: { de: 'Eintrittskarte' }, default_price: price.toFixed(2), admission: true, active: true }),
-          }, requestId);
-          const reducedPrice = Math.ceil(price / 2);
-          const item2 = await pretixFetch(`/events/${slug}/items/`, {
-            method: 'POST',
-            body: JSON.stringify({ name: { de: 'Ermäßigt' }, default_price: reducedPrice.toFixed(2), admission: true, active: true }),
-          }, requestId);
-          const itemIds = [item1?.id, item2?.id].filter(Boolean);
-          if (itemIds.length > 0) {
-            await pretixFetch(`/events/${slug}/quotas/`, {
-              method: 'POST',
-              body: JSON.stringify({ name: 'Kapazität', size: event.maxTickets || 80, items: itemIds }),
-            }, requestId);
-          }
-        } else {
-          // Free event
-          const item = await pretixFetch(`/events/${slug}/items/`, {
-            method: 'POST',
-            body: JSON.stringify({ name: { de: 'Eintritt frei' }, default_price: '0.00', admission: true, active: true }),
-          }, requestId);
-          if (item?.id) {
-            await pretixFetch(`/events/${slug}/quotas/`, {
-              method: 'POST',
-              body: JSON.stringify({ name: 'Kapazität', size: event.maxTickets || 150, items: [item.id] }),
-            }, requestId);
-          }
+      if (pretixEvent?.slug) {
+        log(requestId, 'Pretix event created from template', { slug: pretixEvent.slug });
+        await alignClonedProducts(pretixEvent.slug, event, requestId);
+      } else {
+        log(requestId, 'Pretix template copy failed, creating a bare event', { template: PRETIX_TEMPLATE_SLUG });
+        pretixEvent = await pretixFetch('/events/', {
+          method: 'POST',
+          body: JSON.stringify({ ...eventPayload, live: false }),
+        }, requestId);
+        if (pretixEvent?.slug) {
+          log(requestId, 'Pretix event created', { slug: pretixEvent.slug });
+          await createPretixProducts(pretixEvent.slug, event, requestId);
         }
       }
     } else {
@@ -237,6 +295,10 @@ async function syncEventToPretix(event: Event, requestId: string): Promise<strin
       log(requestId, 'Pretix sync did not confirm an event; slug not stored', { slug });
       return event.pretixSlug || null;
     }
+
+    await applyPretixEventSettings(pretixEvent.slug, requestId);
+    await applyPretixCheckoutSettings(pretixEvent.slug, requestId);
+    await setPretixLive(pretixEvent.slug, event.active !== false, requestId);
     return pretixEvent.slug;
   } catch (err: any) {
     log(requestId, 'Pretix sync error', { error: err.message });
@@ -472,6 +534,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       artist: body.artist,
       date: body.date,
       time: body.time,
+      ...(body.admissionTime ? { admissionTime: body.admissionTime } : {}),
+      ...(body.presaleEnd ? { presaleEnd: body.presaleEnd } : {}),
       price: parseFloat(body.price) || 0,
       genre: body.genre,
       month: getMonthYear(body.date),
@@ -538,6 +602,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       artist: body.artist ?? events[eventIndex].artist,
       date: body.date ?? events[eventIndex].date,
       time: body.time ?? events[eventIndex].time,
+      // An emptied field arrives as '' and must clear the stored value.
+      admissionTime: body.admissionTime !== undefined ? (body.admissionTime || undefined) : events[eventIndex].admissionTime,
+      presaleEnd: body.presaleEnd !== undefined ? (body.presaleEnd || undefined) : events[eventIndex].presaleEnd,
       price: body.price !== undefined ? parseFloat(body.price) : events[eventIndex].price,
       genre: body.genre ?? events[eventIndex].genre,
       availability: body.availability ?? events[eventIndex].availability,

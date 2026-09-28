@@ -69,6 +69,7 @@ interface EventData {
   artist: string;
   date: string;
   time: string;
+  admissionTime?: string | null;
   price: string;
   genre: string;
   month: string;
@@ -320,7 +321,7 @@ export function EventDetailPage() {
           </div>
           <div className="flex items-center text-[#666666]">
             <Clock className="h-5 w-5 mr-2 text-[#6b8e6f]" />
-            <span>{event.time}</span>
+            <span>{event.admissionTime ? `Einlass ${event.admissionTime} · Beginn ${event.time}` : event.time}</span>
           </div>
           <div className="flex items-center text-[#666666]">
             <Euro className="h-5 w-5 mr-2 text-[#6b8e6f]" />

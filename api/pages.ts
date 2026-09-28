@@ -70,6 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       artist: event.artist,
       date: formatDate(event.date),
       time: formatTime(event.time),
+      admissionTime: event.admissionTime ? formatTime(event.admissionTime) : null,
       price: formatPrice(event.price),
       genre: event.genre,
       month: event.month,

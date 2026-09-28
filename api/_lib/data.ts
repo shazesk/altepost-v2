@@ -53,7 +53,9 @@ export interface Event {
   title: string;
   artist: string;
   date: string;
-  time: string;
+  time: string; // Beginn
+  admissionTime?: string; // Einlass, HH:MM
+  presaleEnd?: string; // last day of online sales, YYYY-MM-DD; empty = 3 days before
   price: number;
   genre: string;
   month: string;
