@@ -892,7 +892,9 @@ export function AdminPage() {
   const editingSponsorKey = editingSponsor ? `${editingSponsor.id}-${isCreatingSponsor}` : null;
   useEffect(() => {
     if (!editingSponsorKey) return;
-    sponsorFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Instant: a smooth scroll (the site sets `scroll-behavior: smooth`) was seen to
+    // stall part-way when the list re-rendered, leaving the form out of sight.
+    sponsorFormRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'start' });
     sponsorNameRef.current?.focus({ preventScroll: true });
   }, [editingSponsorKey]);
 
