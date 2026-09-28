@@ -61,16 +61,17 @@ export function Footer() {
               className="group mt-6 inline-flex items-center gap-2.5 rounded-full bg-black px-4 py-1 ring-1 ring-white/10 shadow-lg hover:ring-white/25 transition-all duration-300"
             >
               <span className="text-[11px] font-medium tracking-wide text-white/70 group-hover:text-white/90 transition-colors">Made by</span>
-              <span className="text-sm font-bold tracking-[0.15em] text-white leading-none">VISUAX</span>
-              <img
-                src="/made-by-visuax-dark.gif"
-                alt=""
-                aria-hidden="true"
-                className="h-12 w-auto object-contain"
-                width={600}
-                height={338}
-                loading="lazy"
-              />
+              {/* The GIF is square with the eye in the middle; the frame crops the empty margin. */}
+              <span className="relative block h-[42px] w-[82px] overflow-hidden">
+                <img
+                  src="/made-by-visuax-blink.gif"
+                  alt="VISUAX"
+                  className="absolute left-1/2 top-1/2 h-[104px] w-[104px] max-w-none -translate-x-1/2 -translate-y-1/2"
+                  width={480}
+                  height={480}
+                  loading="lazy"
+                />
+              </span>
             </a>
           </div>
 

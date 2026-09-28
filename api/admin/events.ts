@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { put } from '@vercel/blob';
+import { put, list } from '@vercel/blob';
 import { cors } from '../_lib/cors.js';
 import { validateSession } from '../_lib/auth.js';
 import { readEvents, writeEvents, readReservations, writeReservations, readSettings, Event } from '../_lib/data.js';
@@ -376,6 +376,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json(response);
     }
 
+    // Media library: everything uploaded through the CMS, newest first.
+    if (req.query.action === 'list-images') {
+      try {
+        const blobs: { url: string; pathname: string; size: number; uploadedAt: string }[] = [];
+        let cursor: string | undefined;
+        do {
+          const page = await list({ cursor, limit: 1000 });
+          for (const b of page.blobs) {
+            blobs.push({ url: b.url, pathname: b.pathname, size: b.size, uploadedAt: new Date(b.uploadedAt).toISOString() });
+          }
+          cursor = page.hasMore ? page.cursor : undefined;
+        } while (cursor);
+        blobs.sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt));
+        return res.status(200).json({ success: true, data: blobs, requestId });
+      } catch (err: any) {
+        log(requestId, 'List images failed', { error: err.message });
+        return res.status(500).json({ success: false, error: 'List failed: ' + err.message, requestId });
+      }
+    }
+
     const events = await readEvents();
     const archived = req.query.archived === '1';
     const filteredEvents = events.filter(e => e.is_archived === archived);
@@ -493,6 +513,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Handle upload-image action (Vercel Blob)
     if (action === 'upload-image') {
       const { base64, filename } = body;
+      // Folder keeps the media library readable; unknown values fall back to events/.
+      const folder = ['events', 'sponsors', 'gallery', 'site'].includes(body.folder) ? body.folder : 'events';
       log(requestId, 'Upload image action', { filename, hasBase64: !!base64 });
 
       if (!base64 || !filename) {
@@ -509,7 +531,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const buffer = Buffer.from(matches[2], 'base64');
         const contentType = matches[1];
         const ext = contentType.split('/')[1] || 'jpg';
-        const blobFilename = `events/${Date.now()}-${filename.replace(/\.[^.]+$/, '')}.${ext}`;
+        const blobFilename = `${folder}/${Date.now()}-${filename.replace(/\.[^.]+$/, '')}.${ext}`;
 
         const blob = await put(blobFilename, buffer, {
           access: 'public',

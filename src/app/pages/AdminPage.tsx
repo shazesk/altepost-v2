@@ -1,5 +1,6 @@
 import React from "react";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { MediaLibrary, type MediaImage } from '../components/admin/MediaLibrary';
 import { Plus, Edit2, Trash2, Archive, RotateCcw, LogOut, Calendar, ArchiveIcon, Ticket, Check, X, Clock, Eye, Mail, Phone, User, MessageSquare, Gift, Users, Settings, FileText, Save, ChevronRight, ImageIcon, RefreshCw, Handshake, Newspaper, ExternalLink, Download, Camera, Loader2, CheckCircle2, Bell, Euro } from 'lucide-react';
 
 interface Event {
@@ -164,6 +165,39 @@ interface NewsletterSubscriber {
 
 const API_BASE = '/api/admin';
 
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// Plain-language location of an image, so editors can tell website files from uploads.
+function describeImageLocation(url: string): string {
+  if (url.startsWith('/')) {
+    const folder = url.substring(0, url.lastIndexOf('/') + 1) || '/';
+    return `Website-Ordner ${folder} (${decodeURIComponent(url.split('/').pop() || '')})`;
+  }
+  const blob = url.match(/blob\.vercel-storage\.com\/(.+)$/);
+  if (blob) return `Upload-Speicher › ${decodeURIComponent(blob[1])}`;
+  return url;
+}
+
+// Logos shipped with the website (public/sponsors) are not in the upload store,
+// so the media library lists them from the sponsors that use them.
+function websiteSponsorLogos(sponsors: Sponsor[]): MediaImage[] {
+  return sponsors
+    .filter(sp => sp.logo && sp.logo.startsWith('/'))
+    .map(sp => ({
+      url: sp.logo!,
+      name: decodeURIComponent(sp.logo!.split('/').pop() || sp.logo!),
+      location: 'Website-Ordner /sponsors/',
+    }));
+}
+
 export function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -226,6 +260,10 @@ export function AdminPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
   const [isCreatingSponsor, setIsCreatingSponsor] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const sponsorFormRef = useRef<HTMLDivElement>(null);
+  const sponsorNameRef = useRef<HTMLInputElement>(null);
 
   // Newsletter state
   const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
@@ -846,6 +884,15 @@ export function AdminPage() {
     }
   }, [activeView, isAuthenticated, sessionId]);
 
+  // The edit form sits above the sponsor lists; bring it into view when a sponsor
+  // further down is opened, otherwise the click appears to do nothing.
+  const editingSponsorKey = editingSponsor ? `${editingSponsor.id}-${isCreatingSponsor}` : null;
+  useEffect(() => {
+    if (!editingSponsorKey) return;
+    sponsorFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    sponsorNameRef.current?.focus({ preventScroll: true });
+  }, [editingSponsorKey]);
+
   // Load sponsors when entering sponsors view
   useEffect(() => {
     if (isAuthenticated && sessionId && activeView === 'sponsors') {
@@ -1059,18 +1106,39 @@ export function AdminPage() {
     }
   }
 
-  async function uploadToBlob(base64: string, filename: string): Promise<string> {
+  async function uploadToBlob(base64: string, filename: string, folder = 'events'): Promise<string> {
     const res = await fetch(`${API_BASE}/events?action=upload-image`, {
       method: 'POST',
       headers: {
         'x-session-id': sessionId!,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ base64, filename })
+      body: JSON.stringify({ base64, filename, folder })
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Upload failed');
     return data.url;
+  }
+
+  async function handleSponsorLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    // Uploads travel base64-encoded, which must stay under the 4.5 MB request limit.
+    if (file.size > 3 * 1024 * 1024) {
+      setMessage({ text: 'Logo zu groß. Maximum: 3 MB', type: 'error' });
+      return;
+    }
+    setUploadingLogo(true);
+    try {
+      // Not compressed: logos are often PNGs whose transparency JPEG would lose.
+      const url = await uploadToBlob(await fileToDataUrl(file), file.name, 'sponsors');
+      setEditingSponsor(prev => prev ? { ...prev, logo: url } : prev);
+    } catch (err: any) {
+      setMessage({ text: 'Logo-Upload fehlgeschlagen: ' + err.message, type: 'error' });
+    } finally {
+      setUploadingLogo(false);
+    }
   }
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -3420,6 +3488,14 @@ export function AdminPage() {
         {/* Sponsors View */}
         {activeView === 'sponsors' && (
           <>
+            <MediaLibrary
+              open={showMediaLibrary}
+              apiBase={API_BASE}
+              sessionId={sessionId || ''}
+              extraImages={websiteSponsorLogos(sponsors)}
+              onSelect={(url) => setEditingSponsor(prev => prev ? { ...prev, logo: url } : prev)}
+              onClose={() => setShowMediaLibrary(false)}
+            />
             <div className="flex justify-between items-center mb-8">
               <h2 className="font-['Playfair_Display',serif] text-2xl text-[#2d2d2d]">Sponsoren verwalten</h2>
               <button
@@ -3433,7 +3509,7 @@ export function AdminPage() {
 
             {/* Sponsor Edit Form */}
             {(editingSponsor || isCreatingSponsor) && (
-              <div className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] mb-6">
+              <div ref={sponsorFormRef} className="bg-white rounded-xl p-6 border border-[rgba(107,142,111,0.2)] mb-6 scroll-mt-6">
                 <h3 className="font-['Playfair_Display',serif] text-lg text-[#2d2d2d] mb-4">
                   {isCreatingSponsor ? 'Neuer Sponsor' : 'Sponsor bearbeiten'}
                 </h3>
@@ -3441,6 +3517,7 @@ export function AdminPage() {
                   <div>
                     <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Name *</label>
                     <input
+                      ref={sponsorNameRef}
                       type="text"
                       value={editingSponsor?.name || ''}
                       onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, name: e.target.value } : null)}
@@ -3470,15 +3547,58 @@ export function AdminPage() {
                       placeholder="https://..."
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Logo URL</label>
-                    <input
-                      type="url"
-                      value={editingSponsor?.logo || ''}
-                      onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, logo: e.target.value || null } : null)}
-                      className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f]"
-                      placeholder="https://... oder leer lassen"
-                    />
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-[#2d2d2d] mb-1">Logo</label>
+                    <div className="flex flex-col sm:flex-row gap-4 items-start">
+                      <div className="w-40 h-24 flex-shrink-0 rounded-lg border border-[rgba(107,142,111,0.3)] bg-[#faf9f7] flex items-center justify-center p-2">
+                        {uploadingLogo ? (
+                          <Loader2 className="w-6 h-6 animate-spin text-[#6b8e6f]" />
+                        ) : editingSponsor?.logo ? (
+                          <img src={editingSponsor.logo} alt="Logo" className="max-h-full max-w-full object-contain" />
+                        ) : (
+                          <span className="text-sm text-[#666666]">Kein Logo</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex flex-wrap gap-2">
+                          <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm cursor-pointer bg-[#6b8e6f] text-white hover:bg-[#5a7a5e] transition-colors ${uploadingLogo ? 'opacity-50 pointer-events-none' : ''}`}>
+                            <Camera className="w-4 h-4" />
+                            Neues Logo hochladen
+                            <input type="file" accept="image/*" onChange={handleSponsorLogoUpload} className="hidden" />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShowMediaLibrary(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm bg-[#e8e4df] text-[#2d2d2d] hover:bg-[#d8d4cf] transition-colors"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                            Aus Mediathek wählen
+                          </button>
+                          {editingSponsor?.logo && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingSponsor(prev => prev ? { ...prev, logo: null } : prev)}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[#8b4454] hover:bg-[#f5e9ec] transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Entfernen
+                            </button>
+                          )}
+                        </div>
+                        {editingSponsor?.logo && (
+                          <p className="text-xs text-[#666666] break-all">
+                            Gespeichert in: {describeImageLocation(editingSponsor.logo)}
+                          </p>
+                        )}
+                        <input
+                          type="url"
+                          value={editingSponsor?.logo || ''}
+                          onChange={(e) => setEditingSponsor(prev => prev ? { ...prev, logo: e.target.value || null } : null)}
+                          className="w-full px-4 py-2 border border-[rgba(107,142,111,0.3)] rounded-lg focus:outline-none focus:border-[#6b8e6f] text-sm"
+                          placeholder="oder Bild-Adresse einfügen: https://..."
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex gap-3 mt-4">
