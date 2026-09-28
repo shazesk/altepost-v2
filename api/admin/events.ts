@@ -7,7 +7,7 @@ import { SITE_URL } from '../_lib/send.js';
 import { berlinWallClockToDate, presaleEndDate } from '../_lib/berlin-time.js';
 import { syncPretixCapacity } from '../_lib/capacity.js';
 
-const BUILD_VERSION = 'v9-shared-capacity';
+const BUILD_VERSION = 'v10-no-id-reuse';
 const PRETIX_API = 'https://pretix.eu/api/v1/organizers/kleinkunstkneipe';
 
 function generateRequestId(): string {
@@ -574,8 +574,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     log(requestId, 'Create event', { title: body.title });
 
     const events = await readEvents();
+    // Deleting an event keeps its (archived) reservations under the old id, so an
+    // id must never be handed out again or the new event inherits those bookings.
+    const usedIds = [...events.map(e => e.id), ...(await readReservations()).map(r => r.eventId)];
     const newEvent: Event = {
-      id: events.length > 0 ? Math.max(...events.map(e => e.id)) + 1 : 1,
+      id: usedIds.length > 0 ? Math.max(...usedIds) + 1 : 1,
       title: body.title,
       artist: body.artist,
       date: body.date,
