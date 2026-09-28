@@ -57,6 +57,10 @@ function PretixWidget({ slug }: { slug: string }) {
     const widget = document.createElement('pretix-widget');
     widget.setAttribute('event', shopUrl);
     ref.current.appendChild(widget);
+    // Pretix only scans the page for widgets when its script first runs. This one is
+    // added afterwards (the page is a client-side app), so it must be built by hand
+    // or it stays an empty tag and nobody can buy a ticket.
+    (window as any).PretixWidget?.buildWidgets?.();
   }, [shopUrl, loaded]);
 
   if (shopAvailable !== true || !loaded) return null;

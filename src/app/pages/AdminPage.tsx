@@ -261,6 +261,9 @@ export function AdminPage() {
   const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
   const [isCreatingSponsor, setIsCreatingSponsor] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  // Saving an event waits for the Pretix sync (several seconds); the button is locked
+  // meanwhile so a second click cannot create the event twice.
+  const [savingEvent, setSavingEvent] = useState(false);
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const sponsorFormRef = useRef<HTMLDivElement>(null);
   const sponsorNameRef = useRef<HTMLInputElement>(null);
@@ -1043,6 +1046,8 @@ export function AdminPage() {
 
   async function handleSaveEvent(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (savingEvent) return;
+    setSavingEvent(true);
     const form = e.currentTarget;
     const formData = new FormData(form);
 
@@ -1108,6 +1113,8 @@ export function AdminPage() {
       }
     } catch {
       setMessage({ text: 'Verbindungsfehler', type: 'error' });
+    } finally {
+      setSavingEvent(false);
     }
   }
 
@@ -2280,7 +2287,10 @@ export function AdminPage() {
               </label>
             </div>
             <div className="flex gap-4">
-              <button type="submit" className="bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors">{event ? 'Speichern' : 'Erstellen'}</button>
+              <button type="submit" disabled={savingEvent} className="inline-flex items-center gap-2 bg-[#6b8e6f] text-white px-6 py-2 rounded-lg hover:bg-[#5a7a5e] transition-colors disabled:opacity-60 disabled:cursor-wait">
+                {savingEvent && <Loader2 className="w-4 h-4 animate-spin" />}
+                {savingEvent ? 'Speichert…' : event ? 'Speichern' : 'Erstellen'}
+              </button>
               <button type="button" onClick={() => { setEditingEvent(null); setIsCreating(false); setImagePreview(null); setSelectedImageFile(null); setEventPhotos([]); }} className="bg-[#e8e4df] text-[#2d2d2d] px-6 py-2 rounded-lg hover:bg-[#d8d4cf] transition-colors">Abbrechen</button>
             </div>
           </form>
